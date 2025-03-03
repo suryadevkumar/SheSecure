@@ -1,9 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import http from 'http';
+import {Server} from 'socket.io';
 
 import connectDB from './db/connection.js';
 
 const app = express();
+const server=http.createServer(app);
+const io=new Server(server);
+
 dotenv.config();
 
 connectDB();
@@ -17,6 +22,6 @@ app.get('/', (req, res) => {
 
 const port = process.env.PORT;
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Backend is running on http://localhost:${port}`);
 });
