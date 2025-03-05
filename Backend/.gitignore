@@ -1,3 +1,5 @@
 .env
 
 node_modules
+
+config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json
