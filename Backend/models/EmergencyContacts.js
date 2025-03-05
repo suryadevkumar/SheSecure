@@ -1,7 +1,3 @@
-
-
-
-
 const mongoose=require("mongoose");
 
 const emergencyContactsSchema=mongoose.Schema(
