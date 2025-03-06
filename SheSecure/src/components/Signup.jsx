@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import background from '../assets/background.jpg'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ const Signup = () => {
 
   const [emailOTP, setEmailOTP] = useState('');
   const [mobileOTP, setMobileOTP] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(2);
 
   const [emailTimer, setEmailTimer] = useState(0);
   const [mobileTimer, setMobileTimer] = useState(0);
@@ -57,28 +58,12 @@ const Signup = () => {
     console.log(formData);
   };
 
-  const sendMobileOTP=()=>{
-    setMobileTimer(59);
-  }
-
-  const sendEmailOTP=()=>{
-    setEmailTimer(59);
-  }
-
-  const verifyEmail=()=>{
-
-  }
-
-  const verifyMobile=()=>{
-
-  }
-
   const signup=()=>{
 
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className='min-h-screen flex items-center justify-center bg-gray-100'>
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
         {page==1 &&<form onSubmit={sendOTP} className="space-y-4">

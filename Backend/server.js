@@ -5,8 +5,8 @@ import {Server} from 'socket.io';
 import session from 'express-session';
 import cors from 'cors';
 
-import authRoutes from './routes/User';
-import connectDB from './config/connection';
+import authRoutes from './routes/User.js';
+import connectDB from './config/connection.js';
 
 const app = express();
 const server=http.createServer(app);

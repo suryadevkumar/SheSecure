@@ -1,4 +1,4 @@
-const mongoose=require("mongoose");
+import mongoose from "mongoose";
 
 const emergencyContactsSchema=mongoose.Schema(
     {
@@ -13,4 +13,4 @@ const emergencyContactsSchema=mongoose.Schema(
     }
 );
 
-module.exports=mongoose.model("EmergencyContacts",emergencyContactsSchema);
+export default mongoose.model("EmergencyContacts",emergencyContactsSchema);

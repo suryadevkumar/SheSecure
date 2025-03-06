@@ -1,18 +1,17 @@
-const User = require("../models/User");
-const otpGenerator = require("otp-generator");
-const Profile = require('../models/Profile');
-const mailSender = require('../utils/nodemailer');
-const jwt = require("jsonwebtoken");
-require("dotenv").config;
+import User from "../models/User.js";
+import otpGenerator from 'otp-generator';
+import Profile from "../models/Profile.js";
+import mailSender from "../utils/nodemailer.js";
+import jwt from 'jsonwebtoken';
+import admin from 'firebase-admin';
 
-const admin = require("firebase-admin");
-const serviceAccount = require("../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json");
+import serviceAccount from '../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json' assert { type: 'json' };;
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 //send otp for mobile verification
-exports.sendMobileOTP = async (req, res) => {
+export const sendMobileOTP = async (req, res) => {
     try {
       const { phoneNumber } = req.body;
   
@@ -39,7 +38,7 @@ exports.sendMobileOTP = async (req, res) => {
   };
 
 //verify otp for mobile verification
-exports.verifyMobileOTP = async (req, res) => {
+export const verifyMobileOTP = async (req, res) => {
     try {
         const { phoneNumber, otp } = req.body;
 
@@ -63,7 +62,7 @@ exports.verifyMobileOTP = async (req, res) => {
 };
 
 // send otp for email verification
-exports.sendOTP = async(req,res)=>{
+export const sendOTP = async(req,res)=>{
     try{
         //fetch email from request body
         const { email } = req.body;
@@ -104,7 +103,7 @@ exports.sendOTP = async(req,res)=>{
     }
 }
 
-exports.verifyOTP= async (req,res)=>{
+export const verifyOTP= async (req,res)=>{
     try{
         const { otp } = req.body;
 
@@ -144,7 +143,7 @@ exports.verifyOTP= async (req,res)=>{
     }
 }
 
-exports.signUp=async (req,res)=>{
+export const signUp=async (req,res)=>{
     try{
         const {
             firstName,
@@ -213,7 +212,7 @@ exports.signUp=async (req,res)=>{
     }
 }
 
-exports.login=async (req,res)=>{
+export const login=async (req,res)=>{
     try {
         //get data from req body
         const {email} = req.body;

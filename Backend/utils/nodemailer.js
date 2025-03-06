@@ -1,6 +1,4 @@
-
-require("dotenv").config();
-const nodemailer=require("nodemailer");
+import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -33,4 +31,4 @@ const mailSender=async (email,otp)=>{
     }
 }
 
-module.exports = mailSender;
+export default mailSender;

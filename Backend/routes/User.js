@@ -1,14 +1,7 @@
+import express from 'express';
+import { login, signUp, sendOTP, verifyOTP, sendMobileOTP, verifyMobileOTP } from '../controllers/Auth.js';
 
-
-const express=require("express");
-const router=express.Router();
-const {login,
-    signUp, 
-    sendOTP,
-    verifyOTP,
-    sendMobileOTP,
-    verifyMobileOTP
-} = require("../controllers/Auth");
+const router = express.Router();
 
 router.post("/login", login);
 router.post("/signup", signUp);
@@ -17,4 +10,4 @@ router.post("/verify-otp", verifyOTP);
 router.post("/send-mobile-otp", sendMobileOTP);
 router.post("/verify-mobile-otp", verifyMobileOTP);
 
-module.exports = router;
+export default router;
