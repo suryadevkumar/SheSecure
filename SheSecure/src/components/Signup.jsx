@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP';
 import background from '../assets/background.jpg'
 
 const Signup = () => {
@@ -53,9 +54,8 @@ const Signup = () => {
   const sendOTP = (e) => {
     e.preventDefault();
     setPage(2);
-    sendMobileOTP();
-    sendEmailOTP();
-    console.log(formData);
+    sendMobileOTP(setMobileTimer, formData.mobile);
+    sendEmailOTP(setEmailTimer, formData.email);
   };
 
   const signup=()=>{
@@ -165,9 +165,10 @@ const Signup = () => {
             Sign Up
           </button>
         </form>}
-        {page==2 && <div>
+        {page === 2 && (
+        <div>
           <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="mobile">
+            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
               Verify Your Email
             </label>
             <input
@@ -177,30 +178,35 @@ const Signup = () => {
               disabled={true}
             />
             <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${emailTimer > 0  ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-              onClick={sendEmailOTP}
+              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
+              }`}
+              onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
               disabled={isEmailVerify}
             >
-              {emailTimer > 0 ? `Resend in ${emailTimer}s` : 'Resend'}
+              {emailTimer > 0 && !isEmailVerify ? `Resend in ${emailTimer}s` : 'Resend'}
             </button>
           </div>
           <div>
             <input
-              className="appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed':''}`}
               type="text"
               name="emailOTP"
               id="emailOTP"
               value={emailOTP}
-              onChange={(e)=>{setEmailOTP(e.target.value)}}
+              onChange={(e) => setEmailOTP(e.target.value)}
               placeholder="Enter your email OTP"
               required
+              disabled={isEmailVerify}
             />
             <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-              onClick={verifyEmail()}
-              disabled={emailTimer > 0}
+              className={`text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
+              }`}
+              onClick={() => verifyEmail(setIsEmailVerify, emailOTP)}
+              disabled={isEmailVerify}
             >
-              {isEmailVerify ? 'Veified' : 'Verify'}
+              {isEmailVerify ? 'Verified' : 'Verify'}
             </button>
           </div>
           <div>
@@ -214,39 +220,53 @@ const Signup = () => {
               disabled={true}
             />
             <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${mobileTimer > 0  ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-              onClick={sendMobileOTP}
+              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                mobileTimer > 0 || isMobileVerify? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
+              }`}
+              onClick={() => sendMobileOTP(setMobileTimer, formData.mobile)}
               disabled={isMobileVerify}
             >
-              {mobileTimer > 0 ? `Resend in ${mobileTimer}s` : 'Resend'}
+              {mobileTimer > 0 && !isMobileVerify ? `Resend in ${mobileTimer}s` : 'Resend'}
             </button>
           </div>
           <div>
             <input
-              className="appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed':''}`}
               type="text"
               name="mobileOTP"
               id="mobileOTP"
               value={mobileOTP}
-              onChange={(e)=>{setMobileOTP(e.target.value)}}
+              onChange={(e) => setMobileOTP(e.target.value)}
               placeholder="Enter your mobile OTP"
               required
+              disabled={isMobileVerify}
             />
             <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-              onClick={verifyMobile()}
-              disabled={mobileTimer > 0}
+              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                isMobileVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
+              }`}
+              onClick={() => verifyMobile(setIsMobileVerify, mobileOTP)}
+              disabled={isMobileVerify}
             >
-              {isMobileVerify ? 'Veified' : 'Verify'}
+              {isMobileVerify ? 'Verified' : 'Verify'}
             </button>
-          </div>         
+          </div>
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-full"
-            onClick={signup()}
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
+            onClick={()=>setPage(1)}
+            disabled={isEmailVerify && isMobileVerify}
+          >
+            Back
+          </button>
+          <button
+            className={`bg-blue-500 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify ? 'hover:bg-blue-700 cursor-pointer' :'opacity-50 cursor-not-allowed'}`}
+            onClick={signup}
+            disabled={!isEmailVerify || !isMobileVerify}
           >
             Submit
           </button>
-        </div>}
+        </div>
+      )}
       </div>
     </div>
   );

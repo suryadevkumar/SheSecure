@@ -1,15 +1,15 @@
-const sendMobileOTP=()=>{
+export const sendMobileOTP=(setMobileTimer, mobile)=>{
     setMobileTimer(59);
 }
 
-const sendEmailOTP=()=>{
+export const sendEmailOTP=(setEmailTimer, email)=>{
     setEmailTimer(59);
 }
 
-const verifyEmail=()=>{
-
+export const verifyEmail=(setIsEmailVerify, emailOTP)=>{
+    setIsEmailVerify(true);
 }
 
-const verifyMobile=()=>{
-
+export const verifyMobile=(setIsMobileVerify, mobileOTP)=>{
+    setIsMobileVerify(true);
 }
