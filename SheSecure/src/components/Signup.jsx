@@ -14,7 +14,7 @@ const Signup = () => {
 
   const [emailOTP, setEmailOTP] = useState('');
   const [mobileOTP, setMobileOTP] = useState('');
-  const [page, setPage] = useState(2);
+  const [page, setPage] = useState(1);
 
   const [emailTimer, setEmailTimer] = useState(0);
   const [mobileTimer, setMobileTimer] = useState(0);

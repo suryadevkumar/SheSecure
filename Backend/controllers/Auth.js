@@ -62,78 +62,70 @@ export const verifyMobileOTP = async (req, res) => {
 };
 
 // send otp for email verification
-export const sendOTP = async(req,res)=>{
-    try{
-        //fetch email from request body
+export const sendOTP = async (req, res) => {
+    try {
         const { email } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ 
-            success: false,
-            message: "Email is required" 
-        });
-    }
+        if (!email) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Email is required" 
+            });
+        }
 
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
-        // Store OTP in session with expiration time
-        req.session.otp = otp;
+        req.session.emailOTP = otp;
         req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // Set expiry to 5 minutes
-        console.log('OTP Generated : ', otp);
-        
-        try{
-            const mailResponse=await mailSender(email,otp);
+
+        try {
+            const mailResponse = await mailSender(email, otp);
             console.log("sent email's response==>", mailResponse);
-        }catch(error){
-            console.log("error occured while sending mail", error);
+        } catch (error) {
+            console.log("error occurred while sending mail", error);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send OTP",
+            });
         }
 
-        //return response successfully
-        return res.status(200).json({
-            success: true,
-            message: "otp sent successfully",
-        })
-
-    }catch(error){
+    } catch (error) {
         console.log(error.message);
         return res.status(500).json({
             success: false,
             message: error.message,
         });
     }
-}
+};
 
 export const verifyOTP= async (req,res)=>{
     try{
-        const { otp } = req.body;
+        const { emailOTP } = req.body;
 
-    if (!otp) {
-        return res.status(400).json({ success:false,message: "OTP is required" });
-    }
+        // Check if OTP exists and is not expired
+        // if (Date.now() > req.session.otpExpiresAt) {
+        //     req.session.emailOTP = null;
+        //     req.session.otpExpiresAt = null; 
+        //     return res.status(400).json({ success:false,message: "OTP has expired or not found" });
+        // }
 
-    // Check if OTP exists and is not expired
-    if (Date.now() > req.session.otpExpiresAt) {
-        req.session.otp = null;
-        req.session.otpExpiresAt = null; 
-        return res.status(400).json({ success:false,message: "OTP has expired or not found" });
-    }
+        // Validate OTP
+        console.log(req.session.emailOTP, emailOTP)
+        if (req.session.emailOTP !== emailOTP) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP" 
+            });
+        }
 
-    // Validate OTP
-    if (req.session.otp !== otp) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid OTP" 
+        // OTP is valid, clear session
+        // req.session.emailOTP = null;
+        // req.session.otpExpiresAt = null;
+
+        res.status(200).json({ 
+            success: true,
+            message: "OTP verified successfully" 
         });
-    }
-
-    // OTP is valid, clear session
-    req.session.otp = null;
-    req.session.otpExpiresAt = null;
-
-    res.status(200).json({ 
-        success: true,
-        message: "OTP verified successfully" 
-    });
     }catch(error){
         console.log(error.message);
         return res.status(500).json({

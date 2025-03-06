@@ -1,4 +1,7 @@
 import nodemailer from 'nodemailer'
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -8,27 +11,25 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const mailSender=async (email,otp)=>{
-    try{
-    
-        let mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: "Your OTP Code",
-            text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`
-        };
-        
-        transporter.sendMail(mailOptions,(error, info) => {
-            if (error) {
-                console.error('Error:', error);
-            } else {
-                console.log('Email sent:', info.response);
-            }
-        });
-    }
-    catch(error){
-        console.log("problem in mailSender =>",error.message);
-    }
-}
+const mailSender = async (email, otp) => {
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Your OTP Code",
+        text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error('Error:', error);
+        } else {
+            console.log('Email sent:', info.response);
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent successfully",
+            });
+        }
+    });
+};
 
 export default mailSender;

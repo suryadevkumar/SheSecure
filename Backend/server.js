@@ -23,7 +23,7 @@ app.use(
     session({
         secret: process.env.SESSION_SECRET || "my_secret_key",
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
         cookie: { maxAge: 5 * 60 * 1000 },
     })
 );
@@ -31,14 +31,14 @@ app.use('/api/auth',authRoutes);
 
 connectDB();
 
+const port = process.env.PORT || 5000;
+
 app.get('/', (req, res) => {
     res.send(`<p style="color: rgb(0, 255, 55);
         text-align: center;
         font-size: 100px;
-        margin-top: 30px;">Server is running on PORT 5000</p>`);
+        margin-top: 30px;">Server is running on PORT ${port}</p>`);
 });
-
-const port = process.env.PORT || 5000;
 
 server.listen(port, () => {
     console.log(`Backend is running on http://localhost:${port}`);
