@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP';
 import background from '../assets/background.jpg'
+import { api } from '../config/config';
+// import background from '../assets/stop violence.jpg'
 
 const Signup = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    mobile: '',
-    userType: '',
-    dob: '',
-  });
+  const [formData, setFormData] = useState({firstName: '',lastName: '',email: '',mobile: '',userType: '',dob: '',});
 
   const [emailOTP, setEmailOTP] = useState('');
   const [mobileOTP, setMobileOTP] = useState('');
@@ -51,20 +46,63 @@ const Signup = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const back=()=>{
+    setPage(1);
+    setIsEmailVerify(false);
+    setIsMobileVerify(false);
+    setEmailOTP('');
+    setMobileOTP('');
+  }
+
   const sendOTP = (e) => {
     e.preventDefault();
-    setPage(2);
-    sendMobileOTP(setMobileTimer, formData.mobile);
-    sendEmailOTP(setEmailTimer, formData.email);
+    fetch(api + '/auth/userExist', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({email: formData.email})
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) 
+          return alert(data.message);
+        else{
+          setPage(2);                     
+          sendMobileOTP(setMobileTimer, formData.mobile);
+          sendEmailOTP(setEmailTimer, formData.email);
+        }
+      })
+      .catch(error => {
+        console.error('Error during signup:', error);
+        alert('An error occurred. Please try again.');
+      });
   };
 
   const signup=()=>{
-
+    fetch(api + '/auth/signup', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Signup Successful. Redirecting to login...');
+          window.location.href = '/login';
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error during signup:', error);
+        alert('An error occurred. Please try again.');
+      });   
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-100'>
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
+    <div className= 'bg-cover bg-center min-h-screen flex items-center justify-center bg-gray-100' style={{ backgroundImage: `url(${background})`}}>
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%]">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
         {page==1 &&<form onSubmit={sendOTP} className="space-y-4">
           <div>
@@ -253,7 +291,7 @@ const Signup = () => {
           </div>
           <button
             className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
-            onClick={()=>setPage(1)}
+            onClick={back}
             disabled={isEmailVerify && isMobileVerify}
           >
             Back

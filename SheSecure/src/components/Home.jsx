@@ -1,9 +1,10 @@
 import React from 'react';
 import logo from '../assets/logo.png';
+import background from '../assets/stop violence.jpg';
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100" style={{backgroundImage:`url(${background})`}}>
       <nav className="bg-white shadow p-4 flex justify-between items-center">
         <div className="flex items-center">
           <img
@@ -21,7 +22,7 @@ const HomePage = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center py-20 px-8">
+      {/* <div className="flex flex-col items-center justify-center py-20 px-8">
         <div className="mb-8">
           <img
             src="https://images.unsplash.com/photo-1496070527953-98faef8b036f?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d29tYW4lMjBjb25maWRlbnR8ZW58MHx8MHx8fDA%3D"
@@ -50,6 +51,12 @@ const HomePage = () => {
             className="max-w-sm rounded-lg shadow-md"
           />
         </div>
+      </div> */}
+      <div className='ml-[60%]'>
+        <div className='text-9xl font-bold text-red-600 text-center mt-36 mb-10'>STOP</div>
+        <div className='text-9xl font-bold text-blue-600 text-center my-10'>Violence</div>
+        <div className='text-9xl font-bold text-red-600 text-center my-10'>Against</div>
+        <div className='text-9xl font-bold text-blue-600 text-center my-10'>Woman</div>
       </div>
     </div>
   );

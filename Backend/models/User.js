@@ -17,13 +17,13 @@ const userSchema=mongoose.Schema(
             required:true,
             trim:true,
         },
-        mobileNumber:{
+        mobile:{
             type:Number,
             required:true,
         },
-        accountType:{
+        userType:{
             type:String,
-            enum:["User","counselor","Admin"],
+            enum:["user","counsellor","admin"],
             required:true,
         },
         additionalDetails:{

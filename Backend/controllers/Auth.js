@@ -1,5 +1,5 @@
-import User from "../models/User.js";
 import otpGenerator from 'otp-generator';
+import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 import mailSender from "../utils/nodemailer.js";
 import jwt from 'jsonwebtoken';
@@ -61,148 +61,170 @@ export const verifyMobileOTP = async (req, res) => {
     }
 };
 
+export const userExist = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: true,
+                message: 'User already exists. Please sign in to continue!',
+            });
+        }
+        return res.status(200).json({
+            success: false,
+            message: "Account not Found!"
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 // send otp for email verification
 export const sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
 
         if (!email) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Email is required" 
+                message: "Email is required"
             });
         }
 
+        // Generate OTP
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
+        // Store OTP and expiration time in the session
         req.session.emailOTP = otp;
-        req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // Set expiry to 5 minutes
+        req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
 
+        // Save session data
+        req.session.save((err) => {
+            if (err) {
+                console.error('Failed to save session:', err);
+            }
+        });
+
+        // Send OTP to email
         try {
             const mailResponse = await mailSender(email, otp);
             console.log("sent email's response==>", mailResponse);
         } catch (error) {
-            console.log("error occurred while sending mail", error);
+            console.log("Error while sending OTP:", error);
             return res.status(500).json({
                 success: false,
-                message: "Failed to send OTP",
+                message: "Failed to send OTP"
             });
         }
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully"
+        });
 
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: error.message
         });
     }
 };
 
-export const verifyOTP= async (req,res)=>{
-    try{
+export const verifyOTP = async (req, res) => {
+    try {
         const { emailOTP } = req.body;
 
-        // Check if OTP exists and is not expired
-        // if (Date.now() > req.session.otpExpiresAt) {
-        //     req.session.emailOTP = null;
-        //     req.session.otpExpiresAt = null; 
-        //     return res.status(400).json({ success:false,message: "OTP has expired or not found" });
-        // }
+        // Check if OTP exists and has not expired
+        if (!req.session.emailOTP || Date.now() > req.session.otpExpiresAt) {
+            req.session.emailOTP = null; // Clear OTP after expiration
+            req.session.otpExpiresAt = null;
+            return res.status(400).json({
+                success: false,
+                message: "OTP has expired or not found"
+            });
+        }
 
         // Validate OTP
-        console.log(req.session.emailOTP, emailOTP)
         if (req.session.emailOTP !== emailOTP) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid OTP" 
+                message: "Invalid OTP"
             });
         }
 
-        // OTP is valid, clear session
-        // req.session.emailOTP = null;
-        // req.session.otpExpiresAt = null;
+        // OTP is valid, clear session data
+        req.session.emailOTP = null;
+        req.session.otpExpiresAt = null;
 
-        res.status(200).json({ 
+        return res.status(200).json({
             success: true,
-            message: "OTP verified successfully" 
+            message: "OTP verified successfully"
         });
-    }catch(error){
-        console.log(error.message);
+
+    } catch (error) {
+        console.error(error.message);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: error.message
         });
     }
-}
+};
 
-export const signUp=async (req,res)=>{
-    try{
-        const {
+
+export const signUp = async (req, res) => {
+    try {
+        const { firstName, lastName, email, mobile, userType, dob } = req.body;
+
+        if (!firstName || !lastName || !email || !mobile || !userType || !dob) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required.',
+            });
+        }
+
+        // Create the additional profile for the user
+        const profileDetails = await Profile.create({
+            gender: null,
+            medicalInfo: null,
+            image: null,
+            emergencyContacts: [],
+            address: null,
+        });
+
+        // Create the user
+        const user = await User.create({
             firstName,
             lastName,
             email,
-            mobileNumber,
-            accountType,
-            dob
-        } = req.body;
-    
-         //validata data
-         if(
-            !firstName || 
-            !lastName || 
-            !email || 
-            !mobileNumber || 
-            !accountType || 
-            !dob
-        ) {
-            return res.status(403).json({
-                success: false,
-                message: 'All Fields are required',
-            });
-        }
-    
-        //check if user already exist or not 
-        const existingUser = await User.findOne({ email });
-        if(existingUser) {
-            return res.status(400).json({
-                success: false,
-                message : 'User already exists. Please Sign in to continue.',
-            });
-        }
-    
-            //create the additional profile for user
-            const profileDetails = await  Profile.create({
-                gender : null,
-                medicalInfo: null,
-                image: null,
-                emergencyContacts: [],
-                address: null
-            });
-        
-            const user = await User.create({
-                firstName,
-                lastName,
-                email,
-                mobileNumber,
-                accountType,
-                additionalDetails: profileDetails._id,
-                dob
-            });
-    
-            //return response
-            return res.status(200).json({
-                success: true,
-                user,
-                message: 'User Registered Successfully',
-            })
-    }catch(error) {
+            mobile,
+            userType,
+            additionalDetails: profileDetails._id,
+            dob,
+        });
+
+        // Return success response
+        return res.status(200).json({
+            success: true,
+            user,
+            message: 'User registered successfully',
+        });
+    } catch (error) {
         console.log(error);
         return res.status(500).json({
             success: false,
-            message: 'User Cannot be Registered, Please Try Again.'
-        })
+            message: 'User cannot be registered, please try again.',
+        });
     }
-}
+};
 
 export const login=async (req,res)=>{
     try {

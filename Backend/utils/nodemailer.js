@@ -24,10 +24,6 @@ const mailSender = async (email, otp) => {
             console.error('Error:', error);
         } else {
             console.log('Email sent:', info.response);
-            return res.status(200).json({
-                success: true,
-                message: "OTP sent successfully",
-            });
         }
     });
 };
