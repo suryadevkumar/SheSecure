@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client'
 import {createBrowserRouter, Outlet, RouterProvider} from 'react-router-dom'
 import HomePage from './components/Home'
 import Signup from './components/Signup'
-import LocationTracker from './components/LocationTracker'
 import Error from './components/Error'
 import './index.css'
+import MapShow from './components/MapView'
+import PoliceStation from './components/PoliceStation'
 
 function Front(){
   return (
@@ -31,7 +32,11 @@ const appRouter=createBrowserRouter([
       },
       {
         path:"location",
-        element: <LocationTracker/>
+        element: <MapShow/>
+      },
+      {
+        path:"police",
+        element: <PoliceStation/>
       }
     ])
   }
