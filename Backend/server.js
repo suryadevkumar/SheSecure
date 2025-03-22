@@ -7,6 +7,7 @@ import ioSession from 'express-socket.io-session';
 import cors from 'cors';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
+import sosRoutes from './routes/SOS.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use(sessionMiddleware);
 io.use(ioSession(sessionMiddleware, { autoSave: true }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/sos', sosRoutes);
 
 connectDB();
 

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
-import { googleMapAPIDCP } from "../config/config";
+import { googleMapAPI } from "../config/config";
 import getLocation from "../utils/Location";
 
 const MapShow = () => {
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: googleMapAPIDCP,
+    googleMapsApiKey: googleMapAPI,
   });
 
   const mapContainerStyle = {
@@ -20,7 +20,6 @@ const MapShow = () => {
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        // Fetch user's current location
         const currentLocation = await getLocation();
         setLocation(currentLocation);
       } catch (error) {

@@ -179,7 +179,6 @@ export const verifyOTP = async (req, res) => {
     }
 };
 
-
 export const signUp = async (req, res) => {
     try {
         const { firstName, lastName, email, mobile, userType, dob } = req.body;
