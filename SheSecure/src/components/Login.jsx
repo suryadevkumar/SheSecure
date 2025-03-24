@@ -1,0 +1,165 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { api } from '../config/config';
+import { sendEmailOTP, verifyEmail } from '../utils/OTP';
+import background from '../assets/background.jpg';
+import { useNavigate } from 'react-router-dom';
+import Toaster from './Toaster';
+
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [emailOTP, setEmailOTP] = useState('');
+  const [error, setError] = useState('');
+  const [emailTimer, setEmailTimer] = useState(0);
+  const [otpVisible, setOtpVisible] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const navigate = useNavigate();
+  const [buttonText, setButtonText] = useState('Send OTP');
+
+  useEffect(() => {
+    let emailInterval = null;
+    if (emailTimer > 0) {
+      emailInterval = setInterval(() => {
+        setEmailTimer((prev) => {
+          const newTimer = prev - 1;
+          setButtonText(`Resend in ${newTimer}s`);
+          return newTimer;
+        });
+      }, 1000);
+    } else {
+      clearInterval(emailInterval);
+      if (otpVisible) {
+        setButtonText('Resend OTP');
+      } else {
+        setButtonText('Send OTP');
+      }
+    }
+
+    return () => clearInterval(emailInterval);
+  }, [emailTimer, otpVisible]);
+
+  const handleSendOTPClick = async () => {
+    if (!otpVisible) {
+      if (!email) {
+        setError('Please enter your email!');
+        return;
+      }
+      setOtpVisible(true);
+      sendEmailOTP(setEmailTimer, email);
+    } else {
+      sendEmailOTP(setEmailTimer, email);
+    }
+  };
+
+  const handleLoginClick = async (e) => {
+    e.preventDefault();
+
+    try {
+      const isVerified = await verifyEmail(setIsEmailVerified, emailOTP);
+
+      if (isVerified) {
+        const response = await fetch(`${api}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            navigate('/dashboard');
+          } else {
+            setError('Login failed. Server error.');
+          }
+        } else {
+          setError('Login failed. Please try again.');
+        }
+      } else {
+        setError('Invalid OTP.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred.');
+    }
+    setError('Incorrect OTP!');
+  };
+
+  // Memoize the handleToasterClose function to prevent it from changing between renders
+  const handleToasterClose = useCallback(() => {
+    setError('');
+  }, []);
+
+  return (
+    <div
+      className="bg-cover bg-center min-h-screen flex items-center justify-center bg-gray-100"
+      style={{ backgroundImage: `url(${background})` }}
+    >
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%] relative">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
+
+        {error && <Toaster message={error} onClose={handleToasterClose} />}
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+              Email
+            </label>
+            <input
+              className={`appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+                otpVisible ? 'cursor-not-allowed' : ''
+              }`}
+              id="email"
+              type="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              disabled={otpVisible}
+            />
+          </div>
+
+          {otpVisible && (
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="emailOTP">
+                OTP
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                type="text"
+                name="emailOTP"
+                id="emailOTP"
+                value={emailOTP}
+                onChange={(e) => setEmailOTP(e.target.value)}
+                placeholder="Enter your email OTP"
+              />
+            </div>
+          )}
+
+          <button
+            className={`text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+              otpVisible ? 'w-[48%]' : 'w-full'
+            } ${otpVisible && emailTimer > 0 ? 'bg-blue-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'}`}
+            onClick={handleSendOTPClick}
+            disabled={otpVisible && emailTimer > 0}
+          >
+            {buttonText}
+          </button>
+
+          {otpVisible && (
+            <button
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
+                emailOTP ? '' : 'cursor-not-allowed opacity-50'
+              }`}
+              onClick={handleLoginClick}
+              disabled={!emailOTP}
+            >
+              Login
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

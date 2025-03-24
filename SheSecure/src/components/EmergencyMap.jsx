@@ -10,7 +10,7 @@ const LiveLocationMap = ({ reportId }) => {
   });
 
   const mapStyles = {
-    height: '800px',
+    height: '100%',
     width: '100%',
   };
 

@@ -4,9 +4,10 @@ import {createBrowserRouter, Outlet, RouterProvider} from 'react-router-dom'
 import HomePage from './components/Home'
 import Signup from './components/Signup'
 import Error from './components/Error'
+import Login from './components/Login'
 import './index.css'
-import MapShow from './components/MapView'
-import PoliceStation from './components/PoliceStation'
+// import MapShow from './components/MapView'
+// import PoliceStation from './components/PoliceStation'
 
 function Front(){
   return (
@@ -31,13 +32,17 @@ const appRouter=createBrowserRouter([
         element: <Signup/>
       },
       {
-        path:"location",
-        element: <MapShow/>
+        path:"login",
+        element:<Login/>
       },
-      {
-        path:"police",
-        element: <PoliceStation/>
-      }
+      // {
+      //   path:"location",
+      //   element: <MapShow/>
+      // },
+      // {
+      //   path:"police",
+      //   element: <PoliceStation/>
+      // }
     ])
   }
 ])

@@ -1,5 +1,5 @@
 import React from 'react';
-import useSOSSystem from '../utils/sosSystem';
+import useSOSSystem from '../utils/SOSSystem';
 
 const SOSButton = () => {
   const { startSOS, stopSOS, sosLink, errorSOS, locationError, isSOSActive } = useSOSSystem();
