@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { GoogleMap, Marker, useLoadScript, InfoWindow } from '@react-google-maps/api';
 import { googleMapAPI } from '../config/config';
 import icon1 from '../assets/location1.png';
 import searchNearby from '../utils/SearchNearBy';
-import getLocation from '../utils/Location';
 
 const PoliceStation = () => {
   const [policeStations, setPoliceStations] = useState(null);
@@ -17,7 +17,8 @@ const PoliceStation = () => {
     googleMapsApiKey: googleMapAPI,
   });
 
-  const { latitude, longitude, error: locationError } = getLocation();
+  const { latitude, longitude, error: locationError } = useSelector((state) => state.location);
+  console.log(latitude, longitude);
 
   useEffect(() => {
     if (latitude && longitude) {
@@ -101,7 +102,7 @@ const PoliceStation = () => {
                 <div>
                   <p className="font-bold">{selectedStation.displayName?.text || 'Police Station'}</p>
                 </div>
-              </InfoWindow>            
+              </InfoWindow>
             )}
           </GoogleMap>
           <button
@@ -138,7 +139,6 @@ const PoliceStation = () => {
         `}
       </style>
     </div>
-    
   );
 };
 

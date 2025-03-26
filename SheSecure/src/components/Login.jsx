@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../config/config';
 import { sendEmailOTP, verifyEmail } from '../utils/OTP';
 import background from '../assets/background.jpg';
@@ -8,12 +8,38 @@ import Toaster from './Toaster';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [emailOTP, setEmailOTP] = useState('');
-  const [error, setError] = useState('');
+  const [toasterVisible, setToasterVisible] = useState(false);
+  const [toasterMessage, setToasterMessage] = useState('');
+  const [toasterType, setToasterType] = useState('success');
   const [emailTimer, setEmailTimer] = useState(0);
   const [otpVisible, setOtpVisible] = useState(false);
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const navigate = useNavigate();
   const [buttonText, setButtonText] = useState('Send OTP');
+  const navigate = useNavigate();
+
+  // Helper function to display success toaster
+  const setSuccessToasterMessage = (message) => {
+    setToasterMessage(message);
+    setToasterType('success');
+    setToasterVisible(true);
+  };
+
+  // Helper function to display error toaster
+  const setErrorToasterMessage = (message) => {
+    setToasterMessage(message);
+    setToasterType('error');
+    setToasterVisible(true);
+  };
+
+  // Close the toaster automatically after 3 seconds
+  useEffect(() => {
+    if (toasterVisible) {
+      const timer = setTimeout(() => {
+        setToasterVisible(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [toasterVisible]);
 
   useEffect(() => {
     let emailInterval = null;
@@ -40,13 +66,43 @@ const Login = () => {
   const handleSendOTPClick = async () => {
     if (!otpVisible) {
       if (!email) {
-        setError('Please enter your email!');
+        setErrorToasterMessage('Please enter your email!');
         return;
       }
-      setOtpVisible(true);
-      sendEmailOTP(setEmailTimer, email);
+
+      fetch(api + '/auth/userExist', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            setOtpVisible(true);
+            sendEmailOTP(setEmailTimer, email, (status) => {
+              if (status.success) {
+                setSuccessToasterMessage('Email sent!');
+              } else {
+                setErrorToasterMessage(status.message);
+              }
+            });
+          } else {
+            setErrorToasterMessage('Account not found!');
+          }
+        })
+        .catch((error) => {
+          console.error('Error during signup:', error);
+          setErrorToasterMessage('An error occurred. Please try again.');
+        });
     } else {
-      sendEmailOTP(setEmailTimer, email);
+      sendEmailOTP(setEmailTimer, email, (status) => {
+        if (status.success) {
+          setSuccessToasterMessage('Email sent!');
+        } else {
+          setErrorToasterMessage(status.message);
+        }
+      });
     }
   };
 
@@ -54,40 +110,31 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const isVerified = await verifyEmail(setIsEmailVerified, emailOTP);
-
-      if (isVerified) {
+        await verifyEmail(emailOTP);
+        
         const response = await fetch(`${api}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
         });
 
         if (response.ok) {
-          const data = await response.json();
-          if (data.token) {
-            localStorage.setItem('token', data.token);
-            navigate('/dashboard');
-          } else {
-            setError('Login failed. Server error.');
-          }
+            const data = await response.json();
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                navigate('/userDashboard');
+                startLocationTracking(data.token);
+            } else {
+                setErrorToasterMessage('Login failed. Server error.');
+            }
         } else {
-          setError('Login failed. Please try again.');
+            setErrorToasterMessage('Login failed. Please try again.');
         }
-      } else {
-        setError('Invalid OTP.');
-      }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('An unexpected error occurred.');
+        console.error('Login error:', err);
+        setErrorToasterMessage(err);
     }
-    setError('Incorrect OTP!');
   };
-
-  // Memoize the handleToasterClose function to prevent it from changing between renders
-  const handleToasterClose = useCallback(() => {
-    setError('');
-  }, []);
 
   return (
     <div
@@ -97,7 +144,13 @@ const Login = () => {
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%] relative">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
 
-        {error && <Toaster message={error} onClose={handleToasterClose} />}
+        {toasterVisible && (
+          <Toaster
+            message={toasterMessage}
+            onClose={() => setToasterVisible(false)}
+            type={toasterType}
+          />
+        )}
 
         <div className="space-y-4">
           <div>

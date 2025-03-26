@@ -1,9 +1,10 @@
 import otpGenerator from 'otp-generator';
-import User from "../models/User.js";
-import Profile from "../models/Profile.js";
-import mailSender from "../utils/nodemailer.js";
 import jwt from 'jsonwebtoken';
 import admin from 'firebase-admin';
+import User from "../models/User.js";
+import Profile from "../models/Profile.js";
+import LocationHistory from '../models/LocationHistory.js';
+import mailSender from "../utils/nodemailer.js";
 
 import serviceAccount from '../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json' assert { type: 'json' };;
 admin.initializeApp({
@@ -99,12 +100,10 @@ export const sendOTP = async (req, res) => {
             });
         }
 
-        // Generate OTP
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
-        // Store OTP and expiration time in the session
         req.session.emailOTP = otp;
-        req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
+        req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
 
         // Save session data
         req.session.save((err) => {
@@ -113,12 +112,11 @@ export const sendOTP = async (req, res) => {
             }
         });
 
-        // Send OTP to email
         try {
             const mailResponse = await mailSender(email, otp);
-            console.log("sent email's response==>", mailResponse);
+            console.log("Email sent successfully:", mailResponse);
         } catch (error) {
-            console.log("Error while sending OTP:", error);
+            console.error("Error while sending OTP:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to send OTP"
@@ -131,7 +129,7 @@ export const sendOTP = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         return res.status(500).json({
             success: false,
             message: error.message
@@ -180,62 +178,58 @@ export const verifyOTP = async (req, res) => {
 };
 
 export const signUp = async (req, res) => {
-    try {
-        const { firstName, lastName, email, mobile, userType, dob } = req.body;
+  try {
+    const { firstName, lastName, email, mobile, userType, dob } = req.body;
 
-        if (!firstName || !lastName || !email || !mobile || !userType || !dob) {
-            return res.status(400).json({
-                success: false,
-                message: 'All fields are required.',
-            });
-        }
-
-        // Create the additional profile for the user
-        const profileDetails = await Profile.create({
-            gender: null,
-            medicalInfo: null,
-            image: null,
-            emergencyContacts: [],
-            address: null,
-        });
-
-        // Create the user
-        const user = await User.create({
-            firstName,
-            lastName,
-            email,
-            mobile,
-            userType,
-            additionalDetails: profileDetails._id,
-            dob,
-        });
-
-        // Return success response
-        return res.status(200).json({
-            success: true,
-            user,
-            message: 'User registered successfully',
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            success: false,
-            message: 'User cannot be registered, please try again.',
-        });
+    if (!firstName || !lastName || !email || !mobile || !userType || !dob) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required.',
+      });
     }
+
+    const profileDetails = await Profile.create({
+      gender: null,
+      medicalInfo: null,
+      image: null,
+      emergencyContacts: [],
+      address: null,
+    });
+
+    const locationHistory = await LocationHistory.create({
+      locations: [],
+    });
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      mobile,
+      userType,
+      additionalDetails: profileDetails._id,
+      dob,
+      locationHistory: locationHistory._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      user,
+      message: 'User registered successfully',
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: 'User cannot be registered, please try again.',
+    });
+  }
 };
 
 export const login=async (req,res)=>{
     try {
         //get data from req body
         const {email} = req.body;
-        //validation of data
-        if(!email) {
-            return res.status(400).json({
-                success: false,
-                message: `Please Fill up All the Required Fields`,
-            });
-        }
+        
         //check user exists or not
         const user = await User.findOne({email}).populate('additionalDetails');
         if(!user) {

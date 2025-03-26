@@ -34,7 +34,12 @@ const userSchema=mongoose.Schema(
         dob:{
             type:Date,
             required:true,
-        }
+        },
+        locationHistory: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: "LocationHistory",
+        },
     }
 );
 

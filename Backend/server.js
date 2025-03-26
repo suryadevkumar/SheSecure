@@ -4,10 +4,12 @@ import http from 'http';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import ioSession from 'express-socket.io-session';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
 import sosRoutes from './routes/SOS.js';
+import locationRoutes from './routes/LocationHistory.js'
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ const io = new Server(server, {
 });
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(
     cors({
@@ -49,6 +52,7 @@ io.use(ioSession(sessionMiddleware, { autoSave: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/sos', sosRoutes);
+app.use('/api/location', locationRoutes);
 
 connectDB();
 

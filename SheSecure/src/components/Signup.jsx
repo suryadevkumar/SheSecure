@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP';
 import background from '../assets/background.jpg'
 import { api } from '../config/config';
+import Toaster from './Toaster';
 // import background from '../assets/stop violence.jpg'
 
 const Signup = () => {
@@ -10,12 +11,38 @@ const Signup = () => {
   const [emailOTP, setEmailOTP] = useState('');
   const [mobileOTP, setMobileOTP] = useState('');
   const [page, setPage] = useState(1);
-
   const [emailTimer, setEmailTimer] = useState(0);
   const [mobileTimer, setMobileTimer] = useState(0);
-
   const [isEmailVerify,setIsEmailVerify]=useState(false);
   const [isMobileVerify,setIsMobileVerify]=useState(false);
+  const [toasterVisible, setToasterVisible] = useState(false);
+  const [toasterMessage, setToasterMessage] = useState('');
+  const [toasterType, setToasterType] = useState('success');
+
+  // Helper function to display success toaster
+  const setSuccessToasterMessage = (message) => {
+    setToasterMessage(message);
+    setToasterType('success');
+    setToasterVisible(true);
+  };
+
+  // Helper function to display error toaster
+  const setErrorToasterMessage = (message) => {
+    setToasterMessage(message);
+    setToasterType('error');
+    setToasterVisible(true);
+  };
+
+  // Close the toaster automatically after 3 seconds
+  useEffect(() => {
+    if (toasterVisible) {
+      const timer = setTimeout(() => {
+        setToasterVisible(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [toasterVisible]);
 
   useEffect(() => {
     let emailInterval = null;
@@ -62,21 +89,38 @@ const Signup = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({email: formData.email})
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) 
-          return alert(data.message);
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success)
+          setErrorToasterMessage(data.message);
         else{
           setPage(2);                     
           sendMobileOTP(setMobileTimer, formData.mobile);
-          sendEmailOTP(setEmailTimer, formData.email);
+          sendEmailOTP(setEmailTimer, formData.email, (status) => {
+            if (status.success) {
+              setSuccessToasterMessage('Email sent!');
+            } else {
+              setErrorToasterMessage(status.message);
+            }
+          });
         }
       })
       .catch(error => {
         console.error('Error during signup:', error);
-        alert('An error occurred. Please try again.');
+        setErrorToasterMessage('An error occurred. Please try again.');
       });
   };
+
+  const emailVerification = () => {
+    verifyEmail(emailOTP)
+      .then(() => {
+        setIsEmailVerify(true);
+        setSuccessToasterMessage('Email verification successful!');
+      })
+      .catch((error) => {
+        setErrorToasterMessage(error);
+      });
+  };  
 
   const signup=()=>{
     fetch(api + '/auth/signup', {
@@ -88,15 +132,17 @@ const Signup = () => {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          alert('Signup Successful. Redirecting to login...');
-          window.location.href = '/login';
+          setSuccessToasterMessage('Signup successful. Redirecting to login...');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 3000);
         } else {
-          alert(data.message);
+          setErrorToasterMessage(data.message);
         }
       })
       .catch(error => {
         console.error('Error during signup:', error);
-        alert('An error occurred. Please try again.');
+        setErrorToasterMessage('An error occurred. Please try again.');
       });   
   }
 
@@ -104,6 +150,15 @@ const Signup = () => {
     <div className= 'bg-cover bg-center min-h-screen flex items-center justify-center bg-gray-100' style={{ backgroundImage: `url(${background})`}}>
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%]">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
+        
+        {toasterVisible && (
+          <Toaster
+            message={toasterMessage}
+            onClose={() => setToasterVisible(false)}
+            type={toasterType}
+          />
+        )}
+
         {page==1 &&<form onSubmit={sendOTP} className="space-y-4">
           <div>
             <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="firstName">
@@ -197,7 +252,7 @@ const Signup = () => {
             />
           </div>
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full cursor-pointer"
             type="submit"
           >
             Sign Up
@@ -241,11 +296,12 @@ const Signup = () => {
               className={`text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                 isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
               }`}
-              onClick={() => verifyEmail(setIsEmailVerify, emailOTP)}
+              onClick={emailVerification}
               disabled={isEmailVerify}
             >
               {isEmailVerify ? 'Verified' : 'Verify'}
             </button>
+
           </div>
           <div>
             <label className="block text-gray-700 text-lg font-bold mb-1 mt-2" htmlFor="mobile">
