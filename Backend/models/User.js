@@ -37,7 +37,6 @@ const userSchema=mongoose.Schema(
         },
         locationHistory: {
             type: mongoose.Schema.Types.ObjectId,
-            required: true,
             ref: "LocationHistory",
         },
     }

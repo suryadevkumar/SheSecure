@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLocation, setError } from '../redux/locationSlice';
 import { api } from '../config/config';
@@ -8,40 +8,38 @@ const useLocationTracking = () => {
   const token = useSelector((state) => state.auth.token);
   const user = useSelector((state) => state.auth.user);
   const lastLocation = useRef({ lat: null, lng: null, startTime: null });
-  const watchId = useRef(null); // Store watch ID to clear later
+  const watchId = useRef(null);
 
   const sendLocationToBackend = async (lat, lng, startTime, endTime) => {
-    if (!token || !user) return;
-    try {
-      const response = await fetch(api + '/location/save-userLocation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: user._id,
-          locations: [{
-            latitude: lat,
-            longitude: lng,
-            startTime: startTime,
-            endTime: endTime,
-          }],
-        }),
-      });
+    if (!token) return;
+    // try {
+    //   const response = await fetch(api + '/location/save-userLocation', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //     body: JSON.stringify({
+    //       locations: [{
+    //         latitude: lat,
+    //         longitude: lng,
+    //         startTime: startTime,
+    //         endTime: endTime,
+    //       }],
+    //     }),
+    //   });
 
-      if (!response.ok) {
-        console.error('Error sending location history to backend');
-      }
-    } catch (err) {
-      console.error('Failed to send location history:', err);
-    }
+    //   if (!response.ok) {
+    //     console.error('Error sending location history to backend', await response.text());
+    //   }
+    // } catch (err) {
+    //   console.error('Failed to send location history:', err);
+    // }
   };
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        // When tab is hidden, send current location to backend if available
         if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {
           sendLocationToBackend(
             lastLocation.current.lat,
@@ -51,11 +49,10 @@ const useLocationTracking = () => {
           );
         }
         if (watchId.current) {
-          navigator.geolocation.clearWatch(watchId.current); // Clear the geolocation watch
+          navigator.geolocation.clearWatch(watchId.current);
         }
       } else {
-        // When tab becomes visible, reinitialize the geolocation tracking
-        watchLocation(); // Resume tracking when the tab becomes visible again
+        watchLocation();
       }
     };
 
@@ -66,30 +63,30 @@ const useLocationTracking = () => {
         watchId.current = navigator.geolocation.watchPosition(
           async (position) => {
             const { latitude: lat, longitude: lng } = position.coords;
+            const now = new Date();
 
-            // Always update Redux with the current position
+            // Send initial location to backend only if lastLocation is null
+            if (!lastLocation.current.lat || !lastLocation.current.lng) {
+              lastLocation.current = { lat, lng, startTime: now };
+              // Send initial location to the backend
+              sendLocationToBackend(lat, lng, now, now);
+            } else if (
+              lastLocation.current.lat !== lat || lastLocation.current.lng !== lng
+            ) {
+              // Send previous location data to the backend if location has changed
+              await sendLocationToBackend(
+                lastLocation.current.lat,
+                lastLocation.current.lng,
+                lastLocation.current.startTime,
+                now
+              );
+            }
+
+            // Always update Redux with the latest location
             dispatch(setLocation({ latitude: lat, longitude: lng }));
 
-            // Check if the location has changed and update the backend if necessary
-            if (
-              lastLocation.current.lat === null ||
-              lastLocation.current.lng === null ||
-              lastLocation.current.lat !== lat ||
-              lastLocation.current.lng !== lng
-            ) {
-              const now = new Date();
-              if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {
-                await sendLocationToBackend(
-                  lastLocation.current.lat,
-                  lastLocation.current.lng,
-                  lastLocation.current.startTime,
-                  now
-                );
-              }
-
-              // Update last known location
-              lastLocation.current = { lat, lng, startTime: now };
-            }
+            // Update the current location in the lastLocation ref
+            lastLocation.current = { lat, lng, startTime: now };
           },
           (err) => {
             dispatch(setError(err.message));
@@ -107,13 +104,12 @@ const useLocationTracking = () => {
     };
 
     if (token && user) {
-      watchLocation(); // Start location tracking
+      watchLocation();
     }
 
-    // Clean up on component unmount
     return () => {
       if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current); // Clear watch when component unmounts
+        navigator.geolocation.clearWatch(watchId.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {

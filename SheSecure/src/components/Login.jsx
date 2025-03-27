@@ -108,33 +108,33 @@ const Login = () => {
 
   const handleLoginClick = async (e) => {
     e.preventDefault();
-
+  
     try {
-        await verifyEmail(emailOTP);
-        
-        const response = await fetch(`${api}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.token) {
-                localStorage.setItem('token', data.token);
-                navigate('/userDashboard');
-                startLocationTracking(data.token);
-            } else {
-                setErrorToasterMessage('Login failed. Server error.');
-            }
+      await verifyEmail(emailOTP);
+  
+      const response = await fetch(`${api}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem('token', data.token); // Save JWT to localStorage
+          navigate('/userDashboard');
+          startLocationTracking(data.token); // Pass the token to start location tracking
         } else {
-            setErrorToasterMessage('Login failed. Please try again.');
+          setErrorToasterMessage('Login failed. Server error.');
         }
+      } else {
+        setErrorToasterMessage('Login failed. Please try again.');
+      }
     } catch (err) {
-        console.error('Login error:', err);
-        setErrorToasterMessage(err);
+      console.error('Login error:', err);
+      setErrorToasterMessage(err);
     }
-  };
+  };  
 
   return (
     <div
