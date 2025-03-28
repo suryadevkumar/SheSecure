@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { googleMapAPI } from '../config/config';
+import { api } from '../config/config';
 
 const LiveLocationMap = ({ reportId }) => {
   const [location, setLocation] = useState(null);

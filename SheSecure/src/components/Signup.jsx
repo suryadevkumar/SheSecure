@@ -3,6 +3,8 @@ import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils
 import background from '../assets/background.jpg'
 import { api } from '../config/config';
 import Toaster from './Toaster';
+import { Header1 } from './Header';
+import { Footer } from './Footer';
 // import background from '../assets/stop violence.jpg'
 
 const Signup = () => {
@@ -147,221 +149,225 @@ const Signup = () => {
   }
 
   return (
-    <div className= 'bg-cover bg-center min-h-screen flex items-center justify-center bg-gray-100' style={{ backgroundImage: `url(${background})`}}>
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%]">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
-        
-        {toasterVisible && (
-          <Toaster
-            message={toasterMessage}
-            onClose={() => setToasterVisible(false)}
-            type={toasterType}
-          />
+    <div className='bg-cover bg-center min-h-screen'style={{ backgroundImage: `url(${background})` }}>
+      <Header1/>
+      <div className= 'flex items-center justify-center'>
+        <div className="bg-white p-8 mt-[6%] rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%]">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
+          
+          {toasterVisible && (
+            <Toaster
+              message={toasterMessage}
+              onClose={() => setToasterVisible(false)}
+              type={toasterType}
+            />
+          )}
+
+          {page==1 &&<form onSubmit={sendOTP} className="space-y-4">
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="firstName">
+                First Name
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="firstName"
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Enter your first name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="lastName">
+                Last Name
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="lastName"
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Enter your last name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+                Email
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="mobile">
+                Mobile Number
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="mobile"
+                type="tel"
+                name="mobile"
+                value={formData.mobile}
+                onChange={handleChange}
+                placeholder="Enter your mobile number"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="userType">
+                User Type
+              </label>
+              <select
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="userType"
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+              >
+                <option value="">Select User Type</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="counsellor">Counsellor</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="dob">
+                Date of Birth
+              </label>
+              <input
+                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="dob"
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full cursor-pointer"
+              type="submit"
+            >
+              Sign Up
+            </button>
+          </form>}
+          {page === 2 && (
+          <div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+                Verify Your Email
+              </label>
+              <input
+                className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
+                id="userEmail"
+                value={formData.email}
+                disabled={true}
+              />
+              <button
+                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                  emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
+                }`}
+                onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
+                disabled={isEmailVerify}
+              >
+                {emailTimer > 0 && !isEmailVerify ? `Resend in ${emailTimer}s` : 'Resend'}
+              </button>
+            </div>
+            <div>
+              <input
+                className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed':''}`}
+                type="text"
+                name="emailOTP"
+                id="emailOTP"
+                value={emailOTP}
+                onChange={(e) => setEmailOTP(e.target.value)}
+                placeholder="Enter your email OTP"
+                required
+                disabled={isEmailVerify}
+              />
+              <button
+                className={`text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                  isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
+                }`}
+                onClick={emailVerification}
+                disabled={isEmailVerify}
+              >
+                {isEmailVerify ? 'Verified' : 'Verify'}
+              </button>
+
+            </div>
+            <div>
+              <label className="block text-gray-700 text-lg font-bold mb-1 mt-2" htmlFor="mobile">
+                Verify Your Mobile Number
+              </label>
+              <input
+                className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
+                value={formData.mobile}
+                id="userMobile"
+                disabled={true}
+              />
+              <button
+                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                  mobileTimer > 0 || isMobileVerify? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
+                }`}
+                onClick={() => sendMobileOTP(setMobileTimer, formData.mobile)}
+                disabled={isMobileVerify}
+              >
+                {mobileTimer > 0 && !isMobileVerify ? `Resend in ${mobileTimer}s` : 'Resend'}
+              </button>
+            </div>
+            <div>
+              <input
+                className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed':''}`}
+                type="text"
+                name="mobileOTP"
+                id="mobileOTP"
+                value={mobileOTP}
+                onChange={(e) => setMobileOTP(e.target.value)}
+                placeholder="Enter your mobile OTP"
+                required
+                disabled={isMobileVerify}
+              />
+              <button
+                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                  isMobileVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
+                }`}
+                onClick={() => verifyMobile(setIsMobileVerify, mobileOTP)}
+                disabled={isMobileVerify}
+              >
+                {isMobileVerify ? 'Verified' : 'Verify'}
+              </button>
+            </div>
+            <button
+              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
+              onClick={back}
+              disabled={isEmailVerify && isMobileVerify}
+            >
+              Back
+            </button>
+            <button
+              className={`bg-blue-500 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify ? 'hover:bg-blue-700 cursor-pointer' :'opacity-50 cursor-not-allowed'}`}
+              onClick={signup}
+              disabled={!isEmailVerify || !isMobileVerify}
+            >
+              Submit
+            </button>
+          </div>
         )}
-
-        {page==1 &&<form onSubmit={sendOTP} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="firstName">
-              First Name
-            </label>
-            <input
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="firstName"
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              placeholder="Enter your first name"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="lastName">
-              Last Name
-            </label>
-            <input
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="lastName"
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              placeholder="Enter your last name"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="mobile">
-              Mobile Number
-            </label>
-            <input
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="mobile"
-              type="tel"
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Enter your mobile number"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="userType">
-              User Type
-            </label>
-            <select
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="userType"
-              name="userType"
-              value={formData.userType}
-              onChange={handleChange}
-            >
-              <option value="">Select User Type</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-              <option value="counsellor">Counsellor</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="dob">
-              Date of Birth
-            </label>
-            <input
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="dob"
-              type="date"
-              name="dob"
-              value={formData.dob}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full cursor-pointer"
-            type="submit"
-          >
-            Sign Up
-          </button>
-        </form>}
-        {page === 2 && (
-        <div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
-              Verify Your Email
-            </label>
-            <input
-              className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
-              id="userEmail"
-              value={formData.email}
-              disabled={true}
-            />
-            <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
-                emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
-              }`}
-              onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
-              disabled={isEmailVerify}
-            >
-              {emailTimer > 0 && !isEmailVerify ? `Resend in ${emailTimer}s` : 'Resend'}
-            </button>
-          </div>
-          <div>
-            <input
-              className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed':''}`}
-              type="text"
-              name="emailOTP"
-              id="emailOTP"
-              value={emailOTP}
-              onChange={(e) => setEmailOTP(e.target.value)}
-              placeholder="Enter your email OTP"
-              required
-              disabled={isEmailVerify}
-            />
-            <button
-              className={`text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
-                isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
-              }`}
-              onClick={emailVerification}
-              disabled={isEmailVerify}
-            >
-              {isEmailVerify ? 'Verified' : 'Verify'}
-            </button>
-
-          </div>
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1 mt-2" htmlFor="mobile">
-              Verify Your Mobile Number
-            </label>
-            <input
-              className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
-              value={formData.mobile}
-              id="userMobile"
-              disabled={true}
-            />
-            <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
-                mobileTimer > 0 || isMobileVerify? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
-              }`}
-              onClick={() => sendMobileOTP(setMobileTimer, formData.mobile)}
-              disabled={isMobileVerify}
-            >
-              {mobileTimer > 0 && !isMobileVerify ? `Resend in ${mobileTimer}s` : 'Resend'}
-            </button>
-          </div>
-          <div>
-            <input
-              className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed':''}`}
-              type="text"
-              name="mobileOTP"
-              id="mobileOTP"
-              value={mobileOTP}
-              onChange={(e) => setMobileOTP(e.target.value)}
-              placeholder="Enter your mobile OTP"
-              required
-              disabled={isMobileVerify}
-            />
-            <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
-                isMobileVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
-              }`}
-              onClick={() => verifyMobile(setIsMobileVerify, mobileOTP)}
-              disabled={isMobileVerify}
-            >
-              {isMobileVerify ? 'Verified' : 'Verify'}
-            </button>
-          </div>
-          <button
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
-            onClick={back}
-            disabled={isEmailVerify && isMobileVerify}
-          >
-            Back
-          </button>
-          <button
-            className={`bg-blue-500 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify ? 'hover:bg-blue-700 cursor-pointer' :'opacity-50 cursor-not-allowed'}`}
-            onClick={signup}
-            disabled={!isEmailVerify || !isMobileVerify}
-          >
-            Submit
-          </button>
         </div>
-      )}
       </div>
+      <Footer/>
     </div>
   );
 };

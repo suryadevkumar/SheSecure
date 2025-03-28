@@ -4,6 +4,8 @@ import { GoogleMap, Marker, useLoadScript, InfoWindow } from '@react-google-maps
 import { googleMapAPI } from '../config/config';
 import icon1 from '../assets/location1.png';
 import searchNearby from '../utils/SearchNearBy';
+import { Header2 } from './Header';
+import { Footer } from './Footer';
 
 const PoliceStation = () => {
   const [policeStations, setPoliceStations] = useState(null);
@@ -74,15 +76,16 @@ const PoliceStation = () => {
   if (!isLoaded) return <p>Loading Map...</p>;
 
   return (
-    <div>
+    <div className=' h-screen'>
+      <Header2/>
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {policeStations && (
-        <div className="flex h-screen">
+        <div className="flex flex-grow">
           <GoogleMap
             center={mapCenter}
             zoom={12}
-            mapContainerStyle={{ width: `${showPlaceButton ? '75%' : '100%'}`, height: '100%' }}
+            mapContainerStyle={{ width: `${showPlaceButton ? '75%' : '100%'}`, height: 'calc(100vh - 4rem)' }}
             onClick={() => setSelectedStation(null)} // Reset selectedStation on map click
           >
             {renderMarkers()}
@@ -96,7 +99,7 @@ const PoliceStation = () => {
                 }}
                 options={{
                   disableAutoPan: true,
-                  pixelOffset: new window.google.maps.Size(0, -30), // Offset for better positioning
+                  pixelOffset: new window.google.maps.Size(0, -30),
                 }}
               >
                 <div>
@@ -106,12 +109,12 @@ const PoliceStation = () => {
             )}
           </GoogleMap>
           <button
-            className="fixed top-0 right-0 w-[3%] mt-0.5 p-1 bg-blue-600 text-white hover:opacity-50 cursor-pointer"
+            className="fixed top-16 right-0 w-[3%] mt-0.5 p-1 bg-blue-600 text-white hover:opacity-50 cursor-pointer"
             onClick={() => setShowPlaceButton(!showPlaceButton)}
           >
             {showPlaceButton ? '>>' : '<<'}
           </button>
-          <div className={`${showPlaceButton ? '' : 'hidden'} w-[25%] h-screen`}>
+          <div className={`${showPlaceButton ? '' : 'hidden'} w-[25%] h-[calc(100vh-4rem)]`}>
             <div className="border-white border-2">
               <p className="bg-green-500 text-white text-2xl text-center w-[90%]">Nearest Police Stations</p>
             </div>
@@ -138,6 +141,7 @@ const PoliceStation = () => {
           }
         `}
       </style>
+      <Footer/>
     </div>
   );
 };

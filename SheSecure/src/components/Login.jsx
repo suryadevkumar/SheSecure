@@ -4,6 +4,8 @@ import { sendEmailOTP, verifyEmail } from '../utils/OTP';
 import background from '../assets/background.jpg';
 import { useNavigate } from 'react-router-dom';
 import Toaster from './Toaster';
+import { Header1 } from './Header';
+import { Footer } from './Footer';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -137,80 +139,83 @@ const Login = () => {
   };  
 
   return (
-    <div
-      className="bg-cover bg-center min-h-screen flex items-center justify-center bg-gray-100"
-      style={{ backgroundImage: `url(${background})` }}
-    >
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%] relative">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
+    <div className='bg-cover bg-center min-h-screen'style={{ backgroundImage: `url(${background})` }}>
+      <Header1/>
+      <div
+        className=" flex items-center justify-center"
+      >
+        <div className="bg-white p-8 mt-[15%] rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%] relative">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
 
-        {toasterVisible && (
-          <Toaster
-            message={toasterMessage}
-            onClose={() => setToasterVisible(false)}
-            type={toasterType}
-          />
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              className={`appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                otpVisible ? 'cursor-not-allowed' : ''
-              }`}
-              id="email"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              disabled={otpVisible}
+          {toasterVisible && (
+            <Toaster
+              message={toasterMessage}
+              onClose={() => setToasterVisible(false)}
+              type={toasterType}
             />
-          </div>
+          )}
 
-          {otpVisible && (
+          <div className="space-y-4">
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="emailOTP">
-                OTP
+              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+                Email
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                type="text"
-                name="emailOTP"
-                id="emailOTP"
-                value={emailOTP}
-                onChange={(e) => setEmailOTP(e.target.value)}
-                placeholder="Enter your email OTP"
+                className={`appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+                  otpVisible ? 'cursor-not-allowed' : ''
+                }`}
+                id="email"
+                type="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                disabled={otpVisible}
               />
             </div>
-          )}
 
-          <button
-            className={`text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
-              otpVisible ? 'w-[48%]' : 'w-full'
-            } ${otpVisible && emailTimer > 0 ? 'bg-blue-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'}`}
-            onClick={handleSendOTPClick}
-            disabled={otpVisible && emailTimer > 0}
-          >
-            {buttonText}
-          </button>
+            {otpVisible && (
+              <div>
+                <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="emailOTP">
+                  OTP
+                </label>
+                <input
+                  className="appearance-none border rounded w-full py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  type="text"
+                  name="emailOTP"
+                  id="emailOTP"
+                  value={emailOTP}
+                  onChange={(e) => setEmailOTP(e.target.value)}
+                  placeholder="Enter your email OTP"
+                />
+              </div>
+            )}
 
-          {otpVisible && (
             <button
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
-                emailOTP ? '' : 'cursor-not-allowed opacity-50'
-              }`}
-              onClick={handleLoginClick}
-              disabled={!emailOTP}
+              className={`text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+                otpVisible ? 'w-[48%]' : 'w-full'
+              } ${otpVisible && emailTimer > 0 ? 'bg-blue-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'}`}
+              onClick={handleSendOTPClick}
+              disabled={otpVisible && emailTimer > 0}
             >
-              Login
+              {buttonText}
             </button>
-          )}
+
+            {otpVisible && (
+              <button
+                className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
+                  emailOTP ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                }`}
+                onClick={handleLoginClick}
+                disabled={!emailOTP}
+              >
+                Login
+              </button>
+            )}
+          </div>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 };

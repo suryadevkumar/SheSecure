@@ -82,10 +82,8 @@ const useLocationTracking = () => {
               );
             }
 
-            // Always update Redux with the latest location
             dispatch(setLocation({ latitude: lat, longitude: lng }));
 
-            // Update the current location in the lastLocation ref
             lastLocation.current = { lat, lng, startTime: now };
           },
           (err) => {
