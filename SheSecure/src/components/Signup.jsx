@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP';
-import background from '../assets/background.jpg'
+import background from '../assets/background1.jpg'
 import { api } from '../config/config';
 import Toaster from './Toaster';
-import { Header1 } from './Header';
-import { Footer } from './Footer';
 // import background from '../assets/stop violence.jpg'
 
 const Signup = () => {
@@ -149,11 +147,10 @@ const Signup = () => {
   }
 
   return (
-    <div className='bg-cover bg-center min-h-screen'style={{ backgroundImage: `url(${background})` }}>
-      <Header1/>
+    <div className='bg-cover bg-center h-[calc(100vh-4rem)]'style={{ backgroundImage: `url(${background})` }}>
       <div className= 'flex items-center justify-center'>
-        <div className="bg-white p-8 mt-[6%] rounded-lg shadow-md w-full max-w-lg ml-[40%] lg:ml-[50%]">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up</h2>
+        <div className="bg-white p-8 mt-[4%] rounded-lg shadow-md w-full max-w-md ml-[40%] lg:ml-[50%]">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Sign Up</h2>
           
           {toasterVisible && (
             <Toaster
@@ -165,11 +162,11 @@ const Signup = () => {
 
           {page==1 &&<form onSubmit={sendOTP} className="space-y-4">
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="firstName">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="firstName">
                 First Name
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="firstName"
                 type="text"
                 name="firstName"
@@ -180,11 +177,11 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="lastName">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="lastName">
                 Last Name
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="lastName"
                 type="text"
                 name="lastName"
@@ -195,11 +192,11 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="email">
                 Email
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="email"
                 type="email"
                 name="email"
@@ -210,11 +207,11 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="mobile">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="mobile">
                 Mobile Number
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="mobile"
                 type="tel"
                 name="mobile"
@@ -225,11 +222,11 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="userType">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="userType">
                 User Type
               </label>
               <select
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="userType"
                 name="userType"
                 value={formData.userType}
@@ -242,11 +239,11 @@ const Signup = () => {
               </select>
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="dob">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="dob">
                 Date of Birth
               </label>
               <input
-                className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="dob"
                 type="date"
                 name="dob"
@@ -256,7 +253,7 @@ const Signup = () => {
               />
             </div>
             <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full cursor-pointer"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded focus:outline-none focus:shadow-outline w-full cursor-pointer"
               type="submit"
             >
               Sign Up
@@ -265,17 +262,17 @@ const Signup = () => {
           {page === 2 && (
           <div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1" htmlFor="email">
+              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="email">
                 Verify Your Email
               </label>
               <input
-                className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
+                className="appearance-none border rounded w-[67%] py-1 px-3 text-gray-700 leading-tight cursor-not-allowed"
                 id="userEmail"
                 value={formData.email}
                 disabled={true}
               />
               <button
-                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                className={`bg-blue-500 text-white font-bold py-1 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                   emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
                 }`}
                 onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
@@ -286,7 +283,7 @@ const Signup = () => {
             </div>
             <div>
               <input
-                className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed':''}`}
+                className={`appearance-none border rounded w-[67%] py-1 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed':''}`}
                 type="text"
                 name="emailOTP"
                 id="emailOTP"
@@ -308,11 +305,11 @@ const Signup = () => {
 
             </div>
             <div>
-              <label className="block text-gray-700 text-lg font-bold mb-1 mt-2" htmlFor="mobile">
+              <label className="block text-gray-700 text-md font-bold mb-1 mt-2" htmlFor="mobile">
                 Verify Your Mobile Number
               </label>
               <input
-                className="appearance-none border rounded w-[67%] py-2 px-3 text-gray-700 leading-tight cursor-not-allowed"
+                className="appearance-none border rounded w-[67%] py-1 px-3 text-gray-700 leading-tight cursor-not-allowed"
                 value={formData.mobile}
                 id="userMobile"
                 disabled={true}
@@ -329,7 +326,7 @@ const Signup = () => {
             </div>
             <div>
               <input
-                className={`appearance-none border rounded w-[67%] py-2 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed':''}`}
+                className={`appearance-none border rounded w-[67%] py-1 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed':''}`}
                 type="text"
                 name="mobileOTP"
                 id="mobileOTP"
@@ -367,7 +364,6 @@ const Signup = () => {
         )}
         </div>
       </div>
-      <Footer/>
     </div>
   );
 };

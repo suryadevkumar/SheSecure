@@ -1,7 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLocation, setError } from '../redux/locationSlice';
+import searchNearby from './SearchNearBy';
+import { setPoliceStations } from '../redux/policeStationSlice';
 import { api } from '../config/config';
+
+// Haversine formula to calculate distance between two lat/lng points
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const toRad = (value) => (value * Math.PI) / 180;
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in kilometers
+  return distance;
+};
 
 const useLocationTracking = () => {
   const dispatch = useDispatch();
@@ -70,9 +87,7 @@ const useLocationTracking = () => {
               lastLocation.current = { lat, lng, startTime: now };
               // Send initial location to the backend
               sendLocationToBackend(lat, lng, now, now);
-            } else if (
-              lastLocation.current.lat !== lat || lastLocation.current.lng !== lng
-            ) {
+            } else if (lastLocation.current.lat !== lat || lastLocation.current.lng !== lng) {
               // Send previous location data to the backend if location has changed
               await sendLocationToBackend(
                 lastLocation.current.lat,
@@ -85,6 +100,32 @@ const useLocationTracking = () => {
             dispatch(setLocation({ latitude: lat, longitude: lng }));
 
             lastLocation.current = { lat, lng, startTime: now };
+
+            try {
+              const places = await searchNearby(lat, lng, 'police');
+
+              const validStations = places.filter(station => station.location && station.location.latitude && station.location.longitude);
+
+              const sortedPoliceStations = validStations
+                .map((station) => {
+                  const stationLat = station.location.latitude;
+                  const stationLng = station.location.longitude;
+                  
+                  const distance = calculateDistance(
+                    lat,
+                    lng,
+                    stationLat,
+                    stationLng
+                  );
+                  return { ...station, distance };
+                })
+                .sort((a, b) => a.distance - b.distance);
+
+              dispatch(setPoliceStations(sortedPoliceStations));
+            } catch (error) {
+              dispatch(setError(error.message));
+              console.error("Error fetching police stations:", error.message);
+            }
           },
           (err) => {
             dispatch(setError(err.message));

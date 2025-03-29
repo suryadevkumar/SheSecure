@@ -34,12 +34,12 @@ const Toaster = ({ message, onClose, type }) => {
 
   return (
     <div
-      className={`fixed top-20 left-1/2 transform -translate-x-1/2 rounded-lg shadow-md p-4 w-150 z-50 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}
+      className={`fixed top-20 left-1/2 transform -translate-x-1/2 rounded-lg shadow-md p-4 w-120 z-50 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`h-6 w-6 ${isSuccess ? 'text-green-500' : 'text-red-500'}`}>
-            {isSuccess ? (
+            {/* {isSuccess ? (
               <path
                 fillRule="evenodd"
                 d="M8.485 22.944a.75.75 0 01-1.06-1.06l9.057-9.057-9.057-9.057a.75.75 0 011.06-1.06l9.586 9.586a.75.75 0 010 1.06l-9.586 9.586z"
@@ -51,16 +51,25 @@ const Toaster = ({ message, onClose, type }) => {
                 d="M5.72 5.72a.75 75 0 0110.6 0L12 11.38l5.68-5.66a.75 75 0 111.06 1.06L13.06 12l5.68 5.66a.75 75 0 11-1.06 1.06L12 13.06l-5.68 5.66a.75 75 0 01-1.06-1.06L10.94 12 5.26 6.34a.75 75 0 010-1.06z"
                 clipRule="evenodd"
               />
+            )} */}
+            {isSuccess ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-green-500">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-red-500">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             )}
           </svg>
-          <span className="ml-4 text-2xl">{message}</span>
+          <span className="ml-4 text-xl">{message}</span>
         </div>
         <button className="text-gray-500" onClick={() => setIsVisible(false)}>
           &times;
         </button>
       </div>
       <div
-        className={`mt-3 h-1 rounded-b-lg ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}
+        className={`mt-2 h-1 rounded-b-lg ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}
         style={{ width: progressWidth, transition: 'width 0.05s linear' }}
       ></div>
     </div>

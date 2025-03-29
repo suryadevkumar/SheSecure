@@ -1,12 +1,12 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, Outlet, RouterProvider, useNavigate, useLocation } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // Ensure you import this correctly
+import { jwtDecode } from 'jwt-decode';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import './index.css';
 import store from './redux/store';
 import { setToken } from './redux/authSlice';
-import useLocationTracking from './utils/Location'; // Import the hook here
+import useLocationTracking from './utils/Location';
 import HomePage from './components/Home';
 import Signup from './components/Signup';
 import Error from './components/Error';
@@ -15,23 +15,56 @@ import Toaster from './components/Toaster';
 import UserDashboard from './components/UserDashboard';
 import PoliceStation from './components/PoliceStation';
 import EmergencyMap from './components/EmergencyMap';
+import Header from './components/Header';
+import { Footer } from './components/Footer';
 
-function Front() {
+function Front({ setErrorToasterMessage }) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const publicPaths = ['/', '/login', '/signup', '/emergencyMap'];
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      dispatch(setToken(token));
+      try {
+        const decodedToken = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+
+        if (decodedToken.exp > currentTime) {
+          if (publicPaths.includes(location.pathname)) {
+            navigate('/userDashboard');
+          }
+        } else {
+          alert("Session expired, please login again");
+          localStorage.removeItem('token');
+          dispatch(setToken(null)); 
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error("Invalid token:", error);
+        setErrorToasterMessage("Invalid session, please login again");
+        localStorage.removeItem('token');
+        dispatch(setToken(null)); 
+        navigate('/'); 
+      }
+    } else {
+      dispatch(setToken(null));
+      if (!publicPaths.includes(location.pathname)) {
+        setErrorToasterMessage("Please login to access this page");
+        navigate('/');
+      }
+    }
+  }, [location, navigate, dispatch]);
+
+  return <Outlet />;
+}
+
+function AppWrapper() {
   const [toasterVisible, setToasterVisible] = useState(false);
   const [toasterMessage, setToasterMessage] = useState('');
   const [toasterType, setToasterType] = useState('success');
-
-  
-  // Helper function to display success toaster
-  const setSuccessToasterMessage = (message) => {
-    setToasterMessage(message);
-    setToasterType('success');
-    setToasterVisible(true);
-  };
 
   // Helper function to display error toaster
   const setErrorToasterMessage = (message) => {
@@ -51,48 +84,15 @@ function Front() {
     }
   }, [toasterVisible]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      dispatch(setToken(token));
-    }
-
-    if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        const currentTime = Date.now() / 1000;
-
-        if (decodedToken.exp > currentTime) {
-          if (publicPaths.includes(location.pathname)) {
-            navigate('/userDashboard');
-          }
-        } else {
-          alert("Session expired, please login again");
-          localStorage.removeItem('token');
-          dispatch(setToken(null)); 
-          navigate('/login');
-        }
-      } catch (error) {
-        console.error("Invalid token:", error);
-        alert("Invalid session, please login again");
-        localStorage.removeItem('token');
-        dispatch(setToken(null)); 
-        navigate('/'); 
-      }
-    } else {
-      if (!publicPaths.includes(location.pathname)) {
-        alert("Please login to access this page");
-        navigate('/');
-      }
-    }
-  }, [location, navigate, dispatch]);
-
-  return <Outlet />;
-}
-
-function AppWrapper() {
-  // useLocationTracking();  
-  return <Front />;
+  // useLocationTracking();
+  return (
+    <>
+      <Header />
+      {toasterVisible && (<Toaster message={toasterMessage} type={toasterType} onClose={() => setToasterVisible(false)} />)}
+      <Front setErrorToasterMessage={setErrorToasterMessage}/>
+      <Footer />
+    </>
+  );
 }
 
 const appRouter = createBrowserRouter([
