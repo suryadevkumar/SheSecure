@@ -112,6 +112,10 @@ const Signup = () => {
   };
 
   const emailVerification = () => {
+    if(!emailOTP){
+      setErrorToasterMessage('Please Enter OTP!');
+      return;
+    }
     verifyEmail(emailOTP)
       .then(() => {
         setIsEmailVerify(true);
@@ -272,7 +276,7 @@ const Signup = () => {
                 disabled={true}
               />
               <button
-                className={`bg-blue-500 text-white font-bold py-1 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                   emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
                 }`}
                 onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
@@ -294,7 +298,7 @@ const Signup = () => {
                 disabled={isEmailVerify}
               />
               <button
-                className={`text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                className={`text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                   isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
                 }`}
                 onClick={emailVerification}
@@ -315,7 +319,7 @@ const Signup = () => {
                 disabled={true}
               />
               <button
-                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                   mobileTimer > 0 || isMobileVerify? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
                 }`}
                 onClick={() => sendMobileOTP(setMobileTimer, formData.mobile)}
@@ -337,7 +341,7 @@ const Signup = () => {
                 disabled={isMobileVerify}
               />
               <button
-                className={`bg-blue-500 text-white font-bold py-2 px-4 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
+                className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${
                   isMobileVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
                 }`}
                 onClick={() => verifyMobile(setIsMobileVerify, mobileOTP)}
@@ -347,14 +351,14 @@ const Signup = () => {
               </button>
             </div>
             <button
-              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
+              className={`bg-blue-500 hover:bg-blue-700 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
               onClick={back}
               disabled={isEmailVerify && isMobileVerify}
             >
               Back
             </button>
             <button
-              className={`bg-blue-500 text-white font-bold py-2 px-4 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify ? 'hover:bg-blue-700 cursor-pointer' :'opacity-50 cursor-not-allowed'}`}
+              className={`bg-blue-500 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify ? 'hover:bg-blue-700 cursor-pointer' :'opacity-50 cursor-not-allowed'}`}
               onClick={signup}
               disabled={!isEmailVerify || !isMobileVerify}
             >

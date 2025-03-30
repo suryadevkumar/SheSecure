@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import './index.css';
 import store from './redux/store';
-import { setToken } from './redux/authSlice';
+import { setToken, setUser } from './redux/authSlice';
 import useLocationTracking from './utils/Location';
 import HomePage from './components/Home';
 import Signup from './components/Signup';
@@ -26,8 +26,10 @@ function Front({ setErrorToasterMessage }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const user=localStorage.getItem('user');
     if (token) {
       dispatch(setToken(token));
+      dispatch(setUser(user));
       try {
         const decodedToken = jwtDecode(token);
         const currentTime = Date.now() / 1000;
@@ -46,7 +48,7 @@ function Front({ setErrorToasterMessage }) {
         console.error("Invalid token:", error);
         setErrorToasterMessage("Invalid session, please login again");
         localStorage.removeItem('token');
-        dispatch(setToken(null)); 
+        dispatch(setToken(null));
         navigate('/'); 
       }
     } else {

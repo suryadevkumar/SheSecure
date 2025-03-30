@@ -1,9 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import { useSelector, useDispatch } from 'react-redux';
 import { setToken } from '../redux/authSlice';
-import useSOSSystem from '../utils/SOSSystem';
-import { useEffect, useRef, useState } from 'react';
+import { useSOSSystem } from '../utils/SOSSystem';
 
 const Header = () => {
     const dispatch = useDispatch();

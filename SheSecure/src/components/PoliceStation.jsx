@@ -15,6 +15,8 @@ const PoliceStation = () => {
   });
 
   const { latitude, longitude, error: locationError } = useSelector((state) => state.location);
+  const user=useSelector((state) => state.auth.user);
+  console.log(JSON.stringify(user, null, 2));
 
   useEffect(() => {
     if (latitude && longitude) {

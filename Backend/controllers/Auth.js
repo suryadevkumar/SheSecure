@@ -196,10 +196,6 @@ export const signUp = async (req, res) => {
       address: null,
     });
 
-    const locationHistory = await LocationHistory.create({
-      locations: [],
-    });
-
     const user = await User.create({
       firstName,
       lastName,
@@ -208,7 +204,7 @@ export const signUp = async (req, res) => {
       userType,
       additionalDetails: profileDetails._id,
       dob,
-      locationHistory: locationHistory._id,
+      locationHistory: [],
     });
 
     return res.status(200).json({

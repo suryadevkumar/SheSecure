@@ -121,9 +121,9 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.token) {
-          localStorage.setItem('token', data.token); // Save JWT to localStorage
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user',data.user);
           navigate('/userDashboard');
-          startLocationTracking(data.token); // Pass the token to start location tracking
         } else {
           setErrorToasterMessage('Login failed. Server error.');
         }

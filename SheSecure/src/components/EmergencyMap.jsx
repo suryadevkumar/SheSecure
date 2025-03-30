@@ -48,3 +48,36 @@ const LiveLocationMap = ({ reportId }) => {
 };
 
 export default LiveLocationMap;
+
+
+// import React, { useEffect, useState } from "react";
+// import useFetchLocation from "./useFetchLocation";
+
+// const MyComponent = ({ reportId }) => {
+//   const { locationData: initialLocationData, isSOSActive } = useFetchLocation(reportId); // Fetch initially
+//   const [locationData, setLocationData] = useState(initialLocationData);
+
+//   useEffect(() => {
+//     const fetchLocation = async () => {
+//       const { locationData: newLocationData } = useFetchLocation(reportId);
+//       setLocationData(newLocationData);
+//     };
+
+//     const intervalId = setInterval(() => {
+//       console.log("Fetching location data...");
+//       fetchLocation(); // Manually trigger fetching inside the interval
+//     }, 5000); // 5-second interval (can be adjusted)
+
+//     // Cleanup interval when the component unmounts
+//     return () => clearInterval(intervalId);
+//   }, [reportId]);
+
+//   return (
+//     <div>
+//       {isSOSActive ? <h1>Live Location</h1> : <h1>Location History (5 hours)</h1>}
+//       <pre>{JSON.stringify(locationData, null, 2)}</pre>
+//     </div>
+//   );
+// };
+
+// export default MyComponent;

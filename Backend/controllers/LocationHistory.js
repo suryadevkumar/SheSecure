@@ -3,38 +3,41 @@ import User from '../models/User.js';
 
 export const saveLocationHistory = async (req, res) => {
   try {
-    const { locations } = req.body;
-    const userId = req.user.id; // Extract user ID from the JWT token
+    const { latitude, longitude, startTime, endTime } = req.body;
+    const userId = req.user.id;
 
-    console.log(userId, locations);
-
-    if (!locations || !Array.isArray(locations) || locations.length === 0) {
-      return res.status(400).json({ message: 'Invalid request data' });
+    // Validate the location data
+    if (!latitude || !longitude || !startTime || !endTime) {
+      return res.status(400).json({ message: "Invalid location data" });
     }
 
-    let locationHistoryEntry;
+    // Create a new location history entry
+    const newLocationHistory = new LocationHistory({
+      latitude,
+      longitude,
+      startTime,
+      endTime,
+    });
+    await newLocationHistory.save();
 
-    const user = await User.findById(userId).populate('locationHistory');
+    // Find the user and update their location history array
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $push: { locationHistory: newLocationHistory._id } },
+      { new: true }
+    );
 
-    if (user.locationHistory) {
-      // If user already has location history, update it by adding new locations
-      locationHistoryEntry = await LocationHistory.findByIdAndUpdate(
-        user.locationHistory._id,
-        { $push: { locations: { $each: locations } } },
-        { new: true }
-      );
-    } else {
-      // If no location history exists, create a new entry and link it to the user
-      locationHistoryEntry = new LocationHistory({ locations });
-      await locationHistoryEntry.save();
-
-      // Update user's locationHistory reference
-      await User.findByIdAndUpdate(userId, { locationHistory: locationHistoryEntry._id });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(201).json({ message: 'Location history saved successfully' });
+    res.status(201).json({
+      message: "Location history saved successfully",
+      locationHistoryId: newLocationHistory._id,
+    });
   } catch (error) {
-    console.error('Error saving location history:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error saving location history:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+

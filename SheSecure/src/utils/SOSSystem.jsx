@@ -1,99 +1,122 @@
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useSelector, useDispatch } from "react-redux";
+import { startSOSAction, stopSOSAction } from "../redux/sosSlice";
 import { api } from "../config/config";
-import {
-  startSOSAction,
-  stopSOSAction,
-  setErrorSOSAction,
-} from "../redux/sosSlice";
 
-const useSOSSystem = () => {
+export const useSOSSystem = () => {
   const dispatch = useDispatch();
-  const { reportId, sosLink, errorSOS, isSOSActive } = useSelector(
-    (state) => state.sos
-  );
-  const {
-    latitude,
-    longitude,
-    error: locationError,
-  } = useSelector((state) => state.location);
+  const [reportId, setReportId] = useState(null);
+  const token = useSelector((state) => state.auth.token);
+  const { latitude, longitude, error: locationError } = useSelector((state) => state.location);
 
   const startSOS = async () => {
     try {
-      const newReportId = uuidv4();
-      const newSosLink = `http://localhost:5173/emergencyMap/?reportId=${newReportId}`;
-      console.log(newReportId);
+      const reportId1 = uuidv4();
+      const reportId2 = uuidv4();
+      const reportId = `${reportId1}_${reportId2}`;
+      setReportId(reportId);
+      const newSosLink = `http://localhost:5173/emergencyMap/?reportId=${reportId}`;
       console.log(newSosLink);
 
-      dispatch(startSOSAction({ reportId: newReportId, sosLink: newSosLink }));
-
-      const response = await fetch(api + "/sos/start-sos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reportId: newReportId }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to start SOS");
+      dispatch(startSOSAction());
+      if(reportId && latitude && longitude){
+        await fetch(api + "/sos/start-sos", {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reportId: reportId,
+            latitude: latitude,
+            longitude: longitude,
+          }),
+        });
       }
-
-      if (latitude && longitude) {
-        sendLocation(newReportId, latitude, longitude);
-      }
+      else
+      console.error("Report id, Latitude, Longitude missing");
     } catch (err) {
-      dispatch(setErrorSOSAction(err.message));
-      dispatch(stopSOSAction());
-      console.error("SOS error:", err);
+      console.error("Start SOS error:", err);
     }
   };
 
   const stopSOS = async () => {
     try {
-      dispatch(stopSOSAction());
+      if (reportId) {
+        await fetch(api + "/sos/end-sos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            reportId: reportId
+          }),
+        });
+        dispatch(stopSOSAction());
+        setReportId(null);
+      } else {
+        console.error("No reportId found to stop SOS");
+      }
     } catch (err) {
-      dispatch(setErrorSOSAction(err.message));
       console.error("Error stopping SOS", err);
     }
   };
 
-  const sendLocation = async (currentReportId, lat, lon) => {
-    try {
-      await fetch(api + "/sos/update-location", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reportId: currentReportId,
-          latitude: lat,
-          longitude: lon,
-        }),
-      });
-      console.log("Location updated successfully");
-    } catch (err) {
-      dispatch(setErrorSOSAction(err.message));
-      console.error("Location update error:", err);
-    }
-  };
-
-  useEffect(() => {
-    if (isSOSActive && latitude && longitude) {
-      sendLocation(reportId, latitude, longitude);
-    }
-  }, [isSOSActive, latitude, longitude, reportId]);
-
   return {
-    reportId,
-    sosLink,
-    errorSOS,
-    isSOSActive,
     locationError,
     startSOS,
     stopSOS,
   };
 };
 
-export default useSOSSystem;
+export const useFetchLocation = (reportId) => {
+  const [locationData, setLocationData] = useState(null);
+  const [isSOSActive, setIsSOSActive] = useState(null);
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        // Check SOS status
+        const response = await fetch(`/sos/check-status/${reportId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(data.message);
+          return;
+        }
+
+        // If SOS is active, fetch live location
+        if (data.isActive) {
+          const liveResponse = await fetch(`/sos/live-location/${reportId}`);
+          const liveData = await liveResponse.json();
+
+          if (liveResponse.ok) {
+            setLocationData(liveData.locationHistory);
+            setIsSOSActive(true);
+          } else {
+            console.error(liveData.message);
+          }
+        } 
+        // If SOS is deactivated, fetch location history
+        else {
+          const historyResponse = await fetch(`/sos/history-location/${reportId}`);
+          const historyData = await historyResponse.json();
+
+          if (historyResponse.ok) {
+            setLocationData(historyData.locationHistory);
+            setIsSOSActive(false);
+          } else {
+            console.error(historyData.message);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch location data:", error);
+      }
+    };
+
+    fetchLocation();
+  }, [reportId]);
+
+  return { locationData, isSOSActive };
+};
