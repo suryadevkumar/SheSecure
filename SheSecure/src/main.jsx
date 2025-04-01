@@ -6,7 +6,7 @@ import { Provider, useDispatch, useSelector } from 'react-redux';
 import './index.css';
 import store from './redux/store';
 import { setToken, setUser } from './redux/authSlice';
-import useLocationTracking from './utils/Location';
+import useLocationTracking from './utils/Location.js';
 import HomePage from './components/Home';
 import Signup from './components/Signup';
 import Error from './components/Error';
@@ -16,32 +16,34 @@ import UserDashboard from './components/UserDashboard';
 import PoliceStation from './components/PoliceStation';
 import EmergencyMap from './components/EmergencyMap';
 import Header from './components/Header';
-import { Footer } from './components/Footer';
+import Footer from './components/Footer';
 
 function Front({ setErrorToasterMessage }) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const publicPaths = ['/', '/login', '/signup', '/emergencyMap'];
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const user=localStorage.getItem('user');
+    const user = localStorage.getItem('user');
+    const publicPaths = ['/', '/login', '/signup']; 
+    
     if (token) {
       dispatch(setToken(token));
       dispatch(setUser(user));
       try {
         const decodedToken = jwtDecode(token);
         const currentTime = Date.now() / 1000;
-
+  
         if (decodedToken.exp > currentTime) {
+          // If the user is logged in, they are redirected to userDashboard if they try to access login/signup
           if (publicPaths.includes(location.pathname)) {
             navigate('/userDashboard');
           }
         } else {
           alert("Session expired, please login again");
           localStorage.removeItem('token');
-          dispatch(setToken(null)); 
+          dispatch(setToken(null));
           navigate('/login');
         }
       } catch (error) {
@@ -49,16 +51,18 @@ function Front({ setErrorToasterMessage }) {
         setErrorToasterMessage("Invalid session, please login again");
         localStorage.removeItem('token');
         dispatch(setToken(null));
-        navigate('/'); 
+        navigate('/');
       }
     } else {
       dispatch(setToken(null));
-      if (!publicPaths.includes(location.pathname)) {
+      // Allow access to public routes (including /emergencyMap) without login
+      if(location.pathname.startsWith('/emergency-sos'));
+      else if (!publicPaths.includes(location.pathname)) {
         setErrorToasterMessage("Please login to access this page");
         navigate('/');
       }
     }
-  }, [location, navigate, dispatch]);
+  }, [location, navigate, dispatch]);  
 
   return <Outlet />;
 }
@@ -86,7 +90,7 @@ function AppWrapper() {
     }
   }, [toasterVisible]);
 
-  // useLocationTracking();
+  useLocationTracking();
   return (
     <>
       <Header />
@@ -124,7 +128,7 @@ const appRouter = createBrowserRouter([
         element: <PoliceStation />,
       },
       {
-        path: 'emergencyMap',
+        path: 'emergency-sos',
         element: <EmergencyMap />,
       },
     ],

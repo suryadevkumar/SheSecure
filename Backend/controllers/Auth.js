@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import admin from 'firebase-admin';
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
-import LocationHistory from '../models/LocationHistory.js';
 import mailSender from "../utils/nodemailer.js";
 
 import serviceAccount from '../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json' assert { type: 'json' };;
@@ -221,49 +220,56 @@ export const signUp = async (req, res) => {
   }
 };
 
-export const login=async (req,res)=>{
+export const login = async (req, res) => {
     try {
-        //get data from req body
-        const {email} = req.body;
-        
-        //check user exists or not
-        const user = await User.findOne({email}).populate('additionalDetails');
-        if(!user) {
+        const { email } = req.body;
+
+        // Check if user exists
+        const user = await User.findOne({ email }).populate('additionalDetails');
+        if (!user) {
             return res.status(401).json({
-                //Return 401 unauthorized status code with error message
                 success: false,
-                message: `User is not registered with Us, Please signup to Continue`,
+                message: "User not registered. Please sign up.",
             });
         }
-        //Generate JWT
+
+        // Generate JWT
         const payload = {
             email: user.email,
             id: user._id,
             accountType: user.accountType,
-        }
+        };
 
-        const token = jwt.sign(payload, process.env.JWT_SECRET,{
-            expiresIn:"72h",
+        const token = jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: "72h",
         });
 
-        //create cookie and send response
-        const options = {
-            expiresIn: new Date(Date.now()+ 3*24*60*60*1000),
-            httpOnly: true,
-        }
-        res.cookie("token", token , options).status(200).json({
+        // Store user info in session
+        req.session.user = {
+            id: user._id,
+            email: user.email,
+            accountType: user.accountType,
+        };
+
+        // Save session
+        req.session.save(err => {
+            if (err) {
+                console.error("Session save error:", err);
+            }
+        });
+
+        res.cookie("token", token, { httpOnly: true }).status(200).json({
             success: true,
             token,
             user,
-            message: `User Login Success`,
+            message: "User Login Success",
         });
-        
+
     } catch (error) {
         console.log(error);
-        //Return 500 Internal Server Error status code with error message
         return res.status(500).json({
             success: false,
-            message: `Login Failure Please Try Again`,
+            message: "Login Failure, Please Try Again",
         });
     }
-}
+};

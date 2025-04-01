@@ -1,11 +1,17 @@
 import SOS from '../models/SOS.js';
-import LocationHistory from '../models/LocationHistory.js';
+import User from '../models/User.js';
 
 export const startSOS = async (req, res) => {
   const { reportId, latitude, longitude } = req.body;
   const userId = req.user.id;
 
   try {
+    // End any existing active SOS for this user
+    await SOS.updateMany(
+      { userId, endSosTime: null },
+      { endSosTime: new Date() }
+    );
+
     const sos = new SOS({
       reportId,
       userId,
@@ -17,91 +23,125 @@ export const startSOS = async (req, res) => {
 
     await sos.save();
 
-    res.status(201).json({ success: true, message: 'SOS started successfully', sos });
+    if (!global.activeSOS) global.activeSOS = {};
+    global.activeSOS[reportId] = {
+      locations: [],
+      userId,
+      startTime: sos.startSosTime
+    };
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'SOS started successfully', 
+      sos,
+      link: `http://yourdomain.com/emergency-sos/?reportId=${reportId}`
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to start SOS', error });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to start SOS', 
+      error: error.message 
+    });
   }
 };
 
 export const endSOS = async (req, res) => {
   const { reportId } = req.body;
+  const userId = req.user?.id;
 
   try {
-    // Directly find and update the SOS record by reportId
-    const sos = await SOS.findOneAndUpdate({ reportId },{ endSosTime: new Date() },{ new: true });
+    const sos = await SOS.findOneAndUpdate(
+      { reportId, ...(userId ? { userId } : {}) },
+      { endSosTime: new Date() },
+      { new: true }
+    );
 
     if (!sos) {
-      return res.status(404).json({ success: false, message: 'No SOS found with this reportId' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No active SOS found with this reportId' 
+      });
     }
 
-    res.status(200).json({ success: true, message: 'SOS ended successfully', sos });
+    if (global.activeSOS?.[reportId]) {
+      delete global.activeSOS[reportId];
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'SOS ended successfully', 
+      sos 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to end SOS', error });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to end SOS', 
+      error: error.message 
+    });
   }
 };
 
-export const checkSOSStatus = async (req, res) => {
-  const { reportId } = req.params;
-
+export const fetchSosLocation = async (req, res) => {
   try {
-    const sos = await SOS.findOne({ reportId });
-
-    if (!sos) {
-      return res.status(404).json({ success: false, message: 'No SOS found with this reportId' });
+    const { reportId } = req.body;
+    
+    // Find the SOS record
+    const sosRecord = await SOS.findOne({ reportId });
+    if (!sosRecord) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Invalid SOS link" 
+      });
     }
 
-    // Check if SOS is active or deactivated
-    const isActive = sos.endSosTime === null;
-    res.status(200).json({ success: true, isActive });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to check SOS status', error });
-  }
-};
+    const { userId, startSosTime, endSosTime } = sosRecord;
 
-export const fetchLiveLocation = async (req, res) => {
-  const { reportId } = req.params;
+    // Determine SOS status
+    const sosStatus = endSosTime ? "inactive" : "active";
 
-  try {
-    const sos = await SOS.findOne({ reportId });
-
-    if (!sos) {
-      return res.status(404).json({ success: false, message: 'No SOS found with this reportId' });
+    // Define time conditions for location history
+    let locationTimeCondition;
+    if (sosStatus === "active") {
+      locationTimeCondition = { startTime: { $gte: startSosTime } };
+    } else {
+      const endTime = endSosTime || new Date();
+      const start24HoursAgo = new Date(endTime - 5 * 60 * 60 * 1000);
+      locationTimeCondition = { startTime: { $gte: start24HoursAgo, $lte: endTime } };
     }
 
-    // Fetch live location data from the start of SOS to now
-    const locationHistory = await LocationHistory.find({
-      userId: sos.userId,
-      'locations.startTime': { $gte: sos.startSosTime },
+    // Fetch user with location history based on the time condition
+    const user = await User.findById(userId)
+      .populate({
+        path: 'locationHistory',
+        match: locationTimeCondition,
+        options: { sort: { startTime: 1 } }
+      });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
+    }
+
+    // Get live locations from active SOS if available
+    const liveLocations = global.activeSOS?.[reportId]?.locations || [];
+
+    // Send the response
+    res.json({
+      success: true,
+      status: sosStatus,
+      locationHistory: user.locationHistory,
+      liveLocations,
+      startSosTime,
+      endSosTime
     });
 
-    res.status(200).json({ success: true, sos, locationHistory });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch live location', error });
-  }
-};
-
-
-export const fetchHistoryLocation = async (req, res) => {
-  const { reportId } = req.params;
-
-  try {
-    const sos = await SOS.findOne({ reportId });
-
-    if (!sos) {
-      return res.status(404).json({ success: false, message: 'No SOS found with this reportId' });
-    }
-
-    // Calculate the time 5 hours before the endSosTime
-    const fiveHoursAgo = new Date(new Date(sos.endSosTime).getTime() - 5 * 60 * 60 * 1000);
-
-    // Fetch location history for the last 5 hours before the end time
-    const locationHistory = await LocationHistory.find({
-      userId: sos.userId,
-      'locations.startTime': { $gte: fiveHoursAgo, $lte: sos.endSosTime },
+    console.error("Error fetching SOS data:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Error fetching SOS data" 
     });
-
-    res.status(200).json({ success: true, sos, locationHistory });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch location history', error });
   }
 };

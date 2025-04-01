@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import { useSelector, useDispatch } from 'react-redux';
 import { setToken } from '../redux/authSlice';
-import { useSOSSystem } from '../utils/SOSSystem';
+import { useSOSSystem } from '../utils/SOSSystem.js';
 
 const Header = () => {
     const dispatch = useDispatch();

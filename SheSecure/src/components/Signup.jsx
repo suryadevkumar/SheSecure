@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP';
+import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile } from '../utils/OTP.js';
 import background from '../assets/background1.jpg'
 import { api } from '../config/config';
 import Toaster from './Toaster';
