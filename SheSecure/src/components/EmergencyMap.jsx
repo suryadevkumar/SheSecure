@@ -5,7 +5,7 @@ import io from "socket.io-client";
 import { api, googleMapAPI1 } from "../config/config";
 import calculateDistance from "../utils/calculateDistance";
 import victimIcon from '../assets/location1.png';
-import helperIcon from '../assets/location2.png';
+import helperIcon from '../assets/liveLocation.png';
 
 const mapContainerStyle = {
   width: '100%',
@@ -249,7 +249,7 @@ function EmergencyMap() {
             console.error("Geolocation error:", error);
             alert("Error getting location. Please enable location services.");
           },
-          { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
         setWatchId(id);
         setShowHelperLocation(true);

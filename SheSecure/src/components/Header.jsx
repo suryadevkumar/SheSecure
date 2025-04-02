@@ -57,7 +57,7 @@ const Header = () => {
                 </Link>
                 <div className="flex items-center space-x-4" ref={profileRef}>
                     <Link to="/userDashboard" className="text-black hover:text-red-500 font-bold text-sm py-2 px-4 rounded-md">Dashboard</Link>
-                    <Link to="/police" className="text-black hover:text-red-500 font-bold text-sm py-2 px-4 rounded-md cursor-pointer">Police Station</Link>
+                    <Link to="/map-view" className="text-black hover:text-red-500 font-bold text-sm py-2 px-4 rounded-md cursor-pointer">View Map</Link>
                     <button className={`${isSOSActive ? 'bg-green-500' : 'bg-red-500'}  font-semibold text-white text-sm px-2 py-1 rounded-lg hover:bg-red-700 cursor-pointer`}
                         onClick={isSOSActive?stopSOS:startSOS}>
                         {isSOSActive ? 'SOS Activated' : 'Activate SOS'}

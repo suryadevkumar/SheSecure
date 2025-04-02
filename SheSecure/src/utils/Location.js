@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLocation, setError } from '../redux/locationSlice';
 import searchNearby from './SearchNearBy';
+import { setLocation, setError } from '../redux/locationSlice';
 import { setPoliceStations } from '../redux/policeStationSlice';
+import { setHospitals } from '../redux/hospitalSlice';
 import { api } from '../config/config';
 import calculateDistance from './calculateDistance';
 
@@ -24,10 +25,10 @@ const useLocationTracking = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            latitude: lat,
-            longitude: lng,
-            startTime: startTime,
-            endTime: endTime,
+          latitude: lat,
+          longitude: lng,
+          startTime: startTime,
+          endTime: endTime,
         }),
       });
 
@@ -39,9 +40,109 @@ const useLocationTracking = () => {
     }
   };
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+  return new Promise((resolve) => {
+    useEffect(() => {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {
+            sendLocationToBackend(
+              lastLocation.current.lat,
+              lastLocation.current.lng,
+              lastLocation.current.startTime,
+              new Date()
+            );
+          }
+          if (watchId.current) {
+            navigator.geolocation.clearWatch(watchId.current);
+          }
+        } else {
+          watchLocation();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      let isInitialLocationFetched = false;
+
+      const watchLocation = () => {
+        if (navigator.geolocation) {
+          watchId.current = navigator.geolocation.watchPosition(
+            async (position) => {
+              const { latitude: lat, longitude: lng } = position.coords;
+              const now = new Date();
+
+              // Send initial location to backend only if lastLocation is null
+              if (!lastLocation.current.lat || !lastLocation.current.lng) {
+                lastLocation.current = { lat, lng, startTime: now };
+                await sendLocationToBackend(lat, lng, now, now);
+
+                if (!isInitialLocationFetched) {
+                  isInitialLocationFetched = true;
+                  resolve(); // Resolve the promise when initial location is fetched
+                }
+              } else if (lastLocation.current.lat !== lat || lastLocation.current.lng !== lng) {
+                await sendLocationToBackend(
+                  lastLocation.current.lat,
+                  lastLocation.current.lng,
+                  lastLocation.current.startTime,
+                  now
+                );
+              }
+
+              dispatch(setLocation({ latitude: lat, longitude: lng }));
+              lastLocation.current = { lat, lng, startTime: now };
+
+              try {
+                const policeStations = await searchNearby(lat, lng, 'police');
+                const hospitals = await searchNearby(lat, lng, 'hospital');
+
+                const processPlaces = (places) =>
+                  places
+                    .filter((place) => place.location && place.location.latitude && place.location.longitude)
+                    .map((place) => ({
+                      ...place,
+                      distance: calculateDistance(lat, lng, place.location.latitude, place.location.longitude),
+                    }))
+                    .sort((a, b) => a.distance - b.distance);
+
+                dispatch(setPoliceStations(processPlaces(policeStations)));
+                dispatch(setHospitals(processPlaces(hospitals)));
+              } catch (error) {
+                dispatch(setError(error.message));
+                console.error("Error fetching nearby places:", error.message);
+              }
+            },
+            (err) => {
+              dispatch(setError(err.message));
+              console.error('Error watching location:', err);
+              if (!isInitialLocationFetched) {
+                isInitialLocationFetched = true;
+                resolve();
+              }
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            }
+          );
+        } else {
+          dispatch(setError('Geolocation is not supported by this browser.'));
+          resolve();
+        }
+      };
+
+      if (token && user) {
+        watchLocation();
+      } else {
+        resolve();
+      }
+
+      return () => {
+        if (watchId.current) {
+          navigator.geolocation.clearWatch(watchId.current);
+        }
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {
           sendLocationToBackend(
             lastLocation.current.lat,
@@ -50,104 +151,9 @@ const useLocationTracking = () => {
             new Date()
           );
         }
-        if (watchId.current) {
-          navigator.geolocation.clearWatch(watchId.current);
-        }
-      } else {
-        watchLocation();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    const watchLocation = () => {
-      if (navigator.geolocation) {
-        watchId.current = navigator.geolocation.watchPosition(
-          async (position) => {
-            const { latitude: lat, longitude: lng } = position.coords;
-            const now = new Date();
-
-            // Send initial location to backend only if lastLocation is null
-            if (!lastLocation.current.lat || !lastLocation.current.lng) {
-              lastLocation.current = { lat, lng, startTime: now };
-              // Send initial location to the backend
-              sendLocationToBackend(lat, lng, now, now);
-            } else if (lastLocation.current.lat !== lat || lastLocation.current.lng !== lng) {
-              // Send previous location data to the backend if location has changed
-              await sendLocationToBackend(
-                lastLocation.current.lat,
-                lastLocation.current.lng,
-                lastLocation.current.startTime,
-                now
-              );
-            }
-
-            dispatch(setLocation({ latitude: lat, longitude: lng }));
-
-            lastLocation.current = { lat, lng, startTime: now };
-
-            try {
-              const places = await searchNearby(lat, lng, 'police');
-
-              const validStations = places.filter(station => station.location && station.location.latitude && station.location.longitude);
-
-              const sortedPoliceStations = validStations
-                .map((station) => {
-                  const stationLat = station.location.latitude;
-                  const stationLng = station.location.longitude;
-                  
-                  const distance = calculateDistance(
-                    lat,
-                    lng,
-                    stationLat,
-                    stationLng
-                  );
-                  return { ...station, distance };
-                })
-                .sort((a, b) => a.distance - b.distance);
-
-              dispatch(setPoliceStations(sortedPoliceStations));
-            } catch (error) {
-              dispatch(setError(error.message));
-              console.error("Error fetching police stations:", error.message);
-            }
-          },
-          (err) => {
-            dispatch(setError(err.message));
-            console.error('Error watching location:', err);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          }
-        );
-      } else {
-        dispatch(setError('Geolocation is not supported by this browser.'));
-      }
-    };
-
-    if (token && user) {
-      watchLocation();
-    }
-
-    return () => {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (lastLocation.current.lat && lastLocation.current.lng && lastLocation.current.startTime) {
-        sendLocationToBackend(
-          lastLocation.current.lat,
-          lastLocation.current.lng,
-          lastLocation.current.startTime,
-          new Date()
-        );
-      }
-    };
-  }, [dispatch, token, user]);
-
-  return null;
+      };
+    }, [dispatch, token, user]);
+  });
 };
 
 export default useLocationTracking;

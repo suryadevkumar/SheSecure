@@ -3,6 +3,7 @@ import locationReducer from './locationSlice';
 import authReducer from './authSlice';
 import sosReducer from './sosSlice';
 import policeReducer from './policeStationSlice';
+import hospitalReducer from './hospitalSlice';
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     auth: authReducer,
     sos: sosReducer,
     police: policeReducer,
+    hospital: hospitalReducer,
   },
 });
 
