@@ -1,0 +1,15 @@
+{
+  "name": "shesecure",
+  "version": "1.0.0",
+  "description": "SheSecure: Empowering Women with Protection",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently -c \"blue.bold,green.bold\" -n \"FRONTEND,BACKEND\" \"npm run dev --prefix SheSecure\" \"npm start --prefix Backend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

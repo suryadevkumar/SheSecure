@@ -1,0 +1,34 @@
+# 🔹 Common Ignore Rules (Frontend & Backend)
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 🔹 Node Modules
+node_modules
+
+# 🔹 Build Output
+dist
+dist-ssr
+*.local
+
+# 🔹 Environment & Config Files
+.env
+shesecure/src/config/config.js
+backend/config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json
+
+# 🔹 Editor & System Files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
