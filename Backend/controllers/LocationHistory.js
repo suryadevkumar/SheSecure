@@ -1,4 +1,4 @@
-import LocationHistory from '../models/LocationHistory.js';
+import LocationHistory from '../models/Location.js';
 import User from '../models/User.js';
 
 export const saveLocationHistory = async (req, res) => {

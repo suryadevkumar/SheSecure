@@ -7,4 +7,4 @@ const locationSchema = mongoose.Schema({
   endTime: { type: Date, required: true },
 }, { timestamps: true });
 
-export default mongoose.model("LocationHistory", locationSchema);
+export default mongoose.model("Location", locationSchema);

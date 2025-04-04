@@ -14,12 +14,18 @@ const profileSchema=mongoose.Schema(
                 ref:"emergencyContacts",
             }
         ],
+        dob:{
+            type:Date,
+        },
         gender:{
             type:String,
         },
-        MedicalInfo:{
-            type:String,
-        },
+        location:[
+            {
+                type:mongoose.Schema.Types.ObjectId,
+                ref:"Location"
+            }
+        ]
     }
 );
 

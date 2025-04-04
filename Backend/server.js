@@ -7,6 +7,8 @@ import MongoStore from 'connect-mongo';
 import ioSession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import fileUpload from 'express-fileupload';
+import { cloudinaryConnect } from './config/cloudinary.js';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
 import sosRoutes from './routes/SOS.js';
@@ -36,6 +38,14 @@ app.use(
     credentials: true,
   })
 );
+app.use(
+  fileUpload({
+      useTempFiles: true,
+      tempFileDir: "/tmp",
+  })
+)
+
+cloudinaryConnect();
 
 // 🛠 **SESSION SETUP WITH MONGODB STORAGE**
 const sessionMiddleware = session({

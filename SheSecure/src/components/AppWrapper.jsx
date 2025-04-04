@@ -29,11 +29,7 @@ function AppWrapper() {
       }
     }, [toasterVisible]);
   
-    useLocationTracking();
-  
-    // if (policeStations.length==0) {
-    //   return <div className="loading-screen">Getting your location...</div>;
-    // }
+    // useLocationTracking();
   
     return (
       <>
