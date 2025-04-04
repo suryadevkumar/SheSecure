@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import { setToken, setUser } from '../redux/authSlice';
 
-const Front=({ setErrorToasterMessage })=> {
+const Front=()=> {
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -34,7 +35,7 @@ const Front=({ setErrorToasterMessage })=> {
           }
         } catch (error) {
           console.error("Invalid token:", error);
-          setErrorToasterMessage("Invalid session, please login again");
+          toast.error("Invalid session, please login again");
           localStorage.removeItem('token');
           dispatch(setToken(null));
           navigate('/');
@@ -44,7 +45,7 @@ const Front=({ setErrorToasterMessage })=> {
         // Allow access to public routes (including /emergencyMap) without login
         if(location.pathname.startsWith('/emergency-sos'));
         else if (!publicPaths.includes(location.pathname)) {
-          setErrorToasterMessage("Please login to access this page");
+          toast.error("Please login to access this page");
           navigate('/');
         }
       }

@@ -2,14 +2,13 @@ import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useSelector, useDispatch } from "react-redux";
 import { startSOSAction, stopSOSAction } from "../redux/sosSlice";
-import { api } from "../config/config";
 import io from 'socket.io-client';
+import { endSOS, saveSOS } from "../routes/sosSystem-routes";
 
 export const useSOSSystem = () => {
   const dispatch = useDispatch();
   const [reportId, setReportId] = useState(null);
   const [socket, setSocket] = useState(null);
-  const token = useSelector((state) => state.auth.token);
   const { latitude, longitude } = useSelector((state) => state.location);
   const [sosLink, setSosLink] = useState('');
 
@@ -45,18 +44,7 @@ export const useSOSSystem = () => {
 
       dispatch(startSOSAction());
 
-      const response = await fetch(api + "/sos/start-sos", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          reportId: newReportId,
-          latitude,
-          longitude,
-        }),
-      });
+      const response = await saveSOS(newReportId, latitude, longitude);
 
       if (!response.ok) {
         throw new Error('Failed to start SOS');
@@ -78,14 +66,8 @@ export const useSOSSystem = () => {
     if (!reportId) return;
 
     try {
-      const response = await fetch(api + "/sos/end-sos", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reportId }),
-      });
+      
+      const response = await endSOS(reportId);
 
       if (!response.ok) {
         throw new Error('Failed to end SOS');

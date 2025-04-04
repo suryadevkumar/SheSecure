@@ -4,8 +4,8 @@ import searchNearby from './SearchNearBy';
 import { setLocation, setError } from '../redux/locationSlice';
 import { setPoliceStations } from '../redux/policeStationSlice';
 import { setHospitals } from '../redux/hospitalSlice';
-import { api } from '../config/config';
 import calculateDistance from './calculateDistance';
+import { sendLocationToBackend } from '../routes/location-routes';
 
 const useLocationTracking = () => {
   const dispatch = useDispatch();
@@ -13,32 +13,6 @@ const useLocationTracking = () => {
   const user = useSelector((state) => state.auth.user);
   const lastLocation = useRef({ lat: null, lng: null, startTime: null });
   const watchId = useRef(null);
-
-  const sendLocationToBackend = async (lat, lng, startTime, endTime) => {
-    console.log(user);
-    if (!token) return;
-    try {
-      const response = await fetch(api + '/location/save-userLocation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          latitude: lat,
-          longitude: lng,
-          startTime: startTime,
-          endTime: endTime,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('Error sending location history to backend', await response.text());
-      }
-    } catch (err) {
-      console.error('Failed to send location history:', err);
-    }
-  };
 
   return new Promise((resolve) => {
     useEffect(() => {

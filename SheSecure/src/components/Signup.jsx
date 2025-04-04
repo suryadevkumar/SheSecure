@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile, checkUserExist, signUp } from '../routes/signup-login-otp-routes';
 import background from '../assets/background1.jpg'
-import { api } from '../config/config';
 import { MdDelete } from "react-icons/md";
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const Signup = () => {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', MobileNumber: '', userType: '', });
@@ -163,55 +162,11 @@ const Signup = () => {
       });
   };
 
-  //signup
-  const signup = async () => {
-      setIsSigningUp(true);
-      try {
-          
-          // Validate basic form data
-          if (!formData.firstName || !formData.lastName || !formData.email || !formData.MobileNumber || !formData.userType) {
-              toast.error('All fields are required');
-              setIsSigningUp(false);
-              return;
-          }
-
-          // Validate qualifications for Counsellor/Admin
-          if ((formData.userType === "Counsellor" || formData.userType === "Admin") && (!coursesData || coursesData.length === 0)) {
-              toast.error('Qualifications are required for Counsellors/Admins');
-              setIsSigningUp(false);
-              return;
-          }
-
-          const toastId = toast.loading('Processing your signup...');
-          
-          const response = await signUp(formData, courseData);
-
-          toast.dismiss(toastId);
-          
-          if (response.success) {
-              toast.success(response.message || 'Signup successful. Redirecting to login...');
-              setTimeout(() => {
-                  window.location.href = '/login';
-                  setIsSigningUp(false);
-              }, 3000);
-          } else {
-              toast.error(response.message || 'Signup failed');
-              setIsSigningUp(false);
-          }
-      } catch (error) {
-          console.error('Error during signup:', error);
-          toast.error('An error occurred. Please try again.');
-          setIsSigningUp(false);
-      }
-  };
-
   return (
     <div className='bg-cover bg-center h-[calc(100vh-4rem)]' style={{ backgroundImage: `url(${background})` }}>
       <div className='flex items-center justify-center'>
         <div className="bg-white p-8 mt-[4%] rounded-lg shadow-md w-full max-w-md ml-[40%] lg:ml-[50%]">
           <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Sign Up</h2>
-
-          <ToastContainer position="top-center" autoClose={3000} theme="light"/>
 
           {page == 1 && <form onSubmit={sendOTP} className="space-y-4">
             <div>
@@ -549,7 +504,7 @@ const Signup = () => {
               </button>
               <button
                 className={`bg-blue-500 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify && !isSigningUp ? 'hover:bg-blue-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
-                onClick={signup}
+                onClick={signUp(formData, coursesData, setIsSigningUp)}
                 disabled={!isEmailVerify || !isMobileVerify || isSigningUp}
               >
                 Submit

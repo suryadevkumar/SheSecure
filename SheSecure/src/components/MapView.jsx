@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { GoogleMap, Marker, useLoadScript, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
-import { googleMapAPI1 } from '../config/config';
+import { googleMapAPI } from '../config/config';
 import icon1 from '../assets/policeIcon.png';
 import icon2 from '../assets/hospitalIcon.png';
 import icon3 from '../assets/liveLocation.png';
@@ -19,7 +19,7 @@ const MapView = () => {
   const dispatch = useDispatch();
   
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: googleMapAPI1,
+    googleMapsApiKey: googleMapAPI,
     libraries: ['places', 'directions'],
   });
   

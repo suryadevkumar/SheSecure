@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { checkUserExist, logIn, sendEmailOTP, verifyEmail } from '../routes/signup-login-otp-routes';
+import { checkUserExist, logIn, sendEmailOTP } from '../routes/signup-login-otp-routes';
 import background from '../assets/background1.jpg';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -67,38 +67,10 @@ const Login = () => {
     }
   };
 
-  const handleLoginClick = async (e) => {
-    e.preventDefault();
-  
-    try {
-      await verifyEmail(emailOTP);
-  
-      const response = await logIn(email);
-  
-      if (response.ok) {
-        const data = await response.json();
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user',data.user);
-          navigate('/userDashboard');
-        } else {
-          toast.error('Login failed. Server error.');
-        }
-      } else {
-        toast.error('Login failed. Please try again.');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      toast.error(err);
-    }
-  };
-
   return (
     <div className='flex items-center justify-center bg-cover bg-center h-[calc(100vh-4rem)]'style={{ backgroundImage: `url(${background})` }}>
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md ml-[40%] lg:ml-[50%] relative">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
-
-        <ToastContainer position="top-center" autoClose={3000} theme="light"/>
 
         <div className="space-y-4">
           <div>
@@ -151,7 +123,7 @@ const Login = () => {
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
                 emailOTP ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
               }`}
-              onClick={handleLoginClick}
+              onClick={logIn(email, emailOTP)}
               disabled={!emailOTP}
             >
               Login

@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import { useSelector, useDispatch } from 'react-redux';
 import { setToken } from '../redux/authSlice';
-import { useSOSSystem } from '../utils/SOSSystem.js';
+import { useSOSSystem } from '../utils/useSOSSystem.js';
 
 const Header = () => {
-    const dispatch = useDispatch();
-    const isSOSActive = useSelector((state) => state.sos.isSOSActive);
     const token = useSelector((state) => state.auth.token);
+    const isSOSActive = useSelector((state) => state.sos.isSOSActive);
+    const dispatch = useDispatch();
     const { startSOS, stopSOS } = useSOSSystem();
     const navigate = useNavigate();
     const [showProfileBox, setShowProfileBox] = useState(false);

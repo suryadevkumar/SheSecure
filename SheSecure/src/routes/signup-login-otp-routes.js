@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { api } from "../config/config";
 
 export const sendEmailOTP = (setEmailTimer, email, onEmailStatus) => {
@@ -52,7 +53,7 @@ export const verifyMobile = (setIsMobileVerify, mobileOTP) => {
 }
 
 export const checkUserExist = async (email) => {
-    const response = await fetch(api+'/auth/userExist', {
+    const response = await fetch(api + '/auth/userExist', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -61,49 +62,105 @@ export const checkUserExist = async (email) => {
     return response.json();
 };
 
-export const signUp = async (formData, coursesData)=>{
-    // Create FormData object
-    const signupData = new FormData();
-          
-    // Append user data with consistent field names
-    signupData.append('firstName', formData.firstName);
-    signupData.append('lastName', formData.lastName);
-    signupData.append('email', formData.email);
-    signupData.append('mobileNumber', formData.MobileNumber);
-    signupData.append('userType', formData.userType);
+export const signUp = async (formData, coursesData, setIsSigningUp) => {
+    setIsSigningUp(true);
+    try {
 
-    // Only append qualifications for Counsellor/Admin
-    if (formData.userType === "Counsellor" || formData.userType === "Admin") {
-        signupData.append('qualifications', JSON.stringify(
-            coursesData.map(course => ({
-                courseName: course.courseName,
-                percentage: course.percentage
-            })))
-        );
+        // Validate basic form data
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.MobileNumber || !formData.userType) {
+            toast.error('All fields are required');
+            setIsSigningUp(false);
+            return;
+        }
 
-        // Append certificate files
-        coursesData.forEach((course, index) => {
-            if (course.certificate instanceof File) {
-                signupData.append(`qualifications[${index}].certificate`, course.certificate);
-            }
+        // Validate qualifications for Counsellor/Admin
+        if ((formData.userType === "Counsellor" || formData.userType === "Admin") && (!coursesData || coursesData.length === 0)) {
+            toast.error('Qualifications are required for Counsellors/Admins');
+            setIsSigningUp(false);
+            return;
+        }
+
+        const toastId = toast.loading('Processing your signup...');
+
+        // Create FormData object
+        const signupData = new FormData();
+
+        // Append user data with consistent field names
+        signupData.append('firstName', formData.firstName);
+        signupData.append('lastName', formData.lastName);
+        signupData.append('email', formData.email);
+        signupData.append('mobileNumber', formData.MobileNumber);
+        signupData.append('userType', formData.userType);
+
+        // Only append qualifications for Counsellor/Admin
+        if (formData.userType === "Counsellor" || formData.userType === "Admin") {
+            signupData.append('qualifications', JSON.stringify(
+                coursesData.map(course => ({
+                    courseName: course.courseName,
+                    percentage: course.percentage
+                })))
+            );
+
+            // Append certificate files
+            coursesData.forEach((course, index) => {
+                if (course.certificate instanceof File) {
+                    signupData.append(`qualifications[${index}].certificate`, course.certificate);
+                }
+            });
+        }
+
+        // Send to backend
+        const response = await fetch(api + '/auth/signup', {
+            method: 'POST',
+            credentials: 'include',
+            body: signupData
         });
+
+        toast.dismiss(toastId);
+
+        if (response.success) {
+            toast.success(response.message || 'Signup successful. Redirecting to login...');
+            setTimeout(() => {
+                window.location.href = '/login';
+                setIsSigningUp(false);
+            }, 3000);
+        } else {
+            toast.error(response.message || 'Signup failed');
+            setIsSigningUp(false);
+        }
+    } catch (error) {
+        console.error('Error during signup:', error);
+        toast.error('An error occurred. Please try again.');
+        setIsSigningUp(false);
     }
+};
 
-    // Send to backend
-    const response = await fetch(api + '/auth/signup', {
-        method: 'POST',
-        credentials: 'include',
-        body: signupData
-    });
+export const logIn = async (email, emailOTP) => {
+    e.preventDefault();
 
-    return response.json();
-}
+    try {
+        await verifyEmail(emailOTP);
 
-export const logIn = async (email) => {
-    const response = await fetch(api+'/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-    });
-    return response;
+        const response = await fetch(api + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', data.user);
+                navigate('/userDashboard');
+            } else {
+                toast.error('Login failed. Server error.');
+            }
+        } else {
+            toast.error('Login failed. Please try again.');
+        }
+    } catch (err) {
+        console.error('Login error:', err);
+        toast.error(err);
+    }
 };
