@@ -36,7 +36,8 @@ const Login = () => {
   }, [emailTimer, otpVisible]);
 
   //user existance check and send otp
-  const handleSendOTPClick = async () => {
+  const handleSendOTPClick = async (e) => {
+    e.preventDefault();
     if (!otpVisible) {
       if (!email) {
         toast.error('Please enter your email!');
@@ -123,7 +124,7 @@ const Login = () => {
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
                 emailOTP ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
               }`}
-              onClick={logIn(email, emailOTP)}
+              onClick={() => logIn(email, emailOTP)}
               disabled={!emailOTP}
             >
               Login

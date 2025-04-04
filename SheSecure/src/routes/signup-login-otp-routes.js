@@ -118,14 +118,16 @@ export const signUp = async (formData, coursesData, setIsSigningUp) => {
 
         toast.dismiss(toastId);
 
-        if (response.success) {
-            toast.success(response.message || 'Signup successful. Redirecting to login...');
+        const result = await response.json();
+
+        if (result.success) {
+            toast.success(result.message || 'Signup successful. Redirecting to login...');
             setTimeout(() => {
                 window.location.href = '/login';
                 setIsSigningUp(false);
             }, 3000);
         } else {
-            toast.error(response.message || 'Signup failed');
+            toast.error(result.message || 'Signup failed');
             setIsSigningUp(false);
         }
     } catch (error) {
@@ -136,8 +138,6 @@ export const signUp = async (formData, coursesData, setIsSigningUp) => {
 };
 
 export const logIn = async (email, emailOTP) => {
-    e.preventDefault();
-
     try {
         await verifyEmail(emailOTP);
 
@@ -151,8 +151,8 @@ export const logIn = async (email, emailOTP) => {
             const data = await response.json();
             if (data.token) {
                 localStorage.setItem('token', data.token);
-                localStorage.setItem('user', data.user);
-                navigate('/userDashboard');
+                localStorage.setItem('user', JSON.stringify(data.user));
+                window.location.href = '/login';
             } else {
                 toast.error('Login failed. Server error.');
             }
@@ -162,5 +162,6 @@ export const logIn = async (email, emailOTP) => {
     } catch (err) {
         console.error('Login error:', err);
         toast.error(err);
+        throw err;
     }
 };

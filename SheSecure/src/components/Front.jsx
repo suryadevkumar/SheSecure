@@ -14,6 +14,8 @@ const Front=()=> {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       const publicPaths = ['/', '/login', '/signup']; 
+
+      console.log(user);
       
       if (token) {
         dispatch(setToken(token));
