@@ -20,7 +20,7 @@ const ChatLayout = () => {
   }, [user, dispatch]);
   
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden shadow-lg">
+    <div className="flex h-[calc(100vh-5rem)] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden shadow-lg mt-0.5">
       <div className="w-1/3 border-r border-gray-200 shadow-sm">
         <Sidebar />
       </div>

@@ -1,7 +1,6 @@
 import ChatRequest from '../models/ChatRequest.js';
 import ChatRoom from '../models/ChatRoom.js';
-import Message from '../models/ChatRoom.js';
-import mongoose from 'mongoose';
+import Message from '../models/Message.js';
 
 export const getChatRequests = async (req, res) => {
   try {
@@ -55,13 +54,9 @@ export const getMessages = async (req, res) => {
       return res.status(400).json({ message: 'Chat room ID is required' });
     }
     
-    const messages = await Message.find({ chatRoom: new mongoose.Types.ObjectId(chatRoomId) })
+    const messages = await Message.find({chatRoom: chatRoomId})
       .populate('sender', 'firstName lastName userType')
       .sort('createdAt');
-
-    console.log(chatRoomId)
-
-    console.log(messages);
     
     res.json(messages);
   } catch (error) {
