@@ -1,10 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import http from 'http';
-import { Server } from 'socket.io';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-import ioSession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
@@ -12,42 +10,46 @@ import { cloudinaryConnect } from './config/cloudinary.js';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
 import sosRoutes from './routes/SOS.js';
-import locationRoutes from './routes/LocationHistory.js';
+import locationRoutes from './routes/Location.js';
+import chatRoutes from './routes/Counselling.js'
+import authenticateUser from './utils/authenticateUser.js';
+import setupSocket from './utils/socket.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
+// Setup socket.io
+const io = setupSocket(server);
+
 // Connect to MongoDB
 connectDB();
+cloudinaryConnect();
 
-const io = new Server(server, {
-  cors: {
+// CORS configuration - must come before other middleware
+app.use(
+  cors({
     origin: 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+  })
+);
+
+// Handle OPTIONS requests
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(
-  cors({
-    origin: 'http://localhost:5173',
-    credentials: true,
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp",
   })
 );
-app.use(
-  fileUpload({
-      useTempFiles: true,
-      tempFileDir: "/tmp",
-  })
-)
 
-cloudinaryConnect();
-
-// 🛠 **SESSION SETUP WITH MONGODB STORAGE**
+// session setup with mongodb storage
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'my_secret_key',
   resave: false,
@@ -65,85 +67,12 @@ const sessionMiddleware = session({
 });
 
 app.use(sessionMiddleware);
-io.use(ioSession(sessionMiddleware, { autoSave: true }));
-
-// 🛠 **SOCKET.IO MIDDLEWARE TO CHECK SESSION**
-io.use((socket, next) => {
-  if (!socket.request.session) {
-    return next(new Error("Session not found"));
-  }
-
-  const user = socket.request.session.user;
-  if (user) {
-    socket.userId = user.id;
-    next();
-  } else {
-    next(new Error("Authentication error"));
-  }
-});
-
-// 🛠 **TEST SESSION ROUTES**
-app.get('/test-session', (req, res) => {
-  req.session.test = "Session is working";
-  res.send("Session set!");
-});
-
-app.get('/check-session', (req, res) => {
-  res.send(req.session);
-});
-
-// 🛠 **API ROUTES**
 app.use('/api/auth', authRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/location', locationRoutes);
+app.use('/api/chat', chatRoutes);
 
-const port = process.env.PORT || 5000;
-
-io.on("connection", (socket) => {
-  console.log("User connected to SOS system");
-
-  socket.on("updateLocation", ({ reportId, latitude, longitude }) => {
-    if (!reportId || !latitude || !longitude) {
-      return socket.emit("error", { message: "Invalid location data" });
-    }
-
-    if (!global.activeSOS?.[reportId]) {
-      return socket.emit("error", { message: "SOS not active" });
-    }
-
-    const newLocation = { 
-      latitude, 
-      longitude, 
-      timestamp: new Date() 
-    };
-
-    global.activeSOS[reportId].locations.push(newLocation);
-
-    // Broadcast to all clients in this SOS room
-    io.to(reportId).emit("locationUpdate", newLocation);
-    io.to(reportId).emit("pathUpdate", global.activeSOS[reportId].locations);
-  });
-
-  socket.on("joinSOS", (reportId) => {
-    if (!reportId) return;
-    
-    socket.join(reportId);
-    console.log(`User joined SOS room ${reportId}`);
-
-    // Send current locations if available
-    if (global.activeSOS?.[reportId]) {
-      socket.emit("pathUpdate", global.activeSOS[reportId].locations);
-      socket.emit("statusUpdate", { 
-        status: "active",
-        startTime: global.activeSOS[reportId].startTime
-      });
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
+const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.send(`

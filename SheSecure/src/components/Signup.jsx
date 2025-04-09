@@ -504,10 +504,15 @@ const Signup = () => {
               </button>
               <button
                 className={`bg-blue-500 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify && !isSigningUp ? 'hover:bg-blue-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
-                onClick={signUp(formData, coursesData, setIsSigningUp)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (isEmailVerify && isMobileVerify) {
+                    signUp(formData, coursesData, setIsSigningUp);
+                  }
+                }}
                 disabled={!isEmailVerify || !isMobileVerify || isSigningUp}
               >
-                Submit
+                {isSigningUp ? 'Processing...' : 'Submit'}
               </button>
             </div>
           )}

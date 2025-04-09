@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
-import { setToken, setUser } from '../redux/authSlice';
+import { setToken } from '../redux/authSlice';
 
 const Front=()=> {
     const location = useLocation();
@@ -12,14 +12,9 @@ const Front=()=> {
   
     useEffect(() => {
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
       const publicPaths = ['/', '/login', '/signup']; 
-
-      console.log(user);
       
       if (token) {
-        dispatch(setToken(token));
-        dispatch(setUser(user));
         try {
           const decodedToken = jwtDecode(token);
           const currentTime = Date.now() / 1000;
@@ -29,6 +24,7 @@ const Front=()=> {
             if (publicPaths.includes(location.pathname)) {
               navigate('/userDashboard');
             }
+            dispatch({ type: 'socket/initialize' });
           } else {
             alert("Session expired, please login again");
             localStorage.removeItem('token');

@@ -1,8 +1,8 @@
 import express from 'express';
-import { saveLocationHistory } from '../controllers/LocationHistory.js';
+import { saveLocation } from '../controllers/Location.js';
 import authenticateUser from '../utils/authenticateUser.js';
 const router = express.Router();
 
-router.post('/save-userLocation', authenticateUser, saveLocationHistory);
+router.post('/save-userLocation', authenticateUser, saveLocation);
 
 export default router;

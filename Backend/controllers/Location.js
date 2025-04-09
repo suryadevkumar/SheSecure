@@ -2,7 +2,7 @@ import Location from '../models/Location.js';
 import Profile from '../models/Profile.js';
 import User from '../models/User.js';
 
-export const saveLocationHistory = async (req, res) => {
+export const saveLocation = async (req, res) => {
   try {
     const { latitude, longitude, startTime, endTime } = req.body;
     const userId = req.user.id;
