@@ -1,9 +1,7 @@
-import { useSelector } from "react-redux";
 import { api } from "../config/config";
 
 
-export const sendLocationToBackend = async (lat, lng, startTime, endTime) => {
-    const token = useSelector((state) => state.auth.token);
+export const sendLocationToBackend = async (lat, lng, startTime, endTime, token, userId) => {
     if (!token) return;
     try {
         const response = await fetch(api + '/location/save-userLocation', {
@@ -17,6 +15,7 @@ export const sendLocationToBackend = async (lat, lng, startTime, endTime) => {
                 longitude: lng,
                 startTime: startTime,
                 endTime: endTime,
+                userId: userId
             }),
         });
 

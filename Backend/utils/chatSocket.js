@@ -1,16 +1,9 @@
-import { Server } from 'socket.io';
 import User from '../models/User.js';
 import ChatRequest from '../models/ChatRequest.js';
 import ChatRoom from '../models/ChatRoom.js';
 import Message from '../models/Message.js';
 
-const setupSocket = (server) => {
-    const io = new Server(server, {
-        cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
-        }
-    });
+const chatSocket = (io) => {
 
     // Store online users
     const onlineUsers = new Map();
@@ -109,6 +102,20 @@ const setupSocket = (server) => {
                 const populatedRoom = await ChatRoom.findById(newChatRoom._id)
                     .populate('user counsellor chatRequest');
 
+                // Get counsellor details for welcome message
+                const counsellor = await User.findById(counsellorId);
+
+                // Create welcome message
+                const welcomeMessage = await Message.create({
+                    chatRoom: newChatRoom._id,
+                    sender: counsellorId,
+                    content: `Hi, I am ${counsellor.firstName} ${counsellor.lastName} from SheSecure. How can I help you?`,
+                    readBy: [counsellorId]
+                });
+
+                const populatedMessage = await Message.findById(welcomeMessage._id)
+                    .populate('sender', 'firstName lastName userType');
+
                 // Notify both user and counsellor
                 const userSocketId = onlineUsers.get(chatRequest.user._id.toString());
                 if (userSocketId) {
@@ -116,9 +123,11 @@ const setupSocket = (server) => {
                         chatRequest,
                         chatRoom: populatedRoom
                     });
+                    io.to(userSocketId).emit('new_message', populatedMessage);
                 }
 
                 socket.emit('chat_room_created', populatedRoom);
+                socket.emit('message_sent', populatedMessage);
 
                 // Update all counsellors that this request is no longer available
                 io.emit('chat_request_status_updated', chatRequest);
@@ -148,7 +157,7 @@ const setupSocket = (server) => {
                 });
 
                 const populatedMessage = await Message.findById(newMessage._id)
-                    .populate('sender', 'name userType');
+                    .populate('sender', 'firstName lastName userType');
 
                 // Determine recipient
                 const recipientId = senderId === chatRoom.user.toString()
@@ -245,6 +254,16 @@ const setupSocket = (server) => {
                     const counsellorSocketId = onlineUsers.get(chatRoom.counsellor.toString());
                     if (counsellorSocketId) {
                         io.to(counsellorSocketId).emit('end_chat_declined', { chatRoomId });
+
+                        await Message.create({
+                            chatRoom: chatRoomId,
+                            sender: chatRoom.user, // User declined
+                            content: "User declined to end the chat.",
+                            isSystem: true,
+                            readBy: [chatRoom.user]
+                        });
+
+                        io.to(counsellorSocketId).emit('clear_end_request_lock', { chatRoomId });
                     }
                 }
             } catch (error) {
@@ -263,7 +282,7 @@ const setupSocket = (server) => {
         });
     });
 
-    return io;
+    // return io;
 };
 
-export default setupSocket;
+export default chatSocket;

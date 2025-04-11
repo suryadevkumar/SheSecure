@@ -23,7 +23,8 @@ const useLocationTracking = () => {
               lastLocation.current.lat,
               lastLocation.current.lng,
               lastLocation.current.startTime,
-              new Date()
+              new Date(),
+              user._id
             );
           }
           if (watchId.current) {
@@ -48,7 +49,7 @@ const useLocationTracking = () => {
               // Send initial location to backend only if lastLocation is null
               if (!lastLocation.current.lat || !lastLocation.current.lng) {
                 lastLocation.current = { lat, lng, startTime: now };
-                await sendLocationToBackend(lat, lng, now, now);
+                await sendLocationToBackend(lat, lng, now, now, token, user._id);
 
                 if (!isInitialLocationFetched) {
                   isInitialLocationFetched = true;
@@ -59,7 +60,8 @@ const useLocationTracking = () => {
                   lastLocation.current.lat,
                   lastLocation.current.lng,
                   lastLocation.current.startTime,
-                  now
+                  now,
+                  user._id
                 );
               }
 
@@ -122,7 +124,8 @@ const useLocationTracking = () => {
             lastLocation.current.lat,
             lastLocation.current.lng,
             lastLocation.current.startTime,
-            new Date()
+            new Date(),
+            user._id
           );
         }
       };

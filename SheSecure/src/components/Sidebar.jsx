@@ -6,29 +6,31 @@ import { fetchMessages } from "../redux/chatSlice";
 const Sidebar = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  const onlineUsers = useSelector((state) => state.chat.onlineUsers);
   const chatRequests = useSelector((state) => state.chat.chatRequests);
   const chatRooms = useSelector((state) => state.chat.chatRooms);
   const activeRoom = useSelector((state) => state.chat.activeRoom);
+  const unreadCounts = useSelector((state) => state.chat.unreadCounts);
 
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [problemType, setProblemType] = useState("");
   const [brief, setBrief] = useState("");
 
-  const [showChats, setShowChats]=useState(true);
-  const [showPendingChats, setShowPendingChats]=useState(false);
+  const [showChats, setShowChats] = useState(true);
+  const [showPendingChats, setShowPendingChats] = useState(false);
 
   // Count pending requests
-  const pendingRequestsCount = chatRequests.filter(r => r.status === "Pending").length;
+  const pendingRequestsCount = chatRequests.filter(
+    (r) => r.status === "Pending"
+  ).length;
 
-  // This would normally come from your Redux state, but for demonstration:
-  // We'll assume each room has an 'unreadCount' property
-  // In a real app, you might calculate this based on messages that have a 'read' status
-  
   // Total unread messages
-  const totalUnreadMessages = chatRooms.reduce((total, room) => {
-    // Using a default unreadCount of 0 if not present
-    return total + (room.unreadCount || 0);
-  }, 0);
+  const totalUnreadMessages = Object.values(unreadCounts).reduce(
+    (total, count) => total + count,
+    0
+  );
+
+  // const roomUnreadCount = unreadCounts[room._id] || 0;
 
   const handleCreateRequest = (e) => {
     e.preventDefault();
@@ -53,18 +55,17 @@ const Sidebar = () => {
 
     if (room) {
       dispatch(fetchMessages({ roomId: room._id, userId: user._id }));
-      
+
       // You would also want to mark messages as read here
       // dispatch(markMessagesAsRead({ roomId: room._id }));
     }
   };
 
-  const chatList=(checkFalse)=>{
-    if(checkFalse==true)
-      return;
+  const chatList = (checkFalse) => {
+    if (checkFalse == true) return;
     setShowPendingChats(!showPendingChats);
     setShowChats(!showChats);
-  }
+  };
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -74,7 +75,8 @@ const Sidebar = () => {
           {user?.firstName} {user.lastName}
         </h3>
         <div className="bg-blue-500 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold">
-          {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+          {user?.firstName?.charAt(0)}
+          {user?.lastName?.charAt(0)}
         </div>
       </div>
 
@@ -151,9 +153,11 @@ const Sidebar = () => {
 
       {/* Chat Navigation Tabs */}
       <div className="flex border-b border-gray-200 bg-gray-50">
-        <button 
+        <button
           className={`flex-1 py-3 px-2 text-center text-sm font-medium transition-all focus:outline-none relative ${
-            showChats ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500 hover:text-gray-700'
+            showChats
+              ? "text-blue-600 border-b-2 border-blue-600 bg-white"
+              : "text-gray-500 hover:text-gray-700"
           }`}
           onClick={() => chatList(showChats)}
         >
@@ -164,9 +168,11 @@ const Sidebar = () => {
             </span>
           )}
         </button>
-        <button 
+        <button
           className={`flex-1 py-3 px-2 text-center text-sm font-medium transition-all focus:outline-none relative ${
-            showPendingChats ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500 hover:text-gray-700'
+            showPendingChats
+              ? "text-blue-600 border-b-2 border-blue-600 bg-white"
+              : "text-gray-500 hover:text-gray-700"
           }`}
           onClick={() => chatList(showPendingChats)}
         >
@@ -190,7 +196,9 @@ const Sidebar = () => {
               <div
                 key={room._id}
                 className={`p-4 cursor-pointer hover:bg-blue-50 transition duration-150 border-l-4 relative ${
-                  activeRoom?._id === room._id ? "bg-blue-50 border-blue-500" : "border-transparent"
+                  activeRoom?._id === room._id
+                    ? "bg-blue-50 border-blue-500"
+                    : "border-transparent"
                 } ${room.isEnded ? "opacity-70" : ""}`}
                 onClick={() => handleSetActiveRoom(room)}
               >
@@ -199,6 +207,13 @@ const Sidebar = () => {
                     {user?.userType === "User"
                       ? `${room.counsellor.firstName} ${room.counsellor.lastName}`
                       : `${room.user.firstName} ${room.user.lastName}`}
+                    {onlineUsers.includes(
+                      user?.userType === "User"
+                        ? room.counsellor._id
+                        : room.user._id
+                    ) && (
+                      <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
+                    )}
                   </p>
                   <div className="flex items-center">
                     {room.isEnded && (
@@ -214,11 +229,11 @@ const Sidebar = () => {
                 <p className="mt-1 text-sm text-gray-600 truncate">
                   {room.chatRequest.problemType}: {room.chatRequest.brief}
                 </p>
-                
+
                 {/* Unread message counter for each chat */}
-                {(room.unreadCount > 0) && (
+                {unreadCounts[room._id] > 0 && (
                   <span className="absolute right-3 bottom-3 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {room.unreadCount}
+                    {unreadCounts[room._id]}
                   </span>
                 )}
               </div>
@@ -228,40 +243,46 @@ const Sidebar = () => {
       )}
 
       {/* Pending Chat Requests */}
-      {user?.userType === "Counsellor" && showPendingChats && chatRequests.length > 0 && (
-        <div className="flex flex-col flex-grow overflow-y-auto">
-          <h4 className="p-3 text-xs font-medium text-gray-500 uppercase bg-gray-50">
-            Pending Requests
-          </h4>
-          <div className="flex-grow overflow-y-auto">
-            {chatRequests.map((request) => (
-              <div key={request._id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition duration-150">
-                <div className="flex justify-between">
-                  <p className="font-medium text-gray-800">
-                    From: {request.user.name}
-                  </p>
-                  <span className="text-xs text-gray-500">
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <p className="mt-1 mb-3 text-sm text-gray-600">
-                  <span className="font-medium">{request.problemType}:</span>{" "}
-                  {request.brief}
-                </p>
-                <button
-                  onClick={() => handleAcceptChatRequest(request._id)}
-                  className="px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200 shadow-sm"
+      {user?.userType === "Counsellor" &&
+        showPendingChats &&
+        chatRequests.length > 0 && (
+          <div className="flex flex-col flex-grow overflow-y-auto">
+            <h4 className="p-3 text-xs font-medium text-gray-500 uppercase bg-gray-50">
+              Pending Requests
+            </h4>
+            <div className="flex-grow overflow-y-auto">
+              {chatRequests.map((request) => (
+                <div
+                  key={request._id}
+                  className="p-4 border-b border-gray-100 hover:bg-gray-50 transition duration-150"
                 >
-                  Accept Request
-                </button>
-              </div>
-            ))}
+                  <div className="flex justify-between">
+                    <p className="font-medium text-gray-800">
+                      {request.user.firstName} {request.user.lastName}
+                    </p>
+                    <span className="text-xs text-gray-500">
+                      {new Date(request.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="mt-1 mb-3 text-sm text-gray-600">
+                    <span className="font-medium">{request.problemType}:</span>{" "}
+                    {request.brief}
+                  </p>
+                  <button
+                    onClick={() => handleAcceptChatRequest(request._id)}
+                    className="px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200 shadow-sm"
+                  >
+                    Accept Request
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* User Requests Status */}
-      {user?.userType === "User" && showPendingChats &&
+      {user?.userType === "User" &&
+        showPendingChats &&
         chatRequests.filter((r) => r.status === "Pending").length > 0 && (
           <div className="flex flex-col flex-grow overflow-y-auto">
             <h4 className="p-3 text-xs font-medium text-gray-500 uppercase bg-gray-50">
@@ -287,9 +308,25 @@ const Sidebar = () => {
                       {request.brief}
                     </p>
                     <div className="mt-3 flex items-center text-yellow-600">
-                      <svg className="w-4 h-4 mr-1 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="w-4 h-4 mr-1 animate-spin"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       <p className="text-xs">
                         Waiting for a counsellor to accept...

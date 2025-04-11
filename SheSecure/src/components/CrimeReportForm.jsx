@@ -1,0 +1,821 @@
+import { useState, useRef, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import {
+  FiAlertTriangle,
+  FiMapPin,
+  FiUpload,
+  FiCamera,
+  FiVideo,
+  FiFile,
+} from "react-icons/fi";
+import { Loader } from "@googlemaps/js-api-loader";
+import { googleMapAPI } from "../config/config";
+
+const CrimeReportForm = ({ onSubmit }) => {
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [firFile, setFirFile] = useState(null);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [map, setMap] = useState(null);
+  const [marker, setMarker] = useState(null);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [isMapLoading, setIsMapLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sessionToken, setSessionToken] = useState(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    reset,
+  } = useForm();
+  const mapRef = useRef(null);
+  const autocompleteInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
+
+  // Single loader instance with all required libraries
+  const loader = new Loader({
+    apiKey: googleMapAPI,
+    version: "weekly",
+    libraries: ["places", "maps", "marker"],
+  });
+
+  const crimeTypes = [
+    "Assault",
+    "Homicide",
+    "Kidnapping",
+    "Domestic Violence",
+    "Robbery",
+    "Burglary",
+    "Theft",
+    "Vandalism",
+    "Arson",
+    "Hacking",
+    "Online Fraud",
+    "Cyberbullying",
+    "Identity Theft",
+    "Fraud",
+    "Money Laundering",
+    "Bribery",
+    "Counterfeiting",
+    "Drug Trafficking",
+    "Illegal Possession of Drugs",
+    "Public Intoxication",
+    "Sexual Harassment",
+    "Rape",
+    "Human Trafficking",
+    "Child Exploitation",
+    "Harassment",
+    "Stalking",
+    "Trespassing",
+    "Extortion",
+    "Other",
+  ];
+
+  // Close suggestions dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target) &&
+        autocompleteInputRef.current &&
+        !autocompleteInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Initialize Google Maps and Places API
+  useEffect(() => {
+    const initMapAndPlaces = async () => {
+      try {
+        // Load all required libraries once
+        const [places, maps, markerLib] = await Promise.all([
+          loader.importLibrary("places"),
+          loader.importLibrary("maps"),
+          loader.importLibrary("marker"),
+        ]);
+
+        const { Map } = maps;
+        const { AdvancedMarkerElement } = markerLib;
+
+        // Create a session token for Autocomplete
+        const token = new window.google.maps.places.AutocompleteSessionToken();
+        setSessionToken(token);
+
+        // Initialize Geocoder service
+        window.geocoder = new window.google.maps.Geocoder();
+
+        setIsMapLoading(false);
+
+        // Initialize Map if needed
+        if (showMap && !map && mapRef.current) {
+          const mapInstance = new Map(mapRef.current, {
+            center: { lat: 20.5937, lng: 78.9629 }, // Center on India
+            zoom: 5,
+            mapTypeControl: false,
+            streetViewControl: false,
+            mapId: "crime-report-map",
+          });
+
+          const markerInstance = new AdvancedMarkerElement({
+            map: mapInstance,
+            position: { lat: 20.5937, lng: 78.9629 },
+            gmpDraggable: true,
+          });
+
+          // Add click listener to map
+          mapInstance.addListener("click", (e) => {
+            const lat = e.latLng.lat();
+            const lng = e.latLng.lng();
+            updateMarkerPosition(markerInstance, lat, lng);
+            reverseGeocode(lat, lng);
+          });
+
+          // Add marker dragend listener
+          markerInstance.addListener("dragend", () => {
+            const position = markerInstance.position;
+            const lat = position.lat;
+            const lng = position.lng;
+            reverseGeocode(lat, lng);
+          });
+
+          setMap(mapInstance);
+          setMarker(markerInstance);
+
+          // Try to get current location
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                mapInstance.setCenter({ lat, lng });
+                mapInstance.setZoom(15);
+                updateMarkerPosition(markerInstance, lat, lng);
+                reverseGeocode(lat, lng);
+              },
+              (error) => {
+                console.log("Geolocation error:", error);
+              }
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error loading Google Maps:", error);
+        setIsMapLoading(false);
+      }
+    };
+
+    initMapAndPlaces();
+  }, [showMap]);
+
+  // Handle location search input change
+  // Update the handleLocationInputChange function with these changes:
+  const handleLocationInputChange = async (e) => {
+    const value = e.target.value;
+    setLocationQuery(value);
+
+    if (
+      value.length > 2 &&
+      window.google &&
+      window.google.maps &&
+      window.google.maps.places
+    ) {
+      try {
+        // Modify the request object to use the correct properties
+        const request = {
+          input: value,
+          sessionToken: sessionToken,
+          locationRestriction: {
+            // Create a boundary for India
+            east: 97.4025614766,
+            north: 35.6745457,
+            south: 6.7559528,
+            west: 68.1097,
+          },
+          origin: map?.getCenter() || { lat: 20.5937, lng: 78.9629 }, // Use map center as origin if available
+          // Remove the countries and componentRestrictions properties
+        };
+
+        // Use the new AutocompleteSuggestion API
+        const { suggestions: placeSuggestions } =
+          await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
+            request
+          );
+
+        if (placeSuggestions && placeSuggestions.length > 0) {
+          setSuggestions(placeSuggestions);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (error) {
+        console.error("Error fetching place suggestions:", error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionSelect = async (suggestion) => {
+    try {
+      // Get place from the suggestion
+      const place = await suggestion.placePrediction.toPlace();
+
+      // Fetch necessary fields
+      await place.fetchFields({
+        fields: ["displayName", "formattedAddress", "location"],
+      });
+
+      setLocationQuery(place.formattedAddress || place.displayName);
+      setShowSuggestions(false);
+
+      console.log("Place location data:", place.location);
+
+      // Check if location contains functions for lat and lng
+      if (
+        place.location &&
+        typeof place.location.lat === "function" &&
+        typeof place.location.lng === "function"
+      ) {
+        // Call the functions to get the actual values
+        const lat = place.location.lat();
+        const lng = place.location.lng();
+
+        console.log("Extracted coordinates:", { lat, lng });
+
+        setValue("location.coordinates", [lat, lng]);
+        setValue(
+          "location.address",
+          place.formattedAddress || place.displayName
+        );
+        setSelectedPlace(place);
+
+        // Update map if visible
+        if (map && marker) {
+          try {
+            const latLng = { lat, lng };
+            console.log("Setting map center to:", latLng);
+
+            map.setCenter(latLng);
+            map.setZoom(15);
+            marker.position = latLng;
+          } catch (mapError) {
+            console.error("Error updating map:", mapError);
+          }
+        }
+      } else {
+        console.error("Invalid location data format:", place.location);
+
+        // Try to get coordinates from geocoder as fallback
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode(
+          {
+            address: place.formattedAddress || place.displayName,
+          },
+          (results, status) => {
+            if (
+              status === "OK" &&
+              results[0] &&
+              results[0].geometry &&
+              results[0].geometry.location
+            ) {
+              const lat = results[0].geometry.location.lat();
+              const lng = results[0].geometry.location.lng();
+
+              console.log("Geocoded coordinates:", { lat, lng });
+
+              setValue("location.coordinates", [lat, lng]);
+              setValue(
+                "location.address",
+                place.formattedAddress || place.displayName
+              );
+
+              if (map && marker) {
+                map.setCenter({ lat, lng });
+                map.setZoom(15);
+                marker.position = { lat, lng };
+              }
+            }
+          }
+        );
+      }
+
+      // Create a new session token for the next search
+      const newToken = new window.google.maps.places.AutocompleteSessionToken();
+      setSessionToken(newToken);
+    } catch (error) {
+      console.error("Error selecting place:", error);
+    }
+  };
+
+  const updateMarkerPosition = (marker, lat, lng) => {
+    marker.position = { lat, lng };
+    setValue("location.coordinates", [lat, lng]);
+  };
+
+  const reverseGeocode = (lat, lng) => {
+    window.geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        setLocationQuery(results[0].formatted_address);
+        setValue("location.address", results[0].formatted_address);
+      }
+    });
+  };
+
+  const handleFileChange = (e, setFileState, multiple = false) => {
+    if (e.target.files) {
+      if (multiple) {
+        const filesArray = Array.from(e.target.files);
+        setFileState((prev) => [...prev, ...filesArray]);
+      } else {
+        setFileState(e.target.files[0]);
+      }
+    }
+  };
+
+  const handleRemoveFile = (index, fileState, setFileState) => {
+    const newFiles = [...fileState];
+    newFiles.splice(index, 1);
+    setFileState(newFiles);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          if (map && marker) {
+            map.setCenter({ lat, lng });
+            map.setZoom(15);
+            updateMarkerPosition(marker, lat, lng);
+            reverseGeocode(lat, lng);
+          }
+        },
+        (error) => {
+          console.log("Geolocation error:", error);
+          alert(
+            "Could not get your current location. Please make sure location services are enabled."
+          );
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
+
+  const onSubmitForm = async (data) => {
+    setIsSubmitting(true);
+    setUploadProgress(10);
+
+    try {
+      const formData = new FormData();
+
+      // Append all form data
+      Object.keys(data).forEach((key) => {
+        if (key === "location") {
+          formData.append("location", JSON.stringify(data.location));
+        } else {
+          formData.append(key, data[key]);
+        }
+      });
+
+      // Append files
+      if (firFile) formData.append("FIR", firFile);
+      photoFiles.forEach((file) => formData.append("crimePhotos", file));
+      videoFiles.forEach((file) => formData.append("crimeVideos", file));
+
+      setUploadProgress(30);
+
+      // Send to server
+      await onSubmit(formData, (progress) => {
+        // This callback will be called with upload progress updates
+        setUploadProgress(30 + Math.round(progress * 0.6)); // Scale progress to 30-90%
+      });
+
+      setUploadProgress(100);
+
+      // Reset form
+      reset();
+      setPhotoFiles([]);
+      setVideoFiles([]);
+      setFirFile(null);
+      setLocationQuery("");
+      setSelectedPlace(null);
+
+      setTimeout(() => {
+        setUploadProgress(0);
+        setIsSubmitting(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setIsSubmitting(false);
+      setUploadProgress(0);
+      alert("There was an error submitting your report. Please try again.");
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto my-4 p-6 bg-white rounded-xl shadow-lg">
+      <div className="flex items-center mb-6">
+        <FiAlertTriangle className="text-rose-600 text-3xl mr-3" />
+        <h2 className="text-2xl font-bold text-gray-800">
+          File a Crime Report
+        </h2>
+      </div>
+
+      <p className="text-gray-600 mb-6">
+        Your report can help keep others safe. Please provide accurate
+        information to help authorities respond effectively. All reports are
+        confidential.
+      </p>
+
+      {isSubmitting && (
+        <div className="mb-6">
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-600 mt-1 text-center">
+            {uploadProgress < 100
+              ? `Uploading report... ${uploadProgress}%`
+              : "Upload complete!"}
+          </p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+        {/* Type of Crime */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Type of Crime <span className="text-rose-500">*</span>
+          </label>
+          <select
+            {...register("typeOfCrime", {
+              required: "Please select a crime type",
+            })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
+            disabled={isSubmitting}
+          >
+            <option value="">Select a crime type</option>
+            {crimeTypes.map((crime) => (
+              <option key={crime} value={crime}>
+                {crime}
+              </option>
+            ))}
+          </select>
+          {errors.typeOfCrime && (
+            <p className="mt-1 text-sm text-rose-600">
+              {errors.typeOfCrime.message}
+            </p>
+          )}
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description <span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            {...register("description", {
+              required: "Please provide a description",
+              minLength: {
+                value: 20,
+                message: "Description should be at least 20 characters",
+              },
+            })}
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+            placeholder="Provide detailed information about the incident..."
+            disabled={isSubmitting}
+          />
+          {errors.description && (
+            <p className="mt-1 text-sm text-rose-600">
+              {errors.description.message}
+            </p>
+          )}
+        </div>
+
+        {/* Location */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Location <span className="text-rose-500">*</span>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiMapPin className="text-gray-400" />
+            </div>
+            <input
+              ref={autocompleteInputRef}
+              type="text"
+              value={locationQuery}
+              onChange={handleLocationInputChange}
+              onFocus={() =>
+                locationQuery.length > 2 &&
+                suggestions.length > 0 &&
+                setShowSuggestions(true)
+              }
+              className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+              placeholder="Search for location or click on map"
+              disabled={isSubmitting}
+            />
+
+            {/* Location suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-y-auto"
+              >
+                {suggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                  >
+                    <p className="text-sm">
+                      {suggestion.placePrediction.text.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowMap(!showMap)}
+              className="text-sm text-rose-600 hover:text-rose-700 cursor-pointer"
+              disabled={isSubmitting}
+            >
+              {showMap ? "Hide map" : "Show map to select location"}
+            </button>
+          </div>
+
+          {showMap && (
+            <div className="mt-4">
+              {isMapLoading ? (
+                <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <p>Loading map...</p>
+                </div>
+              ) : (
+                <>
+                  <div
+                    ref={mapRef}
+                    className="h-64 w-full rounded-lg border border-gray-300"
+                  />
+                  <div className="mt-2 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                      disabled={isSubmitting}
+                    >
+                      Use Current Location
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMap(false)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm"
+                      disabled={isSubmitting}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {errors.location && (
+            <p className="mt-1 text-sm text-rose-600">
+              Please select a location
+            </p>
+          )}
+          <input
+            type="hidden"
+            {...register("location.coordinates", { required: true })}
+          />
+          <input
+            type="hidden"
+            {...register("location.address", { required: true })}
+          />
+        </div>
+
+        {/* FIR Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            FIR Copy (Image) <span className="text-rose-500">*</span>
+          </label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+            <div className="space-y-1 text-center">
+              <div className="flex text-sm text-gray-600 justify-center">
+                <label
+                  htmlFor="firFile"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                >
+                  <span className="flex items-center">
+                    <FiFile className="mr-2" />
+                    {firFile ? "Change FIR file" : "Upload FIR copy"}
+                  </span>
+                  <input
+                    id="firFile"
+                    name="FIR"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, setFirFile)}
+                    className="sr-only"
+                    disabled={isSubmitting}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+              {firFile && (
+                <div className="text-sm text-gray-900 mt-2 flex items-center justify-center gap-2">
+                  <span>{firFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFirFile(null)}
+                    className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                    disabled={isSubmitting}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {errors.FIR && (
+            <p className="mt-1 text-sm text-rose-600">Please upload FIR copy</p>
+          )}
+        </div>
+
+        {/* Photo Evidence */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Photo Evidence
+          </label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+            <div className="space-y-1 text-center">
+              <div className="flex text-sm text-gray-600 justify-center">
+                <label
+                  htmlFor="crimePhotos"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                >
+                  <span className="flex items-center">
+                    <FiCamera className="mr-2" />
+                    Upload photos
+                  </span>
+                  <input
+                    id="crimePhotos"
+                    name="crimePhotos"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, setPhotoFiles, true)}
+                    className="sr-only"
+                    disabled={isSubmitting}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              {photoFiles.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {photoFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
+                    >
+                      <span>
+                        {file.name.length > 15
+                          ? file.name.substring(0, 15) + "..."
+                          : file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveFile(index, photoFiles, setPhotoFiles)
+                        }
+                        className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                        disabled={isSubmitting}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Video Evidence */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Video Evidence
+          </label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+            <div className="space-y-1 text-center">
+              <div className="flex text-sm text-gray-600 justify-center">
+                <label
+                  htmlFor="crimeVideos"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                >
+                  <span className="flex items-center">
+                    <FiVideo className="mr-2" />
+                    Upload videos
+                  </span>
+                  <input
+                    id="crimeVideos"
+                    name="crimeVideos"
+                    type="file"
+                    multiple
+                    accept="video/*"
+                    onChange={(e) => handleFileChange(e, setVideoFiles, true)}
+                    className="sr-only"
+                    disabled={isSubmitting}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">MP4, MOV up to 50MB</p>
+              {videoFiles.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {videoFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
+                    >
+                      <span>
+                        {file.name.length > 15
+                          ? file.name.substring(0, 15) + "..."
+                          : file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveFile(index, videoFiles, setVideoFiles)
+                        }
+                        className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                        disabled={isSubmitting}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Safety Tips */}
+        <div className="bg-rose-50 p-4 rounded-lg border border-rose-100">
+          <h3 className="font-medium text-rose-800 mb-2">Safety Tips</h3>
+          <ul className="text-sm text-rose-700 list-disc pl-5 space-y-1">
+            <li>
+              If you're in immediate danger, call emergency services first
+            </li>
+            <li>
+              Provide as much detail as possible without compromising your
+              safety
+            </li>
+            <li>Your report will be shared with nearby users to alert them</li>
+            <li>You can choose to report anonymously if needed</li>
+          </ul>
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-4">
+          <button
+            type="submit"
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Report"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CrimeReportForm;

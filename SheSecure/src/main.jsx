@@ -14,6 +14,8 @@ import EmergencyMap from "./components/EmergencyMap";
 import AppWrapper from "./components/AppWrapper";
 import ChatLayout from "./components/ChatLayout";
 import axios from 'axios';
+import SuperAdminDashboard from "./components/SuperAdminDashboard";
+import CrimeReportForm from "./components/CrimeReportForm";
 
 // Set default axios base URL
 axios.defaults.baseURL = 'http://localhost:3000';
@@ -53,6 +55,14 @@ const appRouter = createBrowserRouter([
         path: "chat", 
         element: <ChatLayout /> 
       },
+      { 
+        path: "super", 
+        element: <SuperAdminDashboard /> 
+      },
+      {
+        path: "crimeReport",
+        element: <CrimeReportForm />
+      }
     ],
   },
 ]);

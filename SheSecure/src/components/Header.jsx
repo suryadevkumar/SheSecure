@@ -3,14 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import { useSelector, useDispatch } from "react-redux";
 import { setToken } from "../redux/authSlice";
-import { useSOSSystem } from "../utils/useSOSSystem.js";
+import useSosSocket from "../utils/sosSocket";
 
 const Header = () => {
   const token = useSelector((state) => state.auth.token);
   const user = useSelector((state) => state.auth.user);
   const isSOSActive = useSelector((state) => state.sos.isSOSActive);
   const dispatch = useDispatch();
-  const { startSOS, stopSOS } = useSOSSystem();
+  const { startSOS, stopSOS } = useSosSocket();
   const navigate = useNavigate();
   const [showProfileBox, setShowProfileBox] = useState(false);
   const profileRef = useRef(null);
@@ -91,14 +91,14 @@ const Header = () => {
               >
                 View Map
               </Link>
-              <button
+              {user.userType=='User'?<button
                 className={`${
                   isSOSActive ? "bg-green-500" : "bg-red-500"
                 }  font-semibold text-white text-sm px-2 py-1 rounded-lg hover:bg-red-700 cursor-pointer`}
                 onClick={isSOSActive ? stopSOS : startSOS}
               >
                 {isSOSActive ? "SOS Activated" : "Activate SOS"}
-              </button>
+              </button>:null}
               <img
                 src={logo}
                 alt="Profile"
@@ -140,17 +140,19 @@ const Header = () => {
                     <Link
                       to={"./chat"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={()=>setShowProfileBox(!showProfileBox)}
                     >
                       {user.userType === "User"
                         ? "Contact Counsellor"
                         : "Contact User"}
                     </Link>
-                    <a
-                      href="#"
+                    <Link
+                      to={"/crimeReport"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={()=>setShowProfileBox(!showProfileBox)}
                     >
                       Report
-                    </a>
+                    </Link>
                     <a
                       href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

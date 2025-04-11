@@ -30,13 +30,13 @@ export const fetchMessages = createAsyncThunk(
   async ({ roomId, userId }, { rejectWithValue }) => {
     try {
       const res = await axios.get(`/api/chat/messages?chatRoomId=${roomId}`);
-      
+
       // Mark messages as read
       await axios.post("/api/chat/messages/read", {
         chatRoomId: roomId,
         userId: userId,
       });
-      
+
       return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to fetch messages');
@@ -53,9 +53,21 @@ const chatSlice = createSlice({
     messages: [],
     loading: false,
     error: null,
-    pendingEndRequests: []
+    pendingEndRequests: [],
+    unreadCounts: {},
+    onlineUsers: [],
   },
   reducers: {
+    setUserOnline: (state, action) => {
+      const { userId } = action.payload;
+      if (!state.onlineUsers.includes(userId)) {
+        state.onlineUsers.push(userId);
+      }
+    },
+    setUserOffline: (state, action) => {
+      const { userId } = action.payload;
+      state.onlineUsers = state.onlineUsers.filter(id => id !== userId);
+    },
     setActiveRoom: (state, action) => {
       state.activeRoom = action.payload;
     },
@@ -76,7 +88,7 @@ const chatSlice = createSlice({
       );
     },
     updateChatRequest: (state, action) => {
-      state.chatRequests = state.chatRequests.map(req => 
+      state.chatRequests = state.chatRequests.map(req =>
         req._id === action.payload._id ? action.payload : req
       );
     },
@@ -90,7 +102,7 @@ const chatSlice = createSlice({
       if (!state.pendingEndRequests.includes(action.payload)) {
         state.pendingEndRequests.push(action.payload);
       }
-      
+
       // Also update the active room if it's the one receiving the end request
       if (state.activeRoom && state.activeRoom._id === action.payload) {
         state.activeRoom.pendingEndRequest = true;
@@ -100,10 +112,26 @@ const chatSlice = createSlice({
       state.pendingEndRequests = state.pendingEndRequests.filter(
         id => id !== action.payload
       );
+
+      if (state.activeRoom && state.activeRoom._id === action.payload) {
+        state.activeRoom.pendingEndRequest = false;
+      }
+    },
+    markMessageRead: (state, action) => {
+      const { messageId, userId } = action.payload;
+      state.messages = state.messages.map(message => {
+        if (message._id === messageId && !message.readBy.includes(userId)) {
+          return {
+            ...message,
+            readBy: [...message.readBy, userId]
+          };
+        }
+        return message;
+      });
     },
     markChatRoomEnded: (state, action) => {
       const { chatRoomId } = action.payload;
-      
+
       // Update chat rooms list
       state.chatRooms = state.chatRooms.map(room => {
         if (room._id === chatRoomId) {
@@ -115,7 +143,7 @@ const chatSlice = createSlice({
         }
         return room;
       });
-      
+
       // Update active room if it's the one that ended
       if (state.activeRoom && state.activeRoom._id === chatRoomId) {
         state.activeRoom = {
@@ -124,11 +152,22 @@ const chatSlice = createSlice({
           endedAt: new Date().toISOString()
         };
       }
-      
+
       // Remove from pending end requests
       state.pendingEndRequests = state.pendingEndRequests.filter(
         id => id !== chatRoomId
       );
+    },
+    incrementUnreadCount: (state, action) => {
+      const { chatRoomId } = action.payload;
+      if (!state.unreadCounts[chatRoomId]) {
+        state.unreadCounts[chatRoomId] = 0;
+      }
+      state.unreadCounts[chatRoomId]++;
+    },
+    clearUnreadCount: (state, action) => {
+      const { chatRoomId } = action.payload;
+      state.unreadCounts[chatRoomId] = 0;
     }
   },
   extraReducers: (builder) => {
@@ -180,7 +219,11 @@ export const {
   updateChatRooms,
   addPendingEndRequest,
   removePendingEndRequest,
-  markChatRoomEnded
+  markChatRoomEnded,
+  incrementUnreadCount,
+  clearUnreadCount,
+  setUserOnline,
+  setUserOffline
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

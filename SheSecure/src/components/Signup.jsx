@@ -29,6 +29,7 @@ const Signup = () => {
         setCourseData({ courseName: "", percentage: "", certificate: null });
         toast.success("Course successfully added!");
       }
+
       setShowUserDetails(true);
     }
     else {
@@ -316,6 +317,7 @@ const Signup = () => {
                 <input
                   type="file"
                   name="certificate"
+                  onClick={()=>setCourseData({ ...courseData, certificate: null })}
                   onChange={(e) => setCourseData({ ...courseData, certificate: e.target.files[0] })}
                   className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />

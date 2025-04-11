@@ -6,7 +6,7 @@ import policeReducer from './policeStationSlice';
 import hospitalReducer from './hospitalSlice';
 import chatReducer from './chatSlice'
 import socketReducer from './socketSlice'
-import socketMiddleware from '../utils/socket';
+import chatSocket from '../utils/chatSocket';
 
 const store = configureStore({
   reducer: {
@@ -25,7 +25,7 @@ const store = configureStore({
         ignoredActions: ['socket/setSocket'],
         ignoredPaths: ['socket.socket'],
       },
-    }).concat(socketMiddleware),
+    }).concat(chatSocket),
 });
 
 export default store;

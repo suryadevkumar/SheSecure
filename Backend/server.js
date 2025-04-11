@@ -6,14 +6,15 @@ import MongoStore from 'connect-mongo';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
+import { Server } from 'socket.io';
 import { cloudinaryConnect } from './config/cloudinary.js';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
 import sosRoutes from './routes/SOS.js';
 import locationRoutes from './routes/Location.js';
-import chatRoutes from './routes/Counselling.js'
-import authenticateUser from './utils/authenticateUser.js';
-import setupSocket from './utils/socket.js';
+import chatRoutes from './routes/Counselling.js';
+import chatSocket from './utils/chatSocket.js';
+import sosSocket from './utils/sosSocket.js';
 
 dotenv.config();
 
@@ -21,13 +22,19 @@ const app = express();
 const server = http.createServer(app);
 
 // Setup socket.io
-const io = setupSocket(server);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 // Connect to MongoDB
 connectDB();
 cloudinaryConnect();
 
-// CORS configuration - must come before other middleware
+// CORS configuration
 app.use(
   cors({
     origin: 'http://localhost:5173',
@@ -40,6 +47,7 @@ app.use(
 // Handle OPTIONS requests
 app.options('*', cors());
 
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -49,7 +57,7 @@ app.use(
   })
 );
 
-// session setup with mongodb storage
+// Session setup with MongoDB storage
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'my_secret_key',
   resave: false,
@@ -67,6 +75,23 @@ const sessionMiddleware = session({
 });
 
 app.use(sessionMiddleware);
+
+// Create namespaces for different features
+const chatNamespace = io.of('/chat');
+const sosNamespace = io.of('/sos');
+
+// Wrap middleware for Socket.IO
+const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+
+// Apply session middleware to namespaces
+chatNamespace.use(wrap(sessionMiddleware));
+sosNamespace.use(wrap(sessionMiddleware));
+
+// Set up both socket handlers with their own namespaces
+chatSocket(chatNamespace);
+sosSocket(sosNamespace);
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/location', locationRoutes);

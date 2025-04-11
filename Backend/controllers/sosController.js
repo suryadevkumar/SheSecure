@@ -2,8 +2,7 @@ import SOS from '../models/SOS.js';
 import User from '../models/User.js';
 
 export const startSOS = async (req, res) => {
-  const { reportId, latitude, longitude } = req.body;
-  const userId = req.user.id;
+  const { reportId, latitude, longitude, userId } = req.body;
 
   try {
     // End any existing active SOS for this user
@@ -30,13 +29,24 @@ export const startSOS = async (req, res) => {
       startTime: sos.startSosTime
     };
 
+    // Store session information as well
+    if (req.session) {
+      if (!req.session.activeSOS) req.session.activeSOS = {};
+      req.session.activeSOS[userId] = reportId;
+      await req.session.save();
+    }
+
+    // Create shareable link
+    const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${reportId}`;
+
     res.status(201).json({ 
       success: true, 
       message: 'SOS started successfully', 
       sos,
-      link: `http://yourdomain.com/emergency-sos/?reportId=${reportId}`
+      link: sosLink
     });
   } catch (error) {
+    console.error("Start SOS error:", error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to start SOS', 
@@ -46,8 +56,7 @@ export const startSOS = async (req, res) => {
 };
 
 export const endSOS = async (req, res) => {
-  const { reportId } = req.body;
-  const userId = req.user?.id;
+  const { reportId, userId } = req.body;
 
   try {
     const sos = await SOS.findOneAndUpdate(
@@ -67,12 +76,19 @@ export const endSOS = async (req, res) => {
       delete global.activeSOS[reportId];
     }
 
+    // Clear session data
+    if (req.session && req.session.activeSOS && userId) {
+      delete req.session.activeSOS[userId];
+      await req.session.save();
+    }
+
     res.status(200).json({ 
       success: true, 
       message: 'SOS ended successfully', 
       sos 
     });
   } catch (error) {
+    console.error("End SOS error:", error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to end SOS', 
@@ -112,17 +128,20 @@ export const fetchSosLocation = async (req, res) => {
     // Fetch user with location history based on the time condition
     const user = await User.findById(userId)
       .populate({
-        path: 'locationHistory',
-        match: locationTimeCondition,
-        options: { sort: { startTime: 1 } }
+        path: 'additionalDetails',
+        populate: {
+          path: 'location',
+          match: locationTimeCondition,
+          options: { sort: { startTime: 1 } }
+        }
       });
 
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        message: "User not found" 
-      });
-    }
+      if (!user || !user.additionalDetails) {
+        return res.status(404).json({ 
+          success: false,
+          message: "User profile not found" 
+        });
+      }
 
     // Get live locations from active SOS if available
     const liveLocations = global.activeSOS?.[reportId]?.locations || [];
@@ -131,7 +150,7 @@ export const fetchSosLocation = async (req, res) => {
     res.json({
       success: true,
       status: sosStatus,
-      locationHistory: user.locationHistory,
+      locationHistory: user.additionalDetails.location || [],
       liveLocations,
       startSosTime,
       endSosTime
@@ -142,6 +161,84 @@ export const fetchSosLocation = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: "Error fetching SOS data" 
+    });
+  }
+};
+
+// New endpoint to check if a user has an active SOS
+export const checkActiveSOSForUser = async (req, res) => {
+  const { userId } = req.body;
+  
+  try {
+    // Check database for active SOS
+    const activeSOS = await SOS.findOne({
+      userId,
+      endSosTime: null
+    });
+    
+    if (!activeSOS) {
+      return res.json({
+        isActive: false
+      });
+    }
+    
+    // Create shareable link
+    const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${activeSOS.reportId}`;
+    
+    // Initialize global state if needed
+    if (!global.activeSOS) global.activeSOS = {};
+    if (!global.activeSOS[activeSOS.reportId]) {
+      global.activeSOS[activeSOS.reportId] = {
+        locations: [],
+        userId,
+        startTime: activeSOS.startSosTime
+      };
+    }
+    
+    res.json({
+      isActive: true,
+      reportId: activeSOS.reportId,
+      sosLink
+    });
+  } catch (error) {
+    console.error("Error checking active SOS:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking active SOS",
+      error: error.message
+    });
+  }
+};
+
+// KeepAlive endpoint to ensure SOS remains active
+export const keepAlive = async (req, res) => {
+  const { reportId } = req.body;
+  
+  try {
+    // Verify SOS exists and is active
+    const sos = await SOS.findOne({ reportId, endSosTime: null });
+    
+    if (!sos) {
+      return res.status(404).json({
+        success: false,
+        message: "No active SOS found with this reportId"
+      });
+    }
+    
+    // Update last activity timestamp
+    sos.lastActivity = new Date();
+    await sos.save();
+    
+    res.json({
+      success: true,
+      message: "SOS session kept alive"
+    });
+  } catch (error) {
+    console.error("Error in keepAlive:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to keep SOS alive",
+      error: error.message
     });
   }
 };
