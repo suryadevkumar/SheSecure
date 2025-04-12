@@ -6,7 +6,7 @@ import {
   checkActiveSOSForUser,
   keepAlive
 } from '../controllers/sosController.js';
-import authenticateUser from '../utils/authenticateUser.js';
+import { authenticateUser } from '../utils/authenticateUser.js';
 
 const router = express.Router();
 

@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useSelector } from "react-redux";
 import {
   FiAlertTriangle,
   FiMapPin,
+  FiUser,
+  FiUserCheck,
   FiUpload,
   FiCamera,
   FiVideo,
@@ -10,8 +13,11 @@ import {
 } from "react-icons/fi";
 import { Loader } from "@googlemaps/js-api-loader";
 import { googleMapAPI } from "../config/config";
+import { submitCrimeReport } from "../routes/crime-report-routes";
 
-const CrimeReportForm = ({ onSubmit }) => {
+const CrimeReportForm = () => {
+  const [suspects, setSuspects] = useState([]);
+  const [witnesses, setWitnesses] = useState([]);
   const [photoFiles, setPhotoFiles] = useState([]);
   const [videoFiles, setVideoFiles] = useState([]);
   const [firFile, setFirFile] = useState(null);
@@ -26,6 +32,12 @@ const CrimeReportForm = ({ onSubmit }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+
+  const token = useSelector((state) => state.auth.token);
+
+  console.log(selectedPlace);
 
   const {
     register,
@@ -245,8 +257,6 @@ const CrimeReportForm = ({ onSubmit }) => {
       setLocationQuery(place.formattedAddress || place.displayName);
       setShowSuggestions(false);
 
-      console.log("Place location data:", place.location);
-
       // Check if location contains functions for lat and lng
       if (
         place.location &&
@@ -381,8 +391,9 @@ const CrimeReportForm = ({ onSubmit }) => {
     }
   };
 
-  const onSubmitForm = async (data) => {
+  const submitForm = async (data) => {
     setIsSubmitting(true);
+    setError(null);
     setUploadProgress(10);
 
     try {
@@ -397,20 +408,80 @@ const CrimeReportForm = ({ onSubmit }) => {
         }
       });
 
+      // Add longitude and latitude from selectedPlace
+      if (selectedPlace && selectedPlace.Eg && selectedPlace.Eg.location) {
+        // Access coordinates from the Eg.location property
+        formData.append("longitude", selectedPlace.Eg.location.lng);
+        formData.append("latitude", selectedPlace.Eg.location.lat);
+      } else {
+        // If using coordinates directly instead of a place object
+        if (data.longitude && data.latitude) {
+          formData.append("longitude", data.longitude);
+          formData.append("latitude", data.latitude);
+        } else {
+          throw new Error("Location coordinates are required");
+        }
+      }
+
       // Append files
       if (firFile) formData.append("FIR", firFile);
+
       photoFiles.forEach((file) => formData.append("crimePhotos", file));
       videoFiles.forEach((file) => formData.append("crimeVideos", file));
+
+      // Append suspects
+      suspects.forEach((suspect, index) => {
+        formData.append(
+          `suspects[${index}][suspectName]`,
+          suspect.suspectName || ""
+        );
+        formData.append(
+          `suspects[${index}][suspectGender]`,
+          suspect.suspectGender || ""
+        );
+        if (suspect.suspectPhoto) {
+          formData.append(
+            `suspects[${index}][suspectPhoto]`,
+            suspect.suspectPhoto
+          );
+        }
+      });
+
+      // Append witnesses
+      witnesses.forEach((witness, index) => {
+        formData.append(
+          `witnesses[${index}][witnessName]`,
+          witness.witnessName || ""
+        );
+        formData.append(
+          `witnesses[${index}][witnessGender]`,
+          witness.witnessGender || ""
+        );
+        formData.append(
+          `witnesses[${index}][witnessContactNumber]`,
+          witness.witnessContactNumber || ""
+        );
+        formData.append(
+          `witnesses[${index}][witnessAddress]`,
+          witness.witnessAddress || ""
+        );
+        if (witness.witnessPhoto) {
+          formData.append(
+            `witnesses[${index}][witnessPhoto]`,
+            witness.witnessPhoto
+          );
+        }
+      });
 
       setUploadProgress(30);
 
       // Send to server
-      await onSubmit(formData, (progress) => {
-        // This callback will be called with upload progress updates
-        setUploadProgress(30 + Math.round(progress * 0.6)); // Scale progress to 30-90%
+      const response = await submitCrimeReport(token, formData, (progress) => {
+        setUploadProgress(30 + Math.round(progress * 0.6));
       });
 
       setUploadProgress(100);
+      setSuccess(true);
 
       // Reset form
       reset();
@@ -419,6 +490,8 @@ const CrimeReportForm = ({ onSubmit }) => {
       setFirFile(null);
       setLocationQuery("");
       setSelectedPlace(null);
+      setSuspects([]);
+      setWitnesses([]);
 
       setTimeout(() => {
         setUploadProgress(0);
@@ -426,394 +499,745 @@ const CrimeReportForm = ({ onSubmit }) => {
       }, 1000);
     } catch (error) {
       console.error("Error submitting form:", error);
+      setError(error.response?.data?.message || "Failed to submit report");
       setIsSubmitting(false);
       setUploadProgress(0);
       alert("There was an error submitting your report. Please try again.");
+      throw error;
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto my-4 p-6 bg-white rounded-xl shadow-lg">
-      <div className="flex items-center mb-6">
-        <FiAlertTriangle className="text-rose-600 text-3xl mr-3" />
-        <h2 className="text-2xl font-bold text-gray-800">
-          File a Crime Report
-        </h2>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-center mb-4">Report a Crime</h1>
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg">
+        <div className="flex items-center mb-6">
+          <FiAlertTriangle className="text-rose-600 text-3xl mr-3" />
+          <h2 className="text-2xl font-bold text-gray-800">
+            File a Crime Report
+          </h2>
+        </div>
 
-      <p className="text-gray-600 mb-6">
-        Your report can help keep others safe. Please provide accurate
-        information to help authorities respond effectively. All reports are
-        confidential.
-      </p>
+        <p className="text-gray-600 mb-6">
+          Your report can help keep others safe. Please provide accurate
+          information to help authorities respond effectively. All reports are
+          confidential.
+        </p>
 
-      {isSubmitting && (
-        <div className="mb-6">
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
+        {success && (
+          <div className="mb-6 bg-green-50 p-4 rounded-lg border border-green-100">
+            <p className="text-green-700 font-medium">
+              Report submitted successfully! Thank you for your contribution to
+              community safety.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-1 text-center">
-            {uploadProgress < 100
-              ? `Uploading report... ${uploadProgress}%`
-              : "Upload complete!"}
-          </p>
-        </div>
-      )}
+        )}
 
-      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
-        {/* Type of Crime */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Type of Crime <span className="text-rose-500">*</span>
-          </label>
-          <select
-            {...register("typeOfCrime", {
-              required: "Please select a crime type",
-            })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
-            disabled={isSubmitting}
-          >
-            <option value="">Select a crime type</option>
-            {crimeTypes.map((crime) => (
-              <option key={crime} value={crime}>
-                {crime}
-              </option>
-            ))}
-          </select>
-          {errors.typeOfCrime && (
-            <p className="mt-1 text-sm text-rose-600">
-              {errors.typeOfCrime.message}
-            </p>
-          )}
-        </div>
+        {error && (
+          <div className="mb-6 bg-rose-50 p-4 rounded-lg border border-rose-100">
+            <p className="text-rose-700 font-medium">{error}</p>
+          </div>
+        )}
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description <span className="text-rose-500">*</span>
-          </label>
-          <textarea
-            {...register("description", {
-              required: "Please provide a description",
-              minLength: {
-                value: 20,
-                message: "Description should be at least 20 characters",
-              },
-            })}
-            rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-            placeholder="Provide detailed information about the incident..."
-            disabled={isSubmitting}
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-rose-600">
-              {errors.description.message}
-            </p>
-          )}
-        </div>
-
-        {/* Location */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Location <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiMapPin className="text-gray-400" />
-            </div>
-            <input
-              ref={autocompleteInputRef}
-              type="text"
-              value={locationQuery}
-              onChange={handleLocationInputChange}
-              onFocus={() =>
-                locationQuery.length > 2 &&
-                suggestions.length > 0 &&
-                setShowSuggestions(true)
-              }
-              className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-              placeholder="Search for location or click on map"
-              disabled={isSubmitting}
-            />
-
-            {/* Location suggestions */}
-            {showSuggestions && suggestions.length > 0 && (
+        {isSubmitting && (
+          <div className="mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div
-                ref={suggestionsRef}
-                className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-y-auto"
-              >
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                  >
-                    <p className="text-sm">
-                      {suggestion.placePrediction.text.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600 mt-1 text-center">
+              {uploadProgress < 100
+                ? `Uploading report... ${uploadProgress}%`
+                : "Upload complete!"}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(submitForm)} className="space-y-6">
+          {/* Type of Crime */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type of Crime <span className="text-rose-500">*</span>
+            </label>
+            <select
+              {...register("typeOfCrime", {
+                required: "Please select a crime type",
+              })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
+              disabled={isSubmitting}
+            >
+              <option value="">Select a crime type</option>
+              {crimeTypes.map((crime) => (
+                <option key={crime} value={crime}>
+                  {crime}
+                </option>
+              ))}
+            </select>
+            {errors.typeOfCrime && (
+              <p className="mt-1 text-sm text-rose-600">
+                {errors.typeOfCrime.message}
+              </p>
             )}
           </div>
 
-          <div className="mt-2">
-            <button
-              type="button"
-              onClick={() => setShowMap(!showMap)}
-              className="text-sm text-rose-600 hover:text-rose-700 cursor-pointer"
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              {...register("description", {
+                required: "Please provide a description",
+                minLength: {
+                  value: 20,
+                  message: "Description should be at least 20 characters",
+                },
+              })}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+              placeholder="Provide detailed information about the incident..."
               disabled={isSubmitting}
-            >
-              {showMap ? "Hide map" : "Show map to select location"}
-            </button>
+            />
+            {errors.description && (
+              <p className="mt-1 text-sm text-rose-600">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
-          {showMap && (
-            <div className="mt-4">
-              {isMapLoading ? (
-                <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <p>Loading map...</p>
+          {/* Date of Crime */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Crime <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="date"
+              {...register("dateOfCrime", {
+                required: "Please select the date of crime",
+                validate: {
+                  notFutureDate: (value) => {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Set to beginning of day for fair comparison
+                    return (
+                      selectedDate <= today || "Date cannot be in the future"
+                    );
+                  },
+                },
+              })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+              max={new Date().toISOString().split("T")[0]} // Set max date to today
+              disabled={isSubmitting}
+            />
+            {errors.dateOfCrime && (
+              <p className="mt-1 text-sm text-rose-600">
+                {errors.dateOfCrime.message}
+              </p>
+            )}
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiMapPin className="text-gray-400" />
+              </div>
+              <input
+                ref={autocompleteInputRef}
+                type="text"
+                value={locationQuery}
+                onChange={handleLocationInputChange}
+                onFocus={() =>
+                  locationQuery.length > 2 &&
+                  suggestions.length > 0 &&
+                  setShowSuggestions(true)
+                }
+                className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                placeholder="Search for location or click on map"
+                disabled={isSubmitting}
+              />
+
+              {/* Location suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      <p className="text-sm">
+                        {suggestion.placePrediction.text.text}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  <div
-                    ref={mapRef}
-                    className="h-64 w-full rounded-lg border border-gray-300"
-                  />
-                  <div className="mt-2 flex justify-between">
+              )}
+            </div>
+
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowMap(!showMap)}
+                className="text-sm text-rose-600 hover:text-rose-700 cursor-pointer"
+                disabled={isSubmitting}
+              >
+                {showMap ? "Hide map" : "Show map to select location"}
+              </button>
+            </div>
+
+            {showMap && (
+              <div className="mt-4">
+                {isMapLoading ? (
+                  <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <p>Loading map...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      ref={mapRef}
+                      className="h-64 w-full rounded-lg border border-gray-300"
+                    />
+                    <div className="mt-2 flex justify-between">
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                        disabled={isSubmitting}
+                      >
+                        Use Current Location
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMap(false)}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm"
+                        disabled={isSubmitting}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {errors.location && (
+              <p className="mt-1 text-sm text-rose-600">
+                Please select a location
+              </p>
+            )}
+            <input
+              type="hidden"
+              {...register("location.coordinates", { required: true })}
+            />
+            <input
+              type="hidden"
+              {...register("location.address", { required: true })}
+            />
+          </div>
+
+          {/* FIR Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              FIR Copy (Image) <span className="text-rose-500">*</span>
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+              <div className="space-y-1 text-center">
+                <div className="flex text-sm text-gray-600 justify-center">
+                  <label
+                    htmlFor="firFile"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                  >
+                    <span className="flex items-center">
+                      <FiFile className="mr-2" />
+                      {firFile ? "Change FIR file" : "Upload FIR copy"}
+                    </span>
+                    <input
+                      id="firFile"
+                      name="FIR"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, setFirFile)}
+                      className="sr-only"
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                {firFile && (
+                  <div className="text-sm text-gray-900 mt-2 flex items-center justify-center gap-2">
+                    <span>{firFile.name}</span>
                     <button
                       type="button"
-                      onClick={handleUseCurrentLocation}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                      onClick={() => setFirFile(null)}
+                      className="text-rose-600 hover:text-rose-800 cursor-pointer"
                       disabled={isSubmitting}
                     >
-                      Use Current Location
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowMap(false)}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm"
-                      disabled={isSubmitting}
-                    >
-                      Done
+                      ×
                     </button>
                   </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {errors.location && (
-            <p className="mt-1 text-sm text-rose-600">
-              Please select a location
-            </p>
-          )}
-          <input
-            type="hidden"
-            {...register("location.coordinates", { required: true })}
-          />
-          <input
-            type="hidden"
-            {...register("location.address", { required: true })}
-          />
-        </div>
-
-        {/* FIR Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            FIR Copy (Image) <span className="text-rose-500">*</span>
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              <div className="flex text-sm text-gray-600 justify-center">
-                <label
-                  htmlFor="firFile"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
-                >
-                  <span className="flex items-center">
-                    <FiFile className="mr-2" />
-                    {firFile ? "Change FIR file" : "Upload FIR copy"}
-                  </span>
-                  <input
-                    id="firFile"
-                    name="FIR"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, setFirFile)}
-                    className="sr-only"
-                    disabled={isSubmitting}
-                  />
-                </label>
+                )}
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
-              {firFile && (
-                <div className="text-sm text-gray-900 mt-2 flex items-center justify-center gap-2">
-                  <span>{firFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setFirFile(null)}
-                    className="text-rose-600 hover:text-rose-800 cursor-pointer"
-                    disabled={isSubmitting}
+            </div>
+            {errors.FIR && (
+              <p className="mt-1 text-sm text-rose-600">
+                Please upload FIR copy
+              </p>
+            )}
+          </div>
+
+          {/* Photo Evidence */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Photo Evidence
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+              <div className="space-y-1 text-center">
+                <div className="flex text-sm text-gray-600 justify-center">
+                  <label
+                    htmlFor="crimePhotos"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
                   >
-                    ×
-                  </button>
+                    <span className="flex items-center">
+                      <FiCamera className="mr-2" />
+                      Upload photos
+                    </span>
+                    <input
+                      id="crimePhotos"
+                      name="crimePhotos"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, setPhotoFiles, true)}
+                      className="sr-only"
+                      disabled={isSubmitting}
+                    />
+                  </label>
                 </div>
-              )}
+                <p className="text-xs text-gray-500">
+                  PNG, JPG, GIF up to 10MB
+                </p>
+                {photoFiles.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {photoFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
+                      >
+                        <span>
+                          {file.name.length > 15
+                            ? file.name.substring(0, 15) + "..."
+                            : file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveFile(index, photoFiles, setPhotoFiles)
+                          }
+                          className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                          disabled={isSubmitting}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          {errors.FIR && (
-            <p className="mt-1 text-sm text-rose-600">Please upload FIR copy</p>
-          )}
-        </div>
 
-        {/* Photo Evidence */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Photo Evidence
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              <div className="flex text-sm text-gray-600 justify-center">
-                <label
-                  htmlFor="crimePhotos"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
-                >
-                  <span className="flex items-center">
-                    <FiCamera className="mr-2" />
-                    Upload photos
-                  </span>
-                  <input
-                    id="crimePhotos"
-                    name="crimePhotos"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, setPhotoFiles, true)}
-                    className="sr-only"
-                    disabled={isSubmitting}
-                  />
-                </label>
+          {/* Video Evidence */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Video Evidence
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+              <div className="space-y-1 text-center">
+                <div className="flex text-sm text-gray-600 justify-center">
+                  <label
+                    htmlFor="crimeVideos"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                  >
+                    <span className="flex items-center">
+                      <FiVideo className="mr-2" />
+                      Upload videos
+                    </span>
+                    <input
+                      id="crimeVideos"
+                      name="crimeVideos"
+                      type="file"
+                      multiple
+                      accept="video/*"
+                      onChange={(e) => handleFileChange(e, setVideoFiles, true)}
+                      className="sr-only"
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">MP4, MOV up to 50MB</p>
+                {videoFiles.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {videoFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
+                      >
+                        <span>
+                          {file.name.length > 15
+                            ? file.name.substring(0, 15) + "..."
+                            : file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveFile(index, videoFiles, setVideoFiles)
+                          }
+                          className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                          disabled={isSubmitting}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-              {photoFiles.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {photoFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
-                    >
-                      <span>
-                        {file.name.length > 15
-                          ? file.name.substring(0, 15) + "..."
-                          : file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleRemoveFile(index, photoFiles, setPhotoFiles)
-                        }
-                        className="text-rose-600 hover:text-rose-800 cursor-pointer"
+            </div>
+          </div>
+
+          {/* Suspects */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Suspects
+            </label>
+            <div className="space-y-4">
+              {suspects.map((suspect, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Suspect Name
+                      </label>
+                      <input
+                        type="text"
+                        value={suspect.suspectName || ""}
+                        onChange={(e) => {
+                          const newSuspects = [...suspects];
+                          newSuspects[index] = {
+                            ...newSuspects[index],
+                            suspectName: e.target.value,
+                          };
+                          setSuspects(newSuspects);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                        placeholder="Name"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gender
+                      </label>
+                      <select
+                        value={suspect.suspectGender || ""}
+                        onChange={(e) => {
+                          const newSuspects = [...suspects];
+                          newSuspects[index] = {
+                            ...newSuspects[index],
+                            suspectGender: e.target.value,
+                          };
+                          setSuspects(newSuspects);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                         disabled={isSubmitting}
                       >
-                        ×
-                      </button>
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
-                  ))}
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Suspect Photo
+                    </label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                      <div className="space-y-1 text-center">
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label
+                            htmlFor={`suspectPhoto-${index}`}
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                          >
+                            <span className="flex items-center">
+                              <FiCamera className="mr-2" />
+                              {suspect.suspectPhoto
+                                ? "Change photo"
+                                : "Upload photo"}
+                            </span>
+                            <input
+                              id={`suspectPhoto-${index}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const newSuspects = [...suspects];
+                                  newSuspects[index] = {
+                                    ...newSuspects[index],
+                                    suspectPhoto: e.target.files[0],
+                                  };
+                                  setSuspects(newSuspects);
+                                }
+                              }}
+                              className="sr-only"
+                              disabled={isSubmitting}
+                            />
+                          </label>
+                        </div>
+                        {suspect.suspectPhoto && (
+                          <p className="text-xs text-gray-500">
+                            {suspect.suspectPhoto.name || "Photo selected"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSuspects = [...suspects];
+                        newSuspects.splice(index, 1);
+                        setSuspects(newSuspects);
+                      }}
+                      className="text-sm text-rose-600 hover:text-rose-800"
+                      disabled={isSubmitting}
+                    >
+                      Remove Suspect
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
+              <button
+                type="button"
+                onClick={() => setSuspects([...suspects, {}])}
+                className="flex items-center text-sm text-rose-600 hover:text-rose-700"
+                disabled={isSubmitting}
+              >
+                <FiUser className="mr-1" /> Add Suspect
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Video Evidence */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Video Evidence
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              <div className="flex text-sm text-gray-600 justify-center">
-                <label
-                  htmlFor="crimeVideos"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+          {/* Witnesses */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Witnesses
+            </label>
+            <div className="space-y-4">
+              {witnesses.map((witness, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 p-4 rounded-lg border border-gray-200"
                 >
-                  <span className="flex items-center">
-                    <FiVideo className="mr-2" />
-                    Upload videos
-                  </span>
-                  <input
-                    id="crimeVideos"
-                    name="crimeVideos"
-                    type="file"
-                    multiple
-                    accept="video/*"
-                    onChange={(e) => handleFileChange(e, setVideoFiles, true)}
-                    className="sr-only"
-                    disabled={isSubmitting}
-                  />
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">MP4, MOV up to 50MB</p>
-              {videoFiles.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {videoFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1"
-                    >
-                      <span>
-                        {file.name.length > 15
-                          ? file.name.substring(0, 15) + "..."
-                          : file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleRemoveFile(index, videoFiles, setVideoFiles)
-                        }
-                        className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Witness Name
+                      </label>
+                      <input
+                        type="text"
+                        value={witness.witnessName || ""}
+                        onChange={(e) => {
+                          const newWitnesses = [...witnesses];
+                          newWitnesses[index] = {
+                            ...newWitnesses[index],
+                            witnessName: e.target.value,
+                          };
+                          setWitnesses(newWitnesses);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                        placeholder="Name"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gender
+                      </label>
+                      <select
+                        value={witness.witnessGender || ""}
+                        onChange={(e) => {
+                          const newWitnesses = [...witnesses];
+                          newWitnesses[index] = {
+                            ...newWitnesses[index],
+                            witnessGender: e.target.value,
+                          };
+                          setWitnesses(newWitnesses);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                         disabled={isSubmitting}
                       >
-                        ×
-                      </button>
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
-                  ))}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact Number
+                      </label>
+                      <input
+                        type="text"
+                        value={witness.witnessContactNumber || ""}
+                        onChange={(e) => {
+                          const newWitnesses = [...witnesses];
+                          newWitnesses[index] = {
+                            ...newWitnesses[index],
+                            witnessContactNumber: e.target.value,
+                          };
+                          setWitnesses(newWitnesses);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                        placeholder="Phone number"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        value={witness.witnessAddress || ""}
+                        onChange={(e) => {
+                          const newWitnesses = [...witnesses];
+                          newWitnesses[index] = {
+                            ...newWitnesses[index],
+                            witnessAddress: e.target.value,
+                          };
+                          setWitnesses(newWitnesses);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                        placeholder="Address"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Witness Photo
+                    </label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                      <div className="space-y-1 text-center">
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label
+                            htmlFor={`witnessPhoto-${index}`}
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-rose-600 hover:text-rose-500 focus-within:outline-none"
+                          >
+                            <span className="flex items-center">
+                              <FiCamera className="mr-2" />
+                              {witness.witnessPhoto
+                                ? "Change photo"
+                                : "Upload photo"}
+                            </span>
+                            <input
+                              id={`witnessPhoto-${index}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const newWitnesses = [...witnesses];
+                                  newWitnesses[index] = {
+                                    ...newWitnesses[index],
+                                    witnessPhoto: e.target.files[0],
+                                  };
+                                  setWitnesses(newWitnesses);
+                                }
+                              }}
+                              className="sr-only"
+                              disabled={isSubmitting}
+                            />
+                          </label>
+                        </div>
+                        {witness.witnessPhoto && (
+                          <p className="text-xs text-gray-500">
+                            {witness.witnessPhoto.name || "Photo selected"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newWitnesses = [...witnesses];
+                        newWitnesses.splice(index, 1);
+                        setWitnesses(newWitnesses);
+                      }}
+                      className="text-sm text-rose-600 hover:text-rose-800"
+                      disabled={isSubmitting}
+                    >
+                      Remove Witness
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
+              <button
+                type="button"
+                onClick={() => setWitnesses([...witnesses, {}])}
+                className="flex items-center text-sm text-rose-600 hover:text-rose-700"
+                disabled={isSubmitting}
+              >
+                <FiUserCheck className="mr-1" /> Add Witness
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Safety Tips */}
-        <div className="bg-rose-50 p-4 rounded-lg border border-rose-100">
-          <h3 className="font-medium text-rose-800 mb-2">Safety Tips</h3>
-          <ul className="text-sm text-rose-700 list-disc pl-5 space-y-1">
-            <li>
-              If you're in immediate danger, call emergency services first
-            </li>
-            <li>
-              Provide as much detail as possible without compromising your
-              safety
-            </li>
-            <li>Your report will be shared with nearby users to alert them</li>
-            <li>You can choose to report anonymously if needed</li>
-          </ul>
-        </div>
+          {/* Safety Tips */}
+          <div className="bg-rose-50 p-4 rounded-lg border border-rose-100">
+            <h3 className="font-medium text-rose-800 mb-2">Safety Tips</h3>
+            <ul className="text-sm text-rose-700 list-disc pl-5 space-y-1">
+              <li>
+                If you're in immediate danger, call emergency services first
+              </li>
+              <li>
+                Provide as much detail as possible without compromising your
+                safety
+              </li>
+              <li>
+                Your report will be shared with nearby users to alert them
+              </li>
+              <li>You can choose to report anonymously if needed</li>
+            </ul>
+          </div>
 
-        {/* Submit Button */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit Report"}
-          </button>
-        </div>
-      </form>
+          {/* Submit Button */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Report"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

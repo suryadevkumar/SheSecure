@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const authenticateUser = (req, res, next) => {
+export const authenticateUser = (req, res, next) => {
     // Try to get token from cookies, then from Authorization header
     const token = req.cookies?.token || req.headers['authorization']?.replace('Bearer ', '').trim();
 
@@ -32,4 +32,50 @@ const authenticateUser = (req, res, next) => {
     }
 };
 
-export default authenticateUser;
+// Middleware to check if the user is an Admin
+export const isAdmin = async (req, res, next) => {
+    try {
+        if (req.user.userType !== "Admin" ) {
+            return res.status(403).json({success:false, message: "Access Denied. Admins only." });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ success:false, message: "Authorization error." });
+    }
+};
+
+// Middleware to check if the user is a regular User
+export const isUser = async (req, res, next) => {
+    try {
+        if (req.user.userType !== "User") {
+            return res.status(403).json({ success:false,message: "Access Denied. Users only." });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ succeess: false,message: "Authorization error." });
+    }
+};
+
+// Middleware to check if the user is a regular User
+export const isCounselor = async (req, res, next) => {
+    try {
+        if (req.user.userType !== "Counsellor") {
+            return res.status(403).json({success:false, message: "Access Denied. Counselors only." });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ success:false, message: "Authorization error." });
+    }
+};
+
+// Middleware to verify Super Admin access 
+export const isSuperAdmin = (req, res, next) => {
+    try {
+        if (req.user.userType !== "SuperAdmin") {
+            return res.status(403).json({success:false, message: "Access Denied. SuperAdmin only." });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ success:false, message: "Authorization error." });
+    }
+};
