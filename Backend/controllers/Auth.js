@@ -2,7 +2,7 @@ import otpGenerator from 'otp-generator';
 import jwt from 'jsonwebtoken';
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
-import { uploadImageToCloudinary } from '../utils/imageUploader.js';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary.js';
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 import Qualification from '../models/Qualification.js';
@@ -352,7 +352,7 @@ export const signUp = async (req, res) => {
                 }
 
                 const certificateFile = req.files[`qualifications[${i}].certificate`];
-                const uploadedCertificate = await uploadImageToCloudinary(certificateFile, "qualification_certificates");
+                const uploadedCertificate = await uploadToCloudinary(certificateFile, "qualification_certificates");
 
                 const newQualification = await Qualification.create({
                     courseName: qual.courseName,

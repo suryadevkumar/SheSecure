@@ -3,7 +3,8 @@ import Location from "../models/Location.js";
 import Suspect from "../models/Suspect.js";
 import Witness from "../models/Witness.js";
 import User from "../models/User.js";
-import { uploadImageToCloudinary } from "../utils/imageUploader.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import cloudinary from 'cloudinary';
 
 // const cloudinary = require('cloudinary').v2;
 
@@ -14,21 +15,19 @@ async function cleanupResources(resources) {
         if (resources.crimeReport) {
             await CrimeReport.deleteOne({ _id: resources.crimeReport });
         }
-        
+
         if (resources.witnesses.length > 0) {
             await Witness.deleteMany({ _id: { $in: resources.witnesses } });
         }
-        
+
         if (resources.suspects.length > 0) {
             await Suspect.deleteMany({ _id: { $in: resources.suspects } });
         }
-        
+
         if (resources.location) {
             await Location.deleteOne({ _id: resources.location });
         }
-        
-        // Delete uploaded files from Cloudinary
-        const cloudinary = require('cloudinary').v2;
+
         for (const file of resources.uploadedFiles) {
             try {
                 await cloudinary.uploader.destroy(file.public_id);
@@ -43,15 +42,15 @@ async function cleanupResources(resources) {
 
 // Function to assign admin in a round-robin fashion
 const getNextAdmin = async () => {
-    const admins = await User.find({ accountType: "Admin", approved:"Verified" }).sort('_id'); // Get all admins
+    const admins = await User.find({ accountType: "Admin", approved: "Verified" }).sort('_id'); // Get all admins
     if (admins.length === 0) return null; // No admins available
 
     // Find the last assigned report to determine the last admin
     const lastAssignedReport = await CrimeReport.findOne().sort('-createdAt');
-    
+
     let lastAdminIndex = admins.some(a => a._id.equals(lastAssignedReport?.assignedAdmin))
-    ? admins.findIndex(a => a._id.equals(lastAssignedReport.assignedAdmin))
-    : -1;
+        ? admins.findIndex(a => a._id.equals(lastAssignedReport.assignedAdmin))
+        : -1;
 
     // Select the next admin in a round-robin manner
     const nextAdminIndex = (lastAdminIndex + 1) % admins.length;
@@ -72,7 +71,7 @@ export const reportCrime = async (req, res) => {
         // Validate basic required fields
         const { typeOfCrime, description, dateOfCrime, longitude, latitude } = req.body;
         const requiredFields = { typeOfCrime, description, dateOfCrime, longitude, latitude };
-        
+
         for (const [field, value] of Object.entries(requiredFields)) {
             if (!value) {
                 await cleanupResources(createdResources);
@@ -86,11 +85,11 @@ export const reportCrime = async (req, res) => {
         // Parse array data with validation
         let suspects = [];
         let witnesses = [];
-        
+
         try {
             suspects = req.body.suspects ? JSON.parse(req.body.suspects) : [];
             witnesses = req.body.witnesses ? JSON.parse(req.body.witnesses) : [];
-            
+
             if (!Array.isArray(suspects) || !Array.isArray(witnesses)) {
                 await cleanupResources(createdResources);
                 return res.status(400).json({
@@ -127,8 +126,8 @@ export const reportCrime = async (req, res) => {
         let firUrl = null;
         if (req.files?.FIR) {
             try {
-                const image = await uploadImageToCloudinary(
-                    req.files.FIR, 
+                const image = await uploadToCloudinary(
+                    req.files.FIR,
                     "sheSecure_crime_reports",
                     1000,
                     1000
@@ -149,26 +148,28 @@ export const reportCrime = async (req, res) => {
         for (const [index, suspect] of suspects.entries()) {
             try {
                 let suspectPhotoUrl = null;
-                
-                if (req.files?.[`suspects[${index}].suspectPhoto`]) {
-                    const uploadedPhoto = await uploadImageToCloudinary(
-                        req.files[`suspects[${index}].suspectPhoto`],
+
+                if (req.files?.[`suspectPhotos[${index}]`]) {
+                    const uploadedPhoto = await uploadToCloudinary(
+                        req.files[`suspectPhotos[${index}]`],
                         "sheSecure_suspects",
                         500,
                         500
                     );
                     suspectPhotoUrl = uploadedPhoto.secure_url;
-                    createdResources.uploadedFiles.push({ 
-                        url: suspectPhotoUrl, 
-                        public_id: uploadedPhoto.public_id 
+                    createdResources.uploadedFiles.push({
+                        url: suspectPhotoUrl,
+                        public_id: uploadedPhoto.public_id
                     });
                 }
+
+                // Map the incoming field names to the model field names
                 const newSuspect = await Suspect.create({
                     suspectPhoto: suspectPhotoUrl,
-                    suspectName: suspect.name,
-                    suspectGender: suspect.gender
+                    suspectName: suspect.name,       // Map from frontend 'name' to model 'suspectName'
+                    suspectGender: suspect.gender    // Map from frontend 'gender' to model 'suspectGender'
                 });
-                
+
                 suspectIds.push(newSuspect._id);
                 createdResources.suspects.push(newSuspect._id);
             } catch (suspectError) {
@@ -186,27 +187,29 @@ export const reportCrime = async (req, res) => {
             try {
                 let witnessPhotoUrl = null;
 
-                if (req.files?.[`witnesses[${index}].witnessPhoto`]) {
-                    const uploadedPhoto = await uploadImageToCloudinary(
-                        req.files[`witnesses[${index}].witnessPhoto`],
+                if (req.files?.[`witnessPhotos[${index}]`]) {
+                    const uploadedPhoto = await uploadToCloudinary(
+                        req.files[`witnessPhotos[${index}]`],
                         "sheSecure_witnesses",
                         500,
                         500
                     );
                     witnessPhotoUrl = uploadedPhoto.secure_url;
-                    createdResources.uploadedFiles.push({ 
-                        url: witnessPhotoUrl, 
-                        public_id: uploadedPhoto.public_id 
+                    createdResources.uploadedFiles.push({
+                        url: witnessPhotoUrl,
+                        public_id: uploadedPhoto.public_id
                     });
                 }
+
+                // Map the incoming field names to the model field names
                 const newWitness = await Witness.create({
                     witnessPhoto: witnessPhotoUrl,
-                    witnessName: witness.name,
-                    witnessGender: witness.gender,
-                    witnessContactNumber: witness.contactNumber,
-                    witnessAddress: witness.address
+                    witnessName: witness.name,               // Map from frontend 'name'
+                    witnessGender: witness.gender,           // Map from frontend 'gender'
+                    witnessContactNumber: witness.contactNumber,  // Map from frontend 'contactNumber'
+                    witnessAddress: witness.address          // Map from frontend 'address'
                 });
-                
+
                 witnessIds.push(newWitness._id);
                 createdResources.witnesses.push(newWitness._id);
             } catch (witnessError) {
@@ -222,21 +225,21 @@ export const reportCrime = async (req, res) => {
         const crimePhotoUrls = [];
         if (req.files?.crimePhotos) {
             try {
-                const photos = Array.isArray(req.files.crimePhotos) 
-                    ? req.files.crimePhotos 
+                const photos = Array.isArray(req.files.crimePhotos)
+                    ? req.files.crimePhotos
                     : [req.files.crimePhotos];
-                
+
                 for (const photo of photos) {
-                    const uploadedPhoto = await uploadImageToCloudinary(
-                        photo, 
+                    const uploadedPhoto = await uploadToCloudinary(
+                        photo,
                         "sheSecure_crime_reports",
                         1000,
                         1000
                     );
                     crimePhotoUrls.push(uploadedPhoto.secure_url);
-                    createdResources.uploadedFiles.push({ 
-                        url: uploadedPhoto.secure_url, 
-                        public_id: uploadedPhoto.public_id 
+                    createdResources.uploadedFiles.push({
+                        url: uploadedPhoto.secure_url,
+                        public_id: uploadedPhoto.public_id
                     });
                 }
             } catch (photoError) {
@@ -251,19 +254,19 @@ export const reportCrime = async (req, res) => {
         const crimeVideoUrls = [];
         if (req.files?.crimeVideos) {
             try {
-                const videos = Array.isArray(req.files.crimeVideos) 
-                    ? req.files.crimeVideos 
+                const videos = Array.isArray(req.files.crimeVideos)
+                    ? req.files.crimeVideos
                     : [req.files.crimeVideos];
-                
+
                 for (const video of videos) {
-                    const uploadedVideo = await uploadFileToCloudinary(
-                        video, 
+                    const uploadedVideo = await uploadToCloudinary(
+                        video,
                         "sheSecure_crime_reports"
                     );
                     crimeVideoUrls.push(uploadedVideo.secure_url);
-                    createdResources.uploadedFiles.push({ 
-                        url: uploadedVideo.secure_url, 
-                        public_id: uploadedVideo.public_id 
+                    createdResources.uploadedFiles.push({
+                        url: uploadedVideo.secure_url,
+                        public_id: uploadedVideo.public_id
                     });
                 }
             } catch (videoError) {
@@ -345,7 +348,7 @@ export const getAllReportsByUser = async (req, res) => {
         console.log(userId);
         const reports = await CrimeReport.find({ reportedBy: userId })
             .populate("location")
-            .populate("assignedAdmin", "firstName lastName email") 
+            .populate("assignedAdmin", "firstName lastName email")
             .sort("-createdAt");
         console.log(reports);
         return res.status(200).json({
@@ -392,12 +395,12 @@ export const verifyCrimeReport = async (req, res) => {
             { status: "Verified" },
             { new: true }
         )
-        .populate("location")
-        .populate("reportedBy", "firstName lastName email")
-        .populate("assignedAdmin", "firstName lastName email")
-        .populate("suspects")
-        .populate("witnesses");
-        
+            .populate("location")
+            .populate("reportedBy", "firstName lastName email")
+            .populate("assignedAdmin", "firstName lastName email")
+            .populate("suspects")
+            .populate("witnesses");
+
 
         if (!crimeReport) {
             return res.status(404).json({ success: false, message: "Crime report not found." });
@@ -421,7 +424,7 @@ export const removeReport = async (req, res) => {
         // 2. Find the report with all its related data
         const report = await CrimeReport.findById(reportId)
             .populate('witnesses suspects');
-        
+
         if (!report) {
             return res.status(404).json({
                 success: false,

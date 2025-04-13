@@ -37,8 +37,6 @@ const CrimeReportForm = () => {
 
   const token = useSelector((state) => state.auth.token);
 
-  console.log(selectedPlace);
-
   const {
     register,
     handleSubmit,
@@ -429,47 +427,43 @@ const CrimeReportForm = () => {
       photoFiles.forEach((file) => formData.append("crimePhotos", file));
       videoFiles.forEach((file) => formData.append("crimeVideos", file));
 
+      // Replace the suspects and witnesses append code with:
+
       // Append suspects
+      formData.append(
+        "suspects",
+        JSON.stringify(
+          suspects.map((suspect) => ({
+            name: suspect.suspectName, // Changed to match backend
+            gender: suspect.suspectGender, // Changed to match backend
+          }))
+        )
+      );
+
+      // Append suspect photos
       suspects.forEach((suspect, index) => {
-        formData.append(
-          `suspects[${index}][suspectName]`,
-          suspect.suspectName || ""
-        );
-        formData.append(
-          `suspects[${index}][suspectGender]`,
-          suspect.suspectGender || ""
-        );
         if (suspect.suspectPhoto) {
-          formData.append(
-            `suspects[${index}][suspectPhoto]`,
-            suspect.suspectPhoto
-          );
+          formData.append(`suspectPhotos[${index}]`, suspect.suspectPhoto);
         }
       });
 
       // Append witnesses
+      formData.append(
+        "witnesses",
+        JSON.stringify(
+          witnesses.map((witness) => ({
+            name: witness.witnessName, // Changed to match backend
+            gender: witness.witnessGender, // Changed to match backend
+            contactNumber: witness.witnessContactNumber, // Changed to match backend
+            address: witness.witnessAddress, // Changed to match backend
+          }))
+        )
+      );
+
+      // Append witness photos
       witnesses.forEach((witness, index) => {
-        formData.append(
-          `witnesses[${index}][witnessName]`,
-          witness.witnessName || ""
-        );
-        formData.append(
-          `witnesses[${index}][witnessGender]`,
-          witness.witnessGender || ""
-        );
-        formData.append(
-          `witnesses[${index}][witnessContactNumber]`,
-          witness.witnessContactNumber || ""
-        );
-        formData.append(
-          `witnesses[${index}][witnessAddress]`,
-          witness.witnessAddress || ""
-        );
         if (witness.witnessPhoto) {
-          formData.append(
-            `witnesses[${index}][witnessPhoto]`,
-            witness.witnessPhoto
-          );
+          formData.append(`witnessPhotos[${index}]`, witness.witnessPhoto);
         }
       });
 
