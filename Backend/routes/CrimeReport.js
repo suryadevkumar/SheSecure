@@ -10,8 +10,7 @@ router.get("/my-reports", authenticateUser, isUser, getAllReportsByUser);
 
 // Admin
 router.get("/getAllReports", authenticateUser, isAdmin, getAllReportsForAdmin);
-router.put("/verify/:reportId", authenticateUser, isAdmin, verifyCrimeReport);
-router.delete("/removeReport/:reportId", authenticateUser, isAdmin, removeReport);
-
+router.put("/verify-report/:reportId", authenticateUser, isAdmin, verifyCrimeReport);
+router.delete("/remove-report/:reportId", authenticateUser, isAdmin, removeReport);
 
 export default router;

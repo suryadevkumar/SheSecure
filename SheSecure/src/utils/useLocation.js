@@ -24,6 +24,7 @@ const useLocationTracking = () => {
               lastLocation.current.lng,
               lastLocation.current.startTime,
               new Date(),
+              token,
               user._id
             );
           }
@@ -61,6 +62,7 @@ const useLocationTracking = () => {
                   lastLocation.current.lng,
                   lastLocation.current.startTime,
                   now,
+                  token,
                   user._id
                 );
               }
@@ -125,6 +127,7 @@ const useLocationTracking = () => {
             lastLocation.current.lng,
             lastLocation.current.startTime,
             new Date(),
+            token,
             user._id
           );
         }

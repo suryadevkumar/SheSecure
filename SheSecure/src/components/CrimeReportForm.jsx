@@ -121,8 +121,8 @@ const CrimeReportForm = () => {
         const { AdvancedMarkerElement } = markerLib;
 
         // Create a session token for Autocomplete
-        const token = new window.google.maps.places.AutocompleteSessionToken();
-        setSessionToken(token);
+        const token1 = new window.google.maps.places.AutocompleteSessionToken();
+        setSessionToken(token1);
 
         // Initialize Geocoder service
         window.geocoder = new window.google.maps.Geocoder();
@@ -191,7 +191,6 @@ const CrimeReportForm = () => {
   }, [showMap]);
 
   // Handle location search input change
-  // Update the handleLocationInputChange function with these changes:
   const handleLocationInputChange = async (e) => {
     const value = e.target.value;
     setLocationQuery(value);
@@ -264,8 +263,6 @@ const CrimeReportForm = () => {
         // Call the functions to get the actual values
         const lat = place.location.lat();
         const lng = place.location.lng();
-
-        console.log("Extracted coordinates:", { lat, lng });
 
         setValue("location.coordinates", [lat, lng]);
         setValue(
@@ -408,18 +405,36 @@ const CrimeReportForm = () => {
 
       // Add longitude and latitude from selectedPlace
       if (selectedPlace && selectedPlace.Eg && selectedPlace.Eg.location) {
-        // Access coordinates from the Eg.location property
+        // Append coordinates
         formData.append("longitude", selectedPlace.Eg.location.lng);
         formData.append("latitude", selectedPlace.Eg.location.lat);
+      
+        // Append place (display name)
+        if (selectedPlace.Eg.displayName) {
+          formData.append("displayName", selectedPlace.Eg.displayName);
+        }
+      
+        // Append formatted address
+        if (selectedPlace.Eg.formattedAddress) {
+          formData.append("formattedAddress", selectedPlace.Eg.formattedAddress);
+        }
       } else {
         // If using coordinates directly instead of a place object
         if (data.longitude && data.latitude) {
           formData.append("longitude", data.longitude);
           formData.append("latitude", data.latitude);
+      
+          // Optional fallback for place/address if available in raw data
+          if (data.displayName) {
+            formData.append("displayName", data.place);
+          }
+          if (data.formattedAddress) {
+            formData.append("formattedAddress", data.address);
+          }
         } else {
           throw new Error("Location coordinates are required");
         }
-      }
+      }      
 
       // Append files
       if (firFile) formData.append("FIR", firFile);
@@ -434,8 +449,8 @@ const CrimeReportForm = () => {
         "suspects",
         JSON.stringify(
           suspects.map((suspect) => ({
-            name: suspect.suspectName, // Changed to match backend
-            gender: suspect.suspectGender, // Changed to match backend
+            name: suspect.suspectName,
+            gender: suspect.suspectGender,
           }))
         )
       );
@@ -452,10 +467,10 @@ const CrimeReportForm = () => {
         "witnesses",
         JSON.stringify(
           witnesses.map((witness) => ({
-            name: witness.witnessName, // Changed to match backend
-            gender: witness.witnessGender, // Changed to match backend
-            contactNumber: witness.witnessContactNumber, // Changed to match backend
-            address: witness.witnessAddress, // Changed to match backend
+            name: witness.witnessName,
+            gender: witness.witnessGender,
+            contactNumber: witness.witnessContactNumber,
+            address: witness.witnessAddress,
           }))
         )
       );
@@ -534,18 +549,20 @@ const CrimeReportForm = () => {
         )}
 
         {isSubmitting && (
-          <div className="mb-6">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
+          <div className="fixed top-0 left-0 right-0 z-50">
+            <div className="max-w-md mx-auto p-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                {uploadProgress < 100
+                  ? `Uploading report... ${uploadProgress}%`
+                  : "Upload complete!"}
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mt-1 text-center">
-              {uploadProgress < 100
-                ? `Uploading report... ${uploadProgress}%`
-                : "Upload complete!"}
-            </p>
           </div>
         )}
 

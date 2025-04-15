@@ -22,7 +22,7 @@ const Front=()=> {
           if (decodedToken.exp > currentTime) {
             // If the user is logged in, they are redirected to userDashboard if they try to access login/signup
             if (publicPaths.includes(location.pathname)) {
-              navigate('/userDashboard');
+              navigate('/dashboard');
             }
             dispatch({ type: 'socket/initialize' });
           } else {

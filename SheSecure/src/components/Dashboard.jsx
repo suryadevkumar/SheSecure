@@ -1,22 +1,22 @@
-// import UserDashboard from "./UserDashboard";
-// import AdminDashboard from "./AdminDashboard";
-// import CounsellorDashboard from "./CounsellorDashboard";
-// import SuperAdminDashboard from "./SuperAdminDashboard"
-// import { useSelector } from "react-redux";
+import UserDashboard from "./UserDashboard";
+import AdminDashboard from "./AdminDashboard";
+import SuperAdminDashboard from "./SuperAdminDashboard"
+import ChatLayout from "./ChatLayout";
+import { useSelector } from "react-redux";
 
-// const Dashboard = () => {
-//   const userType = useSelector((state) => state.auth.user?.userType);
+const Dashboard = () => {
+  const userType = useSelector((state) => state.auth.user?.userType);
 
-//   switch (userType) {
-//     case "User":
-//       return <UserDashboard />;
-//     case "Counsellor":
-//       return <CounsellorDashboard />;
-//     case "Admin":
-//       return <AdminDashboard />;
-//     case "SuperAdmin":
-//       return <SuperAdminDashboard />
-//   }
-// };
+  switch (userType) {
+    case "User":
+      return <UserDashboard />;
+    case "Counsellor":
+      return ChatLayout
+    case "Admin":
+      return <AdminDashboard />;
+    case "SuperAdmin":
+      return <SuperAdminDashboard />
+  }
+};
 
-// export default Dashboard;
+export default Dashboard;

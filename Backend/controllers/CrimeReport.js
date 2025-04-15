@@ -6,8 +6,6 @@ import User from "../models/User.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import cloudinary from 'cloudinary';
 
-// const cloudinary = require('cloudinary').v2;
-
 // Cleanup function remains the same
 async function cleanupResources(resources) {
     try {
@@ -59,6 +57,7 @@ const getNextAdmin = async () => {
 
 //Controller for reporting a crime
 export const reportCrime = async (req, res) => {
+    console.log(req.user._id)
     const createdResources = {
         location: null,
         suspects: [],
@@ -69,7 +68,7 @@ export const reportCrime = async (req, res) => {
 
     try {
         // Validate basic required fields
-        const { typeOfCrime, description, dateOfCrime, longitude, latitude } = req.body;
+        const { typeOfCrime, description, dateOfCrime, longitude, latitude, displayName, formattedAddress } = req.body;
         const requiredFields = { typeOfCrime, description, dateOfCrime, longitude, latitude };
 
         for (const [field, value] of Object.entries(requiredFields)) {
@@ -110,6 +109,8 @@ export const reportCrime = async (req, res) => {
             const location = await Location.create({
                 longitude,
                 latitude,
+                displayName,
+                formattedAddress,
                 startTime: new Date(dateOfCrime),
                 endTime: new Date(dateOfCrime)
             });
@@ -301,7 +302,7 @@ export const reportCrime = async (req, res) => {
                 crimePhotos: crimePhotoUrls,
                 crimeVideos: crimeVideoUrls,
                 FIR: firUrl,
-                reportedBy: req.user.id,
+                reportedBy: req.user._id,
                 assignedAdmin,
                 suspects: suspectIds,
                 witnesses: witnessIds
@@ -344,13 +345,14 @@ export const reportCrime = async (req, res) => {
 //get All reports which is reported by a user
 export const getAllReportsByUser = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
         console.log(userId);
         const reports = await CrimeReport.find({ reportedBy: userId })
             .populate("location")
             .populate("assignedAdmin", "firstName lastName email")
+            .populate("suspects")
+            .populate("witnesses")
             .sort("-createdAt");
-        console.log(reports);
         return res.status(200).json({
             success: true,
             message: "All reports submitted by the user.",
@@ -388,7 +390,6 @@ export const getAllReportsForAdmin = async (req, res) => {
 export const verifyCrimeReport = async (req, res) => {
     try {
         const { reportId } = req.params; // Extract report ID from URL
-
         // Find and update the crime report
         const crimeReport = await CrimeReport.findByIdAndUpdate(
             reportId,

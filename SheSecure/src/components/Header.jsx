@@ -70,7 +70,7 @@ const Header = () => {
         <>
           <nav className="bg-white shadow h-[3rem] p-2 flex justify-between items-center">
             <Link
-              to="/userDashboard"
+              to="/dashboard"
               className="flex items-center cursor-pointer"
             >
               <img src={logo} alt="SheSecure Logo" className="h-9 w-9" />
@@ -80,16 +80,10 @@ const Header = () => {
             </Link>
             <div className="flex items-center space-x-4" ref={profileRef}>
               <Link
-                to="/userDashboard"
+                to="/dashboard"
                 className="text-black hover:text-red-500 font-bold text-sm py-2 px-4 rounded-md"
               >
                 Dashboard
-              </Link>
-              <Link
-                to="/map-view"
-                className="text-black hover:text-red-500 font-bold text-sm py-2 px-4 rounded-md cursor-pointer"
-              >
-                View Map
               </Link>
               {user.userType=='User'?<button
                 className={`${
@@ -100,7 +94,7 @@ const Header = () => {
                 {isSOSActive ? "SOS Activated" : "Activate SOS"}
               </button>:null}
               <img
-                src={logo}
+                src={user.additionalDetails.image}
                 alt="Profile"
                 className="h-9 w-9 rounded-full cursor-pointer"
                 onClick={() => setShowProfileBox(!showProfileBox)}
@@ -119,6 +113,13 @@ const Header = () => {
                     >
                       My Profile
                     </a>
+                    {user.userType==='User'?<Link
+                      to={"./map-view"}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={()=>setShowProfileBox(!showProfileBox)}
+                    >
+                      Nearest Hospital & Police Station
+                    </Link>:null}
                     <a
                       href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -131,12 +132,13 @@ const Header = () => {
                     >
                       Edit Profile
                     </a>
-                    <a
-                      href="#"
+                    <Link
+                      to={"./location-history"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={()=>setShowProfileBox(!showProfileBox)}
                     >
                       Location History
-                    </a>
+                    </Link>
                     <Link
                       to={"./chat"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -151,14 +153,8 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={()=>setShowProfileBox(!showProfileBox)}
                     >
-                      Report
+                      Crime Report
                     </Link>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Report Status
-                    </a>
                     <span
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       onClick={Logout}
