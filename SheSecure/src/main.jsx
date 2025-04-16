@@ -13,10 +13,12 @@ import MapView from "./components/MapView";
 import EmergencyMap from "./components/EmergencyMap";
 import AppWrapper from "./components/AppWrapper";
 import ChatLayout from "./components/ChatLayout";
-import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import CrimeReport from "./components/CrimeReport";
 import LocationHistory from "./components/LocationHistory";
 import Dashboard from "./components/Dashboard";
+import MyProfile from "./components/MyProfile";
+import UpdateProfile from "./components/UpdateProfile";
+import EmergencyContacts from "./components/EmergencyContacts";
 
 // Set default axios base URL
 axios.defaults.baseURL = 'http://localhost:3000';
@@ -61,8 +63,16 @@ const appRouter = createBrowserRouter([
         element: <ChatLayout /> 
       },
       { 
-        path: "super", 
-        element: <SuperAdminDashboard /> 
+        path: "profile", 
+        element: <MyProfile /> 
+      },
+      { 
+        path: "profile-update", 
+        element:  <UpdateProfile />
+      },
+      { 
+        path: "emergency-contacts", 
+        element:  <EmergencyContacts />
       },
       {
         path: "crimeReport",

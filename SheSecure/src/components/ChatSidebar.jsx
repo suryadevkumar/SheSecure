@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { setActiveRoom } from "../redux/chatSlice";
 import { fetchMessages } from "../redux/chatSlice";
 
-const Sidebar = () => {
+const ChatSidebar = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const onlineUsers = useSelector((state) => state.chat.onlineUsers);
@@ -70,7 +70,7 @@ const Sidebar = () => {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* User Info */}
-      <div className="flex items-center justify-between p-4 bg-blue-600 text-white shadow-md">
+      <div className="flex items-center justify-between p-3.5 bg-blue-600 text-white shadow-md">
         <h3 className="font-semibold text-lg">
           {user?.firstName} {user.lastName}
         </h3>
@@ -81,11 +81,11 @@ const Sidebar = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="p-4 bg-gray-50">
+      <div className="px-4 py-2 bg-gray-50">
         {user?.userType === "User" && (
           <button
             onClick={() => setShowNewRequestForm(!showNewRequestForm)}
-            className="w-full px-4 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 shadow-md font-medium"
+            className="w-full px-4 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 shadow-md font-medium cursor-pointer"
           >
             {showNewRequestForm ? "Cancel" : "New Chat Request"}
           </button>
@@ -110,7 +110,7 @@ const Sidebar = () => {
                 id="problemType"
                 value={problemType}
                 onChange={(e) => setProblemType(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all cursor-pointer"
                 required
               >
                 <option value="">Select a type</option>
@@ -143,7 +143,7 @@ const Sidebar = () => {
 
             <button
               type="submit"
-              className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 shadow-sm font-medium"
+              className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 shadow-sm font-medium cursor-pointer"
             >
               Submit Request
             </button>
@@ -154,7 +154,7 @@ const Sidebar = () => {
       {/* Chat Navigation Tabs */}
       <div className="flex border-b border-gray-200 bg-gray-50">
         <button
-          className={`flex-1 py-3 px-2 text-center text-sm font-medium transition-all focus:outline-none relative ${
+          className={`flex-1 p-2 text-center text-sm font-medium transition-all focus:outline-none relative cursor-pointer ${
             showChats
               ? "text-blue-600 border-b-2 border-blue-600 bg-white"
               : "text-gray-500 hover:text-gray-700"
@@ -169,7 +169,7 @@ const Sidebar = () => {
           )}
         </button>
         <button
-          className={`flex-1 py-3 px-2 text-center text-sm font-medium transition-all focus:outline-none relative ${
+          className={`flex-1 p-2 text-center text-sm font-medium transition-all focus:outline-none relative cursor-pointer ${
             showPendingChats
               ? "text-blue-600 border-b-2 border-blue-600 bg-white"
               : "text-gray-500 hover:text-gray-700"
@@ -195,7 +195,7 @@ const Sidebar = () => {
             {chatRooms.map((room) => (
               <div
                 key={room._id}
-                className={`p-4 cursor-pointer hover:bg-blue-50 transition duration-150 border-l-4 relative ${
+                className={`px-4 py-3 cursor-pointer hover:bg-blue-50 transition duration-150 border-l-4 relative ${
                   activeRoom?._id === room._id
                     ? "bg-blue-50 border-blue-500"
                     : "border-transparent"
@@ -341,4 +341,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default ChatSidebar;

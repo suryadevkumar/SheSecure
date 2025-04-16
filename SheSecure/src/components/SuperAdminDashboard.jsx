@@ -1,111 +1,152 @@
-import { useState, useEffect } from 'react';
-import { FaUserShield, FaTrash, FaCheck, FaTimes, FaChartLine, FaBell, FaShieldAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { useState, useEffect } from "react";
+import {
+  FaUserShield,
+  FaCheck,
+  FaTimes,
+  FaUser,
+  FaUsers,
+  FaBell,
+  FaSearch,
+  FaArrowLeft,
+  FaUserCheck,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
+import { approveAdmin, rejectAdmin } from "../routes/superAdmin-routes.js";
+import { fetchAllUser } from "../routes/admin-routes";
+import { useSelector } from "react-redux";
 
 const SuperAdminDashboard = () => {
-  // State for admin requests and other data
-  const [adminRequests, setAdminRequests] = useState([]);
-  const [verifiedAdmins, setVerifiedAdmins] = useState([]);
-  const [activeSOS, setActiveSOS] = useState([]);
+  // State for user data and UI
+  const [allUsers, setAllUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState({
-    totalUsers: 1250,
-    activeAdmins: 24,
-    resolvedSOS: 189,
-    pendingRequests: 8
+    totalUsers: 0,
+    activeAdmins: 0,
+    totalCounselors: 0,
+    pendingRequests: 0,
   });
-  const [selectedTab, setSelectedTab] = useState('requests');
+  const [selectedTab, setSelectedTab] = useState("requests");
 
-  // Mock data - replace with API calls in real implementation
+  const token = useSelector((state)=>state.auth.token);
+
+  // Fetch all users and calculate stats
   useEffect(() => {
-    // Simulate API fetch
     const fetchData = async () => {
-      // Admin requests data
-      const mockRequests = [
-        { id: 1, name: 'Priya Sharma', email: 'priya@example.com', submitted: '2023-05-15', documents: 'verified' },
-        { id: 2, name: 'Ananya Patel', email: 'ananya@example.com', submitted: '2023-05-18', documents: 'pending' },
-        { id: 3, name: 'Neha Gupta', email: 'neha@example.com', submitted: '2023-05-20', documents: 'verified' },
-      ];
-
-      // Verified admins data
-      const mockVerified = [
-        { id: 101, name: 'Admin One', email: 'admin1@example.com', verifiedOn: '2023-01-15', status: 'active' },
-        { id: 102, name: 'Admin Two', email: 'admin2@example.com', verifiedOn: '2023-02-20', status: 'active' },
-      ];
-
-      // Active SOS alerts
-      const mockSOS = [
-        { id: 1001, user: 'User A', location: 'Mumbai', time: '10:25 AM', status: 'active' },
-        { id: 1002, user: 'User B', location: 'Delhi', time: '11:40 AM', status: 'active' },
-      ];
-
-      setAdminRequests(mockRequests);
-      setVerifiedAdmins(mockVerified);
-      setActiveSOS(mockSOS);
+      try {
+        setLoading(true);
+        const users = await fetchAllUser(token);
+        setAllUsers(users);
+        calculateStats(users);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
   }, []);
 
-  // Function to verify an admin
-  const verifyAdmin = (id) => {
-    const request = adminRequests.find(req => req.id === id);
-    if (request) {
-      setVerifiedAdmins([...verifiedAdmins, {
-        id,
-        name: request.name,
-        email: request.email,
-        verifiedOn: new Date().toISOString().split('T')[0],
-        status: 'active'
-      }]);
-      setAdminRequests(adminRequests.filter(req => req.id !== id));
+  const calculateStats = (users) => {
+    const activeAdmins = users.filter(
+      (user) => user.userType === "Admin" && user.approved === "Verified"
+    ).length;
+
+    const pendingRequests = users.filter(
+      (user) => user.userType === "Admin" && user.approved === "Unverified"
+    ).length;
+
+    const totalUsers = users.filter(
+      (user) => user.userType === "User"
+    ).length;
+
+    const totalCounselors = users.filter(
+      (user) => user.userType === "Counsellor" && user.approved === "Verified"
+    ).length;
+
+    setStats({
+      totalUsers,
+      activeAdmins,
+      totalCounselors,
+      pendingRequests,
+    });
+  };
+
+  // Handle admin verification
+  const handleVerifyAdmin = async (userId) => {
+    try {
+      await approveAdmin(token, userId);
+      const updatedUsers = allUsers.map((user) =>
+        user._id === userId ? { ...user, approved: "Verified" } : user
+      );
+      setAllUsers(updatedUsers);
+      calculateStats(updatedUsers);
+    } catch (error) {
+      console.error("Error approving admin:", error);
     }
   };
 
-  // Function to reject an admin request
-  const rejectAdmin = (id) => {
-    setAdminRequests(adminRequests.filter(req => req.id !== id));
+  // Handle admin rejection
+  const handleRejectAdmin = async (userId) => {
+    try {
+      await rejectAdmin(token, userId);
+      const updatedUsers = allUsers.filter((user) => user._id !== userId);
+      setAllUsers(updatedUsers);
+      calculateStats(updatedUsers);
+    } catch (error) {
+      console.error("Error rejecting admin:", error);
+    }
   };
 
-  // Function to delete an admin
-  const deleteAdmin = (id) => {
-    setVerifiedAdmins(verifiedAdmins.filter(admin => admin.id !== id));
-  };
+  // Filter data based on search term
+  const filteredUsers = allUsers.filter((user) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.firstName.toLowerCase().includes(searchLower) ||
+      user.lastName.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      user.mobileNumber.toString().includes(searchTerm) ||
+      user.userType.toLowerCase().includes(searchLower) ||
+      user.approved.toLowerCase().includes(searchLower)
+    );
+  });
 
-  // Function to resolve an SOS alert
-  const resolveSOS = (id) => {
-    setActiveSOS(activeSOS.filter(alert => alert.id !== id));
-    setStats(prev => ({
-      ...prev,
-      resolvedSOS: prev.resolvedSOS + 1
-    }));
-  };
+  // Filter data for different tabs
+  const unverifiedAdmins = filteredUsers.filter(
+    (user) => user.userType === "Admin" && user.approved === "Unverified"
+  );
+
+  const verifiedAdmins = filteredUsers.filter(
+    (user) => user.userType === "Admin" && user.approved === "Verified"
+  );
+
+  const verifiedCounselors = filteredUsers.filter(
+    (user) => user.userType === "Counsellor" && user.approved === "Verified"
+  );
+
+  const regularUsers = filteredUsers.filter(
+    (user) => user.userType === "User"
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-indigo-800 text-white p-4 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold flex items-center">
-            <FaShieldAlt className="mr-2" /> Women Safety Portal
-          </h1>
-          <div className="flex items-center space-x-4">
-            <button className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md flex items-center">
-              <FaBell className="mr-2" /> Notifications
-            </button>
-            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
-              <span className="font-bold">SA</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
       <div className="container mx-auto p-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                <FaUserShield size={20} />
+                <FaUser size={20} />
               </div>
               <div>
                 <p className="text-gray-500">Total Users</p>
@@ -127,11 +168,11 @@ const SuperAdminDashboard = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                <FaChartLine size={20} />
+                <FaUsers size={20} />
               </div>
               <div>
-                <p className="text-gray-500">Resolved SOS</p>
-                <h3 className="text-2xl font-bold">{stats.resolvedSOS}</h3>
+                <p className="text-gray-500">Total Counsellors</p>
+                <h3 className="text-2xl font-bold">{stats.totalCounselors}</h3>
               </div>
             </div>
           </div>
@@ -148,199 +189,690 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6 relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-all duration-300 group-focus-within:text-indigo-600">
+            <FaSearch className="text-gray-400 group-focus-within:text-indigo-500" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-sm hover:shadow-md focus:shadow-lg"
+            placeholder="Search users by name, email, type, etc."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              <FaTimes className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         {/* Navigation Tabs */}
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="flex border-b">
             <button
-              onClick={() => setSelectedTab('requests')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'requests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              onClick={() => setSelectedTab("requests")}
+              className={`px-6 py-3 font-medium ${
+                selectedTab === "requests"
+                  ? "text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-gray-500"
+              }`}
             >
               Admin Requests
             </button>
             <button
-              onClick={() => setSelectedTab('admins')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'admins' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              onClick={() => setSelectedTab("admins")}
+              className={`px-6 py-3 font-medium ${
+                selectedTab === "admins"
+                  ? "text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-gray-500"
+              }`}
             >
               Verified Admins
             </button>
             <button
-              onClick={() => setSelectedTab('sos')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'sos' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              onClick={() => setSelectedTab("counselors")}
+              className={`px-6 py-3 font-medium ${
+                selectedTab === "counselors"
+                  ? "text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-gray-500"
+              }`}
             >
-              Active SOS Alerts
+              All Counsellors
+            </button>
+            <button
+              onClick={() => setSelectedTab("users")}
+              className={`px-6 py-3 font-medium ${
+                selectedTab === "users"
+                  ? "text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-gray-500"
+              }`}
+            >
+              All Users
             </button>
           </div>
         </div>
 
-        {/* Content based on selected tab */}
+        {/* User Details Modal */}
+        {selectedUser && (
+          <>
+            {/* Main Modal */}
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl transform transition-all duration-300 scale-95 animate-in fade-in-50 zoom-in-95">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      User Profile
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Detailed information about this user
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {selectedTab === "requests" &&
+                      selectedUser.approved === "Unverified" && (
+                        <button
+                          onClick={() => {
+                            handleVerifyAdmin(selectedUser._id);
+                            setSelectedUser(null);
+                          }}
+                          className="flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow hover:shadow-md transition-all"
+                          title="Approve Admin"
+                        >
+                          <FaCheck className="mr-1" size={16} />
+                          Approve
+                        </button>
+                      )}
+                    {(selectedTab === "requests" ||
+                      selectedTab === "admins") && (
+                      <button
+                        onClick={() => {
+                          handleRejectAdmin(selectedUser._id);
+                          setSelectedUser(null);
+                        }}
+                        className="flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow hover:shadow-md transition-all"
+                        title="Reject Admin"
+                      >
+                        <FaTimes className="mr-1" size={16} />
+                        Reject
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedUser(null)}
+                      className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
+                      title="Close"
+                    >
+                      <FaTimes size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Left Column - Profile */}
+                  <div className="w-full md:w-1/3 flex flex-col items-center">
+                    {/* Profile Image with Zoom */}
+                    <div className="relative mb-4 cursor-pointer group">
+                      {selectedUser.additionalDetails?.image ? (
+                        <>
+                          <img
+                            src={selectedUser.additionalDetails.image}
+                            alt="Profile"
+                            className="w-48 h-48 rounded-full object-cover border-4 border-indigo-100 shadow-lg transition-all duration-300 group-hover:border-indigo-200 group-hover:scale-105"
+                          />
+                        </>
+                      ) : (
+                        <div className="w-48 h-48 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center border-4 border-indigo-100 shadow-lg">
+                          <span className="text-5xl font-bold text-indigo-500">
+                            {selectedUser.firstName?.charAt(0) || "U"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Basic Info */}
+                    <div className="text-center space-y-2">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {selectedUser.firstName} {selectedUser.lastName}
+                      </h3>
+                      <p className="text-indigo-600 font-medium">
+                        {selectedUser.userType}
+                      </p>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          selectedUser.approved === "Verified"
+                            ? "bg-green-100 text-green-800"
+                            : selectedUser.approved === "Blocked"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {selectedUser.approved}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Details */}
+                  <div className="w-full md:w-2/3 space-y-6">
+                    {/* Contact & Account Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-indigo-200 transition-all">
+                        <h4 className="font-semibold text-gray-700 mb-2">
+                          Contact Information
+                        </h4>
+                        <div className="space-y-2">
+                          <p className="text-gray-700">
+                            <span className="font-medium text-gray-600">
+                              Email:
+                            </span>{" "}
+                            {selectedUser.email}
+                          </p>
+                          <p className="text-gray-700">
+                            <span className="font-medium text-gray-600">
+                              Phone:
+                            </span>{" "}
+                            {selectedUser.mobileNumber || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-indigo-200 transition-all">
+                        <h4 className="font-semibold text-gray-700 mb-2">
+                          Account Information
+                        </h4>
+                        <div className="space-y-2">
+                          <p className="text-gray-700">
+                            <span className="font-medium text-gray-600">
+                              Created:
+                            </span>{" "}
+                            {new Date(selectedUser.createdAt).toLocaleString()}
+                          </p>
+                          <p className="text-gray-700">
+                            <span className="font-medium text-gray-600">
+                              Last Updated:
+                            </span>{" "}
+                            {new Date(selectedUser.updatedAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Details */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-indigo-200 transition-all">
+                      <h4 className="font-semibold text-gray-700 mb-2">
+                        Additional Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p className="text-gray-700">
+                          <span className="font-medium text-gray-600">
+                            Address:
+                          </span>{" "}
+                          {selectedUser.additionalDetails?.address || "N/A"}
+                        </p>
+                        <p className="text-gray-700">
+                          <span className="font-medium text-gray-600">
+                            Date of Birth:
+                          </span>{" "}
+                          {selectedUser.additionalDetails?.dob
+                            ? new Date(
+                                selectedUser.additionalDetails.dob
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </p>
+                        <p className="text-gray-700">
+                          <span className="font-medium text-gray-600">
+                            Gender:
+                          </span>{" "}
+                          {selectedUser.additionalDetails?.gender || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Qualifications */}
+                    {selectedUser.qualification?.length > 0 && (
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-indigo-200 transition-all">
+                        <h4 className="font-semibold text-gray-700 mb-2">
+                          Qualifications
+                        </h4>
+                        <div className="space-y-3">
+                          {selectedUser.qualification.map((qual, index) => (
+                            <div
+                              key={index}
+                              className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-all"
+                            >
+                              <div className="font-medium text-gray-900">
+                                {qual.courseName}
+                              </div>
+                              {qual.percentage && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  Score: {qual.percentage}%
+                                </div>
+                              )}
+                              {qual.certificate && (
+                                <a
+                                  href={qual.certificate}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center mt-2 text-sm text-indigo-600 hover:text-indigo-800"
+                                >
+                                  <FaExternalLinkAlt
+                                    className="mr-1"
+                                    size={12}
+                                  />
+                                  View Certificate
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Tab Content */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {selectedTab === 'requests' && (
+          {/* Pending Admin Requests Tab */}
+          {selectedTab === "requests" && (
             <div>
               <div className="p-4 border-b">
-                <h2 className="text-xl font-semibold">Pending Admin Requests</h2>
+                <h2 className="text-xl font-semibold">
+                  Pending Admin Requests ({unverifiedAdmins.length})
+                </h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {adminRequests.map((request) => (
-                      <tr key={request.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <span className="text-indigo-600 font-medium">{request.name.charAt(0)}</span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{request.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.submitted}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${request.documents === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            {request.documents}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => verifyAdmin(request.id)}
-                            className="text-green-600 hover:text-green-900 mr-4"
-                            title="Verify Admin"
-                          >
-                            <FaCheck />
-                          </button>
-                          <button
-                            onClick={() => rejectAdmin(request.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Reject Request"
-                          >
-                            <FaTimes />
-                          </button>
-                        </td>
+              {unverifiedAdmins.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  No pending admin requests found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Profile
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Submitted
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {unverifiedAdmins.map((admin) => (
+                        <tr
+                          key={admin._id}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          onClick={() => setSelectedUser(admin)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {admin.additionalDetails?.image ? (
+                                <img
+                                  src={admin.additionalDetails.image}
+                                  alt="Profile"
+                                  className="h-12 w-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                                  <span className="text-indigo-600 font-medium">
+                                    {admin.firstName?.charAt(0) || "A"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {admin.firstName} {admin.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {admin.email}
+                            </div>
+                            {admin.additionalDetails?.phone && (
+                              <div className="text-sm text-gray-500 mt-1">
+                                {admin.additionalDetails.phone}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(admin.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 animate-pulse">
+                              Pending
+                            </span>
+                          </td>
+                          <td
+                            className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleVerifyAdmin(admin._id)}
+                                className="text-white bg-green-500 hover:bg-green-600 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
+                                title="Approve Admin"
+                              >
+                                <FaCheck />
+                              </button>
+                              <button
+                                onClick={() => handleRejectAdmin(admin._id)}
+                                className="text-white bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
+                                title="Reject Admin"
+                              >
+                                <FaTimes />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
-          {selectedTab === 'admins' && (
+          {/* Verified Admins Tab */}
+          {selectedTab === "admins" && (
             <div>
               <div className="p-4 border-b">
-                <h2 className="text-xl font-semibold">Verified Admins</h2>
+                <h2 className="text-xl font-semibold">
+                  Verified Admins ({verifiedAdmins.length})
+                </h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verified On</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {verifiedAdmins.map((admin) => (
-                      <tr key={admin.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                              <span className="text-green-600 font-medium">{admin.name.charAt(0)}</span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{admin.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{admin.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{admin.verifiedOn}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {admin.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => deleteAdmin(admin.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete Admin"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
+              {verifiedAdmins.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  No verified admins found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Profile
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Verified On
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {verifiedAdmins.map((admin) => (
+                        <tr
+                          key={admin._id}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          onClick={() => setSelectedUser(admin)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {admin.additionalDetails?.image ? (
+                                <img
+                                  src={admin.additionalDetails.image}
+                                  alt="Profile"
+                                  className="h-12 w-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                                  <span className="text-green-600 font-medium">
+                                    {admin.firstName?.charAt(0) || "A"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {admin.firstName} {admin.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {admin.email}
+                            </div>
+                            {admin.additionalDetails?.phone && (
+                              <div className="text-sm text-gray-500 mt-1">
+                                {admin.additionalDetails.phone}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(admin.updatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Verified
+                            </span>
+                          </td>
+                          <td
+                            className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => handleRejectAdmin(admin._id)}
+                              className="text-white bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
+                              title="Revoke Admin"
+                            >
+                              <FaTimes />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
-          {selectedTab === 'sos' && (
+          {/* Counselors Tab */}
+          {selectedTab === "counselors" && (
             <div>
               <div className="p-4 border-b">
-                <h2 className="text-xl font-semibold">Active SOS Alerts</h2>
+                <h2 className="text-xl font-semibold">
+                  All Counsellors ({verifiedCounselors.length})
+                </h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {activeSOS.map((alert) => (
-                      <tr key={alert.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                              <span className="text-red-600 font-medium">{alert.user.charAt(0)}</span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{alert.user}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <FaMapMarkerAlt className="text-red-500 mr-1" />
-                            {alert.location}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alert.time}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            {alert.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => resolveSOS(alert.id)}
-                            className="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 flex items-center"
-                          >
-                            <FaCheck className="mr-1" /> Resolve
-                          </button>
-                        </td>
+              {verifiedCounselors.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  No counselors found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Profile
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Joined On
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {verifiedCounselors.map((counselor) => (
+                        <tr
+                          key={counselor._id}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          onClick={() => setSelectedUser(counselor)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {counselor.additionalDetails?.image ? (
+                                <img
+                                  src={counselor.additionalDetails.image}
+                                  alt="Profile"
+                                  className="h-12 w-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                  <span className="text-purple-600 font-medium">
+                                    {counselor.firstName?.charAt(0) || "C"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {counselor.firstName} {counselor.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {counselor.email}
+                            </div>
+                            {counselor.additionalDetails?.phone && (
+                              <div className="text-sm text-gray-500 mt-1">
+                                {counselor.additionalDetails.phone}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(counselor.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                counselor.approved === "Verified"
+                                  ? "bg-green-100 text-green-800"
+                                  : counselor.approved === "Blocked"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {counselor.approved || "Pending"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Regular Users Tab */}
+          {selectedTab === "users" && (
+            <div>
+              <div className="p-4 border-b">
+                <h2 className="text-xl font-semibold">
+                  All Users ({regularUsers.length})
+                </h2>
               </div>
+              {regularUsers.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  No users found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Profile
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Joined On
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {regularUsers.map((user) => (
+                        <tr
+                          key={user._id}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          onClick={() => setSelectedUser(user)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {user.additionalDetails?.image ? (
+                                <img
+                                  src={user.additionalDetails.image}
+                                  alt="Profile"
+                                  className="h-12 w-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                  <span className="text-blue-600 font-medium">
+                                    {user.firstName?.charAt(0) || "U"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {user.email}
+                            </div>
+                            {user.additionalDetails?.phone && (
+                              <div className="text-sm text-gray-500 mt-1">
+                                {user.additionalDetails.phone}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                user.approved === "Verified"
+                                  ? "bg-green-100 text-green-800"
+                                  : user.approved === "Blocked"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {user.approved || "Pending"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>

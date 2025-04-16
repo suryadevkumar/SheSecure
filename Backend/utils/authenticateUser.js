@@ -17,8 +17,6 @@ export const authenticateUser = (req, res, next) => {
         // Attach full user object to request
         req.user = {
             _id: decoded.id,
-            firstName: decoded.firstName,
-            lastName: decoded.lastName,
             userType: decoded.userType
         };
         

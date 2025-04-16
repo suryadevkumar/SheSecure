@@ -11,9 +11,13 @@ import { cloudinaryConnect } from './config/cloudinary.js';
 import connectDB from './config/connection.js';
 import authRoutes from './routes/User.js';
 import sosRoutes from './routes/SOS.js';
+import adminRoutes from './routes/Admin.js';
+import superAdminRoutes from "./routes/SuperAdmin.js";
 import locationRoutes from './routes/Location.js';
 import chatRoutes from './routes/Counselling.js';
 import crimeRoutes from './routes/CrimeReport.js';
+import profileRoutes from './routes/Profile.js';
+import emergencyContactRoutes from './routes/emergencyContacts.js';
 import chatSocket from './utils/chatSocket.js';
 import sosSocket from './utils/sosSocket.js';
 
@@ -98,6 +102,10 @@ app.use('/api/sos', sosRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/crime', crimeRoutes);
+app.use("/api/admin",adminRoutes);
+app.use("/api/superAdmin",superAdminRoutes);
+app.use("/api/profile",profileRoutes);
+app.use("/api/emergency-contacts",emergencyContactRoutes);
 
 const port = process.env.PORT || 3000;
 

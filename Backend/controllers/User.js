@@ -508,3 +508,60 @@ export const login = async (req, res) => {
         });
     }
 };
+
+export const allUser= async(req, res) =>{
+    const userId = req.user._id;
+    const userType = req.user.userType;
+    
+    if(userType==='SuperAdmin')
+    {
+        try {
+            const allUsers = await User.find()
+            .populate("additionalDetails")
+            .populate("qualification")
+            .sort({ createdAt: -1 });
+    
+            return res.status(200).json({
+                success: true,
+                message: "All Users fetched successfully",
+                allUsers,
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        } 
+    }
+    else if(userType==='Admin')
+    {
+            try {        
+                const allUsers = await User.find({
+                    $or: [
+                    { userType: "User" },
+                    { userType: "Counsellor", assignedAdmin: userId }
+                    ]
+                })
+                .populate("additionalDetails")
+                .populate("qualification")
+                .sort({ createdAt: -1 });
+        
+                return res.status(200).json({
+                    success: true,
+                    message: "All Users fetched successfully",
+                    allUsers,
+                });
+            } catch (error) {
+                return res.status(500).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+    }
+    else{
+        return res.status(500).json({
+            success: false,
+            message: "You can't fetch this type of data.",
+        });
+    }
+}

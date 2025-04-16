@@ -36,7 +36,7 @@ async function cleanupResources(resources) {
     } catch (cleanupError) {
         console.error("Cleanup failed:", cleanupError);
     }
-}
+};
 
 // Function to assign admin in a round-robin fashion
 const getNextAdmin = async () => {
@@ -57,7 +57,6 @@ const getNextAdmin = async () => {
 
 //Controller for reporting a crime
 export const reportCrime = async (req, res) => {
-    console.log(req.user._id)
     const createdResources = {
         location: null,
         suspects: [],
