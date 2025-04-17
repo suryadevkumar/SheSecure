@@ -53,29 +53,31 @@ export const updateProfile = async (req, res) => {
 
             //Upload image to Cloudinary
             const image = await uploadToCloudinary(
-                displayPicture, 
+                displayPicture,
                 process.env.FOLDER_NAME,
                 1000,
                 1000
             );
-            console.log("Uploaded Image:", image); 
+            console.log("Uploaded Image:", image);
 
-            imageUrl = image.secure_url; 
+            imageUrl = image.secure_url;
         }
-
         const { address, dob, gender } = req.body;
+
 
         //Ensure at least one field is being updated
         if (!imageUrl && !address && !dob && !gender) {
-            return res.status(400).json({ success: false, message: "At least one field is required for update." });
+            return res.status(200).json({ success: true, message: "No any update found." });
         }
 
         // Construct the update object dynamically
         const updateData = {};
-        if (imageUrl) updateData.image = imageUrl;
-        if (address) updateData.address = address;
-        if (dob) updateData.dob = dob;
-        if (gender) updateData.gender = gender;
+        if (gender !== undefined) updateData.gender = gender;
+        if (address !== undefined) updateData.address = address;
+        if (dob !== undefined) updateData.dob = dob;
+
+        console.log(updateData)
+
 
         // Update profile with the provided fields
         const updatedProfile = await Profile.findByIdAndUpdate(
@@ -83,8 +85,7 @@ export const updateProfile = async (req, res) => {
             { $set: updateData },
             { new: true, runValidators: true }
         )
-        .populate("emergencyContacts")
-        .populate("location");
+            .populate("emergencyContacts")
 
         if (!updatedProfile) {
             return res.status(404).json({ success: false, message: "Profile not found." });
@@ -117,7 +118,7 @@ export const deleteAccount = async (req, res) => {
         if (profileId) {
             // Find the profile and delete associated locations and emergency contacts
             const profile = await Profile.findById(profileId).populate(["location", "emergencyContacts"]);
-            
+
             if (profile) {
                 // Delete locations
                 if (profile.location && profile.location.length > 0) {
@@ -129,23 +130,23 @@ export const deleteAccount = async (req, res) => {
                     await EmergencyContacts.deleteMany({ _id: { $in: profile.emergencyContacts } });
                 }
 
-                profile.emergencyContacts=[];
-                profile.location=[];
+                profile.emergencyContacts = [];
+                profile.location = [];
                 await profile.save();
             }
         }
-        user.approved="Blocked";
+        user.approved = "Blocked";
         await user.save();
 
-        res.status(200).json({ 
-            success:true,
-            message: "User deleted successfully" 
+        res.status(200).json({
+            success: true,
+            message: "User deleted successfully"
         });
     } catch (error) {
-        res.status(500).json({ 
-            success:false,
-            message: "Server error", 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
         });
     }
 };

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { GoogleMap, Marker, useLoadScript, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, Marker, useLoadScript, InfoWindow, DirectionsRenderer, Circle } from '@react-google-maps/api';
 import { googleMapAPI } from '../config/config';
 import icon1 from '../assets/policeIcon.png';
 import icon2 from '../assets/hospitalIcon.png';
 import icon3 from '../assets/liveLocation.png';
+import crimeIcon from '../assets/location1.png';
 import { setPathDistance } from '../redux/distanceSlice';
+import calculateDistance from "../utils/calculateDistance";
+import { FaThumbsUp, FaThumbsDown } from "react-icons/fa";
 
 const MapView = () => {
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -13,8 +16,14 @@ const MapView = () => {
   const [mapCenter, setMapCenter] = useState(null);
   const [showPoliceStations, setShowPoliceStations] = useState(true);
   const [showHospitals, setShowHospitals] = useState(true);
+  const [showCrimes, setShowCrimes] = useState(false);
   const [directions, setDirections] = useState(null);
   const [selectedListPlace, setSelectedListPlace] = useState(null);
+  const [selectedCrime, setSelectedCrime] = useState(null);
+  const [rippleRadius, setRippleRadius] = useState(50);
+  const [rippleColor, setRippleColor] = useState("#00FF00");
+  const [safetyScore, setSafetyScore] = useState(100);
+  
   const mapRef = useRef(null);
   const dispatch = useDispatch();
   
@@ -25,6 +34,7 @@ const MapView = () => {
   
   const policeStations = useSelector((state) => state.police.policeStations);
   const hospitals = useSelector((state) => state.hospital.hospitals);
+  const crimesData = useSelector((state) => state.crime.crimeReports);
   const { latitude, longitude, error: locationError } = useSelector((state) => state.location);
 
   const liveLocation = [{
@@ -32,11 +42,42 @@ const MapView = () => {
     location: {latitude: latitude, longitude: longitude}
   }];
 
+  // Animate the ripple effect
+  useEffect(() => {
+    if (showCrimes) {
+      const interval = setInterval(() => {
+        setRippleRadius((prev) => (prev >= 200 ? 50 : prev + 5));
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [showCrimes]);
+  
   useEffect(() => {
     if (latitude && longitude) {
       setMapCenter({ lat: latitude, lng: longitude });
+      if (crimesData && showCrimes) {
+        calculateSafetyScore(crimesData);
+      }
     }
-  }, [latitude, longitude]);
+  }, [latitude, longitude, crimesData, showCrimes]);
+
+  const calculateSafetyScore = (crimes) => {
+    if (!latitude || !longitude) return;
+    
+    const nearbyCrimes = crimes.filter(crime => {
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        crime.location.latitude,
+        crime.location.longitude
+      );
+      return distance <= 2;
+    });
+    
+    const newScore = Math.max(0, 100 - (nearbyCrimes.length * 10));
+    setSafetyScore(newScore);
+    setRippleColor(nearbyCrimes.length > 0 ? "#FF0000" : "#00FF00");
+  };
 
   const calculatePathDistance = async (destination) => {
     if (!window.google || !latitude || !longitude) return null;
@@ -110,6 +151,24 @@ const MapView = () => {
     }
   };
 
+  const handleCrimeClick = (crime) => {
+    setSelectedCrime(crime);
+    setSelectedMarker({
+      displayName: { text: crime.typeOfCrime },
+      location: {
+        latitude: crime.location.latitude,
+        longitude: crime.location.longitude,
+      },
+    });
+  };
+
+  const handleSupport = (isSupported) => {
+    // API call to update crime report would go here
+    console.log(`Crime ${selectedCrime._id} ${isSupported ? 'supported' : 'unsupported'}`);
+    setSelectedCrime(null);
+    setSelectedMarker(null);
+  };
+
   const renderMarkers = useCallback((places, icon, show) => {
     if (!window.google || !show) return null;
 
@@ -165,14 +224,111 @@ const MapView = () => {
               center={mapCenter}
               zoom={12}
               mapContainerStyle={{ width: '100%', height: '100%' }}
-              onClick={() => setSelectedMarker(null)}
+              onClick={() => {
+                setSelectedMarker(null);
+                setSelectedCrime(null);
+              }}
               onLoad={(map) => mapRef.current = map}
             >
               {renderMarkers(sortedPoliceStations, icon1, showPoliceStations)}
               {renderMarkers(sortedHospitals, icon2, showHospitals)}
               {renderMarkers(liveLocation, icon3, true)}
 
-              {selectedMarker && (
+              {/* Safety ripple circle - only show when crimes are enabled */}
+              {mapCenter && showCrimes && (
+                <Circle
+                  center={mapCenter}
+                  radius={rippleRadius * 10}
+                  options={{
+                    strokeColor: rippleColor,
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: rippleColor,
+                    fillOpacity: 0.2,
+                    clickable: false,
+                  }}
+                />
+              )}
+              
+              {/* Crime markers with custom icon */}
+              {showCrimes && crimesData && crimesData.map((crime) => (
+                <Marker
+                  key={crime._id}
+                  position={{
+                    lat: crime.location.latitude,
+                    lng: crime.location.longitude,
+                  }}
+                  icon={{
+                    url: crimeIcon,
+                    scaledSize: new window.google.maps.Size(32, 32),
+                  }}
+                  onClick={() => handleCrimeClick(crime)}
+                />
+              ))}
+
+              {/* Info window for selected crime */}
+              {selectedCrime && (
+                <InfoWindow
+                  position={{
+                    lat: selectedCrime.location.latitude,
+                    lng: selectedCrime.location.longitude,
+                  }}
+                  onCloseClick={() => {
+                    setSelectedCrime(null);
+                    setSelectedMarker(null);
+                  }}
+                >
+                  <div className="max-w-xs">
+                    <h3 className="font-bold text-red-600">
+                      {selectedCrime.typeOfCrime}
+                    </h3>
+                    <p className="text-sm text-gray-700 mt-1">
+                      {selectedCrime.description}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(selectedCrime.createdAt).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Distance: {calculateDistance(
+                        latitude,
+                        longitude,
+                        selectedCrime.location.latitude,
+                        selectedCrime.location.longitude
+                      ).toFixed(2)} km away
+                    </p>
+                    
+                    {selectedCrime.crimePhotos?.length > 0 && (
+                      <div className="mt-2">
+                        <img 
+                          src={selectedCrime.crimePhotos[0]} 
+                          alt="Crime scene" 
+                          className="w-full h-auto rounded"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between mt-3">
+                      <button
+                        onClick={() => handleSupport(true)}
+                        className="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition-colors"
+                      >
+                        <FaThumbsUp /> Support
+                      </button>
+                      <button
+                        onClick={() => handleSupport(false)}
+                        className="flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition-colors"
+                      >
+                        <FaThumbsDown /> Unsupport
+                      </button>
+                    </div>
+                  </div>
+                </InfoWindow>
+              )}
+
+              {selectedMarker && !selectedCrime && (
                 <InfoWindow
                   position={{
                     lat: selectedMarker.location.latitude,
@@ -233,6 +389,29 @@ const MapView = () => {
                 />
                 <b>Hospitals</b>
               </label>
+              <label className="text-white text-md py-1 mx-3 text-center w-[90%]">
+                <input 
+                  type="checkbox" 
+                  className="mr-2"
+                  checked={showCrimes}
+                  onChange={() => setShowCrimes(!showCrimes)}
+                />
+                <b>Crime Reports</b>
+              </label>
+              
+              {/* Display safety score when crime reports are shown */}
+              {showCrimes && (
+                <div className="text-white text-md py-1 mx-3 text-center w-[90%]">
+                  <p className="font-bold">
+                    Safety Score: {safetyScore}/100
+                  </p>
+                  <p className="text-sm">
+                    {crimesData && crimesData.length > 0 
+                      ? `${crimesData.length} crime${crimesData.length !== 1 ? 's' : ''} reported nearby` 
+                      : 'No crimes reported nearby'}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="border-white border-2">
               <p className="bg-green-500 text-white text-xl text-center w-[100%]">Nearest PoliceStation</p>

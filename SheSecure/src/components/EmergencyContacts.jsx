@@ -1,29 +1,22 @@
 import React, { useEffect, useState } from "react";
-import {
-  getEmergencyContacts,
-  addEmergencyContact,
-  updateEmergencyContact,
-  removeEmergencyContact,
-} from "../routes/emergency-contact-routes";
+import { getEmergencyContacts, addEmergencyContact, updateEmergencyContact, removeEmergencyContact } from "../routes/emergency-contact-routes";
 import { toast } from "react-toastify";
-import {
-  Trash2,
-  Pencil,
-  Phone,
-  User,
-  UserPlus,
-  RefreshCcw,
-} from "lucide-react";
+import { Trash2, Pencil, Phone, User, UserPlus, RefreshCcw } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const EmergencyContacts = () => {
   const [contacts, setContacts] = useState([]);
   const [formData, setFormData] = useState({ name: "", contactNumber: "" });
   const [isEditing, setIsEditing] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
   const [error, setError] = useState("");
+  const token = useSelector((state) => state.auth.token);
 
   const fetchContacts = async () => {
     try {
-      const res = await getEmergencyContacts();
+      const res = await getEmergencyContacts(token);
       setContacts(res.contacts);
     } catch {
       toast.error("Error loading contacts");
@@ -46,10 +39,10 @@ const EmergencyContacts = () => {
 
     try {
       if (isEditing) {
-        await updateEmergencyContact(isEditing, formData);
+        await updateEmergencyContact(token, isEditing, formData);
         toast.success("Contact updated");
       } else {
-        await addEmergencyContact(formData);
+        await addEmergencyContact(token, formData);
         toast.success("Contact added");
       }
       setFormData({ name: "", contactNumber: "" });
@@ -66,18 +59,37 @@ const EmergencyContacts = () => {
     setError("");
   };
 
-  const handleDelete = async (id) => {
+  const handleCancelEdit = () => {
+    setFormData({ name: "", contactNumber: "" });
+    setIsEditing(null);
+    setError("");
+  };
+
+  const confirmDelete = (id) => {
+    setShowConfirm(true);
+    setPendingDeleteId(id);
+  };
+
+  const cancelDelete = () => {
+    setShowConfirm(false);
+    setPendingDeleteId(null);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await removeEmergencyContact(id);
+      await removeEmergencyContact(token, pendingDeleteId);
       toast.success("Contact deleted");
       fetchContacts();
     } catch {
       toast.error("Failed to delete contact");
+    } finally {
+      setShowConfirm(false);
+      setPendingDeleteId(null);
     }
   };
 
   return (
-    <div className="mt-30 max-w-4xl mx-auto p-6 rounded-2xl shadow-xl bg-white min-h-[80vh] flex flex-col animate-fade-in transition-all duration-500 ease-in-out">
+    <div className="mt-10 max-w-4xl mx-auto p-6 rounded-2xl shadow-xl bg-white min-h-[80vh] flex flex-col animate-fade-in transition-all duration-500 ease-in-out">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
         Emergency Contacts
       </h2>
@@ -91,9 +103,7 @@ const EmergencyContacts = () => {
           type="text"
           placeholder="Contact Name"
           value={formData.name}
-          onChange={(e) =>
-            setFormData({ ...formData, name: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           className="border border-gray-300 px-4 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
           required
         />
@@ -117,24 +127,36 @@ const EmergencyContacts = () => {
           </p>
         )}
 
-        <button
-          type="submit"
-          className={`col-span-full flex items-center justify-center gap-2 px-6 py-2 rounded-full text-white font-medium transition-all duration-300 ease-in-out transform hover:scale-105 ${
-            isEditing
-              ? "bg-yellow-500 hover:bg-yellow-600"
-              : "bg-blue-600 hover:bg-blue-700"
-          } shadow-md`}
-        >
-          {isEditing ? (
-            <>
-              Update Contact <RefreshCcw className="w-5 h-5 animate-spin" />
-            </>
-          ) : (
-            <>
-              Add Contact <UserPlus className="w-5 h-5" />
-            </>
+        <div className="col-span-full flex gap-4 justify-center">
+          <button
+            type="submit"
+            className={`flex items-center gap-2 px-6 py-2 rounded-full text-white font-medium transition-all duration-300 ease-in-out transform hover:scale-105 cursor-pointer ${
+              isEditing
+                ? "bg-yellow-500 hover:bg-yellow-600"
+                : "bg-blue-600 hover:bg-blue-700"
+            } shadow-md`}
+          >
+            {isEditing ? (
+              <>
+                Update Contact <RefreshCcw className="w-5 h-5 animate-spin" />
+              </>
+            ) : (
+              <>
+                Add Contact <UserPlus className="w-5 h-5" />
+              </>
+            )}
+          </button>
+
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-12 py-2 rounded-full bg-red-500 text-white font-medium border border-red-500 hover:bg-red-700 transition duration-300 shadow-md cursor-pointer"
+            >
+              Cancel
+            </button>
           )}
-        </button>
+        </div>
       </form>
 
       {/* Contact List */}
@@ -163,13 +185,18 @@ const EmergencyContacts = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleEdit(contact)}
-                  className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition transform hover:scale-110"
+                  className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition transform hover:scale-110 cursor-pointer"
                 >
                   <Pencil className="w-4 h-4 text-blue-600" />
                 </button>
                 <button
-                  onClick={() => handleDelete(contact._id)}
-                  className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition transform hover:scale-110"
+                  onClick={() => confirmDelete(contact._id)}
+                  className={`p-2 rounded-full transition transform hover:scale-110 cursor-pointer ${
+                    isEditing
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:bg-red-200 bg-red-100"
+                  }`}
+                  disabled={isEditing}
                 >
                   <Trash2 className="w-4 h-4 text-red-600" />
                 </button>
@@ -182,6 +209,33 @@ const EmergencyContacts = () => {
           </p>
         )}
       </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-transparent bg-opacity-10 backdrop-blur-lg flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-[90%] max-w-md text-center animate-fade-in">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Are you sure?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              This will permanently delete the contact.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-full font-medium bg-red-600 text-white hover:bg-red-700 transition cursor-pointer"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 rounded-full border font-medium border-gray-300 text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

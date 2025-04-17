@@ -3,6 +3,7 @@ import Location from "../models/Location.js";
 import Suspect from "../models/Suspect.js";
 import Witness from "../models/Witness.js";
 import User from "../models/User.js";
+import calculateDistance from "../utils/calculateDistance.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import cloudinary from 'cloudinary';
 
@@ -345,7 +346,6 @@ export const reportCrime = async (req, res) => {
 export const getAllReportsByUser = async (req, res) => {
     try {
         const userId = req.user._id;
-        console.log(userId);
         const reports = await CrimeReport.find({ reportedBy: userId })
             .populate("location")
             .populate("assignedAdmin", "firstName lastName email")
@@ -475,6 +475,72 @@ export const removeReport = async (req, res) => {
             success: false,
             message: "Failed to delete report",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+export const getCrimesNearLocation = async (req, res) => {
+    try {
+        const { latitude, longitude } = req.body;
+        
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: "Latitude and longitude are required parameters."
+            });
+        }
+
+        // Convert to numbers
+        const userLat = parseFloat(latitude);
+        const userLng = parseFloat(longitude);
+
+        // Get all crime reports with populated location data
+        const allCrimeReports = await CrimeReport.find()
+            .populate({
+                path: 'location',
+                select: 'latitude longitude displayName formattedAddress'
+            })
+            .select('-reportedBy -assignedAdmin -__v -status -FIR -suspects -witnesses')
+            .lean();
+
+        // Filter reports within 10km radius
+        const nearbyCrimes = allCrimeReports.filter(report => {
+            if (!report.location) return false;
+            
+            const distance = calculateDistance(
+                userLat, userLng, 
+                report.location.latitude, report.location.longitude
+            );
+            return distance <= 10;
+        });
+
+        // Transform the data to include only needed fields
+        const result = nearbyCrimes.map(crime => ({
+            _id: crime._id,
+            typeOfCrime: crime.typeOfCrime,
+            description: crime.description,
+            crimePhotos: crime.crimePhotos,
+            crimeVideos: crime.crimeVideos,
+            createdAt: crime.createdAt,
+            location: {
+                displayName: crime.location.displayName,
+                formattedAddress: crime.location.formattedAddress,
+                latitude: crime.location.latitude,
+                longitude: crime.location.longitude
+            }
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: "Crimes within 10km radius",
+            count: result.length,
+            crimes: result
+        });
+
+    } catch (error) {
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message 
         });
     }
 };

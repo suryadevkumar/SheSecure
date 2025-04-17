@@ -4,8 +4,10 @@ import searchNearby from './SearchNearBy';
 import { setLocation, setError } from '../redux/locationSlice';
 import { setPoliceStations } from '../redux/policeStationSlice';
 import { setHospitals } from '../redux/hospitalSlice';
+import { setCrimeReports } from '../redux/crimeSlice';
 import calculateDistance from './calculateDistance';
 import { sendLocationToBackend } from '../routes/location-routes';
+import { crimeReportsNearMe } from '../routes/crime-report-routes';
 
 const useLocationTracking = () => {
   const dispatch = useDispatch();
@@ -73,6 +75,8 @@ const useLocationTracking = () => {
               try {
                 const policeStations = await searchNearby(lat, lng, 'police');
                 const hospitals = await searchNearby(lat, lng, 'hospital');
+                const crimeData = await crimeReportsNearMe(token, lat, lng);
+                dispatch(setCrimeReports(crimeData.crimes));
 
                 const processPlaces = (places) =>
                   places

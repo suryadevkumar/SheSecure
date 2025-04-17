@@ -1,30 +1,28 @@
-// src/routes/emergencyContacts.js
 import { api } from "../config/config";
 
-// Helpers
-const getToken = () => localStorage.getItem("token");
-
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${getToken()}`,
-});
-
-// ✅ Get Emergency Contacts
-export const getEmergencyContacts = async () => {
+// Get Emergency Contacts
+export const getEmergencyContacts = async (token) => {
   const res = await fetch(`${api}/emergency-contacts/get`, {
     method: "GET",
-    headers: getHeaders(),
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    }
   });
 
   if (!res.ok) throw new Error("Failed to fetch contacts");
   return res.json();
 };
 
-// ✅ Add Emergency Contact
-export const addEmergencyContact = async (contact) => {
+// Add Emergency Contact
+export const addEmergencyContact = async (token, contact) => {
   const res = await fetch(`${api}/emergency-contacts/add`, {
     method: "POST",
-    headers: getHeaders(),
+    credentials: 'include',
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify(contact),
   });
 
@@ -32,11 +30,14 @@ export const addEmergencyContact = async (contact) => {
   return res.json();
 };
 
-// ✅ Update Emergency Contact
-export const updateEmergencyContact = async (contactId, updatedData) => {
+// Update Emergency Contact
+export const updateEmergencyContact = async (token, contactId, updatedData) => {
   const res = await fetch(`${api}/emergency-contacts/update/${contactId}`, {
     method: "PUT",
-    headers: getHeaders(),
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify(updatedData),
   });
 
@@ -44,11 +45,13 @@ export const updateEmergencyContact = async (contactId, updatedData) => {
   return res.json();
 };
 
-// ✅ Remove Emergency Contact
-export const removeEmergencyContact = async (contactId) => {
+// Remove Emergency Contact
+export const removeEmergencyContact = async (token, contactId) => {
   const res = await fetch(`${api}/emergency-contacts/remove/${contactId}`, {
     method: "DELETE",
-    headers: getHeaders(),
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   });
 
   if (!res.ok) throw new Error("Failed to delete contact");

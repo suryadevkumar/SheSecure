@@ -12,15 +12,17 @@ import {
   FileImage,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 
 const MyProfile = () => {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [modalImage, setModalImage] = useState(null);
   const navigate = useNavigate();
+  const token = useSelector((state)=>state.auth.token);
 
   useEffect(() => {
-    getUserDetails()
+    getUserDetails(token)
       .then((res) => {
         setUser(res.user);
       })
@@ -39,7 +41,7 @@ const MyProfile = () => {
 
   const TabButton = ({ label, value }) => (
     <button
-      className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 rounded-t-lg border-b-2 ${
+      className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 rounded-t-lg border-b-2 cursor-pointer ${
         activeTab === value
           ? "border-blue-600 text-blue-700 bg-white"
           : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
@@ -78,7 +80,7 @@ const MyProfile = () => {
                 ? navigate("/emergency-contacts")
                 : navigate("/Profile-update")
             }
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full flex items-center gap-1 text-sm shadow transition"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full flex items-center gap-1 text-sm shadow transition cursor-pointer"
           >
             <Pencil className="w-4 h-4" />
             {activeTab === "contacts" ? "Edit Emergency Contacts" : "Edit Profile"}
@@ -88,10 +90,10 @@ const MyProfile = () => {
         {/* Tabs */}
         <div className="flex border-b bg-gray-50 px-4">
           <TabButton label="Profile Details" value="profile" />
-          {user.accountType === "User" && (
+          {user.userType === "User" && (
             <TabButton label="Emergency Contacts" value="contacts" />
           )}
-          {(user.accountType === "Admin" || user.accountType === "Counselor") && (
+          {(user.userType === "Admin" || user.userType === "Counsellor") && (
             <TabButton label="Qualification" value="qualification" />
           )}
         </div>
@@ -133,7 +135,7 @@ const MyProfile = () => {
               <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-transform duration-200 hover:-translate-y-1">
                 <UserRoundCheck className="w-4 h-4 text-blue-600 mb-1" />
                 <p className="text-xs text-gray-500">Account Type</p>
-                <p className="font-medium text-sm">{user.accountType}</p>
+                <p className="font-medium text-sm">{user.userType}</p>
               </div>
             </div>
           )}

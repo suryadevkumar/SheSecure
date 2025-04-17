@@ -7,8 +7,9 @@ import { useSelector } from 'react-redux';
 
 function AppWrapper() {
     const userType = useSelector((state)=>state.auth.user.userType);
-    if(userType==='User'){
-      // useLocationTracking();
+    const token = useSelector((state)=>state.auth.token);
+    if(userType==='User' && token){
+      useLocationTracking();
     }
   
     return (

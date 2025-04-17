@@ -62,19 +62,19 @@ export const fetchReports = async (token, userType) => {
 export const crimeReportVerify = async (token, reportId) => {
     try {
         console.log(token)
-        const response = await axios.put(`/api/crime/verify-report/${reportId}`,{}, {
+        const response = await axios.put(`/api/crime/verify-report/${reportId}`, {}, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
         console.log(response);
-        if(response.data.success)
-            return {success: true, message: response.data.message};
+        if (response.data.success)
+            return { success: true, message: response.data.message };
         else
-            return {success: false, message: response.data.message};
-    }catch (err) {
+            return { success: false, message: response.data.message };
+    } catch (err) {
         console.error('Crime verification failed:', err);
-        return {success: false, message: err.response?.data?.message || err.message};
+        return { success: false, message: err.response?.data?.message || err.message };
     }
 };
 
@@ -85,12 +85,39 @@ export const crimeReportRemove = async (token, reportId) => {
                 Authorization: `Bearer ${token}`
             }
         });
-        if(response.data.success)
-            return {success: true, message: response.data.message};
+        if (response.data.success)
+            return { success: true, message: response.data.message };
         else
-            return {success: false, message: response.data.message};
-    }catch (err) {
+            return { success: false, message: response.data.message };
+    } catch (err) {
         console.error('Crime deletion failed:', err);
-        return {success: false, message: err.response?.data?.message || err.message};
+        return { success: false, message: err.response?.data?.message || err.message };
+    }
+};
+
+export const crimeReportsNearMe = async (token, latitude, longitude) => {
+    try {
+        const response = await axios.post(
+            '/api/crime/get-crimes-near-me',
+            { latitude, longitude },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (response.data.success) {
+            return response.data;
+        } else {
+            return { success: false, message: response.data.message };
+        }
+    } catch (err) {
+        console.error('Crime location fetch failed:', err);
+        return {
+            success: false,
+            message: err.response?.data?.message || err.message
+        };
     }
 };

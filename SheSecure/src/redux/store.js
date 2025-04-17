@@ -4,6 +4,7 @@ import authReducer from './authSlice';
 import sosReducer from './sosSlice';
 import policeReducer from './policeStationSlice';
 import hospitalReducer from './hospitalSlice';
+import crimeReducer from './crimeSlice'
 import chatReducer from './chatSlice'
 import socketReducer from './socketSlice'
 import chatSocket from '../utils/chatSocket';
@@ -16,6 +17,7 @@ const store = configureStore({
     chat: chatReducer,
     police: policeReducer,
     hospital: hospitalReducer,
+    crime: crimeReducer,
     socket: socketReducer,
   },
   middleware: (getDefaultMiddleware) =>

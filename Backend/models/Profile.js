@@ -11,7 +11,7 @@ const profileSchema=mongoose.Schema(
         emergencyContacts:[
             {
                 type:mongoose.Schema.Types.ObjectId,
-                ref:"emergencyContacts",
+                ref:"EmergencyContacts",
             }
         ],
         dob:{

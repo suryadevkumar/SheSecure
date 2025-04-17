@@ -59,9 +59,9 @@ const UpdateProfile = () => {
       if (value) data.append(key, value);
     });
     try {
-      await updateProfile(token, data);
-      toast.success("Profile updated successfully");
-      navigate("/myProfile");
+      const res=await updateProfile(token, data);
+      toast.success(res.message);
+      navigate("/profile");
     } catch {
       toast.error("Failed to update profile");
     }
@@ -110,7 +110,7 @@ const UpdateProfile = () => {
         </div>
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm shadow transition-all duration-200 hover:scale-105 hover:shadow-md"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm shadow transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer"
         >
           Save Changes
         </button>
@@ -130,7 +130,7 @@ const UpdateProfile = () => {
             className={`w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none ${
               isGenderSet
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : "focus:ring-2 focus:ring-blue-200"
+                : "focus:ring-2 focus:ring-blue-200 cursor-pointer"
             }`}
           >
             <option value="">Select</option>
@@ -162,7 +162,7 @@ const UpdateProfile = () => {
             name="dob"
             value={formData.dob}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer"
           />
         </div>
 
@@ -173,11 +173,11 @@ const UpdateProfile = () => {
           <p className="text-sm font-medium">{user.mobileNumber}</p>
         </div>
 
-        {/* Account Type */}
+        {/* User Type */}
         <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-transform duration-200 hover:-translate-y-1">
           <BadgeInfo className="w-4 h-4 text-blue-600 mb-1" />
           <p className="text-xs text-gray-500">Account Type</p>
-          <p className="text-sm font-medium">{user.accountType}</p>
+          <p className="text-sm font-medium">{user.userType}</p>
         </div>
       </div>
     </form>
