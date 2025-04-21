@@ -16,10 +16,12 @@ import superAdminRoutes from "./routes/SuperAdmin.js";
 import locationRoutes from './routes/Location.js';
 import chatRoutes from './routes/Counselling.js';
 import crimeRoutes from './routes/CrimeReport.js';
+import crimeInteractionRoutes from './routes/CrimeReportsInteraction.js';
 import profileRoutes from './routes/Profile.js';
 import emergencyContactRoutes from './routes/emergencyContacts.js';
 import chatSocket from './utils/chatSocket.js';
 import sosSocket from './utils/sosSocket.js';
+import { liveLocationSocket } from './utils/liveLocationSocket.js';
 
 dotenv.config();
 
@@ -84,6 +86,7 @@ app.use(sessionMiddleware);
 // Create namespaces for different features
 const chatNamespace = io.of('/chat');
 const sosNamespace = io.of('/sos');
+const locationNamespace = io.of('/location');
 
 // Wrap middleware for Socket.IO
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
@@ -91,10 +94,12 @@ const wrap = middleware => (socket, next) => middleware(socket.request, {}, next
 // Apply session middleware to namespaces
 chatNamespace.use(wrap(sessionMiddleware));
 sosNamespace.use(wrap(sessionMiddleware));
+locationNamespace.use(wrap(sessionMiddleware));
 
 // Set up both socket handlers with their own namespaces
 chatSocket(chatNamespace);
 sosSocket(sosNamespace);
+liveLocationSocket(locationNamespace);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -102,6 +107,7 @@ app.use('/api/sos', sosRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/crime', crimeRoutes);
+app.use('/api/crimeInteraction', crimeInteractionRoutes);
 app.use("/api/admin",adminRoutes);
 app.use("/api/superAdmin",superAdminRoutes);
 app.use("/api/profile",profileRoutes);

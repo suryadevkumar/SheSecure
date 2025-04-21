@@ -88,3 +88,38 @@ export const markMessagesAsRead = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getUnreadCounts = async (req, res) => {
+  try {
+      const { userId } = req.query;
+      
+      if (!userId) {
+          return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      // Get all user's chat rooms
+      const chatRooms = await ChatRoom.find({
+          $or: [{ user: userId }, { counsellor: userId }]
+      });
+      
+      const unreadCounts = {};
+      
+      // For each room, count unread messages
+      for (const room of chatRooms) {
+          const unreadMessages = await Message.countDocuments({
+              chatRoom: room._id,
+              sender: { $ne: userId },
+              readBy: { $nin: [userId] }
+          });
+          
+          if (unreadMessages > 0) {
+              unreadCounts[room._id] = unreadMessages;
+          }
+      }
+      
+      res.json(unreadCounts);
+  } catch (error) {
+      console.error('Error getting unread counts:', error);
+      res.status(500).json({ message: 'Server error' });
+  }
+};

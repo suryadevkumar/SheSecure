@@ -16,7 +16,7 @@ import {
     };
   
     return (
-      <div className="mt-22 min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4 mb-32 lg:mb-10">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-6/12 transition-all duration-300 hover:shadow-2xl">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
             <h1 className="text-3xl font-bold text-white text-center">National Numbers</h1>
@@ -39,7 +39,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('100')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Police"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -59,7 +59,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('101')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Fire Service"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -79,7 +79,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('102')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Pregnancy Medic"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -99,7 +99,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('108')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Ambulance"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -119,7 +119,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('112')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call National Helpline"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -139,7 +139,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('1091')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Women Helpline"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -159,7 +159,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('1098')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Child Helpline"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -179,7 +179,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('1073')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Road Accident Helpline"
               >
                 <Phone className="text-green-600 w-5 h-5" />
@@ -199,7 +199,7 @@ import {
               </div>
               <button 
                 onClick={() => handleCall('182')}
-                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
                 aria-label="Call Railway Protection"
               >
                 <Phone className="text-green-600 w-5 h-5" />

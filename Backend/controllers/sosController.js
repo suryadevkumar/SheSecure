@@ -121,7 +121,7 @@ export const fetchSosLocation = async (req, res) => {
       locationTimeCondition = { startTime: { $gte: startSosTime } };
     } else {
       const endTime = endSosTime || new Date();
-      const start24HoursAgo = new Date(endTime - 5 * 60 * 60 * 1000);
+      const start24HoursAgo = new Date(endTime - 24 * 60 * 60 * 1000);
       locationTimeCondition = { startTime: { $gte: start24HoursAgo, $lte: endTime } };
     }
 

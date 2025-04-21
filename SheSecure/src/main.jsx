@@ -9,16 +9,17 @@ import HomePage from "./components/Home";
 import Signup from "./components/Signup";
 import Login from "./components/Login";
 import Error from "./components/Error";
-import MapView from "./components/MapView";
-import EmergencyMap from "./components/EmergencyMap";
 import AppWrapper from "./components/AppWrapper";
 import ChatLayout from "./components/ChatLayout";
 import CrimeReport from "./components/CrimeReport";
-import LocationHistory from "./components/LocationHistory";
 import Dashboard from "./components/Dashboard";
 import MyProfile from "./components/MyProfile";
 import UpdateProfile from "./components/UpdateProfile";
 import EmergencyContacts from "./components/EmergencyContacts";
+import EmergencyNumbers from "./components/HelplineNumbers";
+import UnifiedMap from "./components/LocationMap";
+import { FullMapView, HistoryMapView } from "./components/MapView";
+
 
 // Set default axios base URL
 axios.defaults.baseURL = 'http://localhost:3000';
@@ -48,15 +49,19 @@ const appRouter = createBrowserRouter([
       },
       {
         path: "map-view",
-        element: <MapView />,
+        element: <FullMapView />,
       },
       {
         path: "location-history",
-        element: <LocationHistory/>
+        element: <HistoryMapView/>
       },
       {
         path: "emergency-sos",
-        element: <EmergencyMap />,
+        element: <UnifiedMap />,
+      },
+      {
+        path: "location",
+        element: <UnifiedMap />,
       },
       { 
         path: "chat", 
@@ -76,7 +81,11 @@ const appRouter = createBrowserRouter([
       },
       {
         path: "crimeReport",
-        element: <CrimeReport/>
+        element: <CrimeReport />
+      },
+      {
+        path: "helpline-number",
+        element: <EmergencyNumbers />
       }
     ],
   },

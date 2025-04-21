@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo1.png";
 import { useSelector, useDispatch } from "react-redux";
 import { setToken } from "../redux/authSlice";
-import useSosSocket from "../utils/sosSocket";
+import useSosSocket from "../utils/useSOSSystem";
 
 const Header = () => {
   const token = useSelector((state) => state.auth.token);
@@ -138,6 +138,18 @@ const Header = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                           Nearest Services
+                        </Link>
+                      )}
+                      {user.userType === 'User' && (
+                        <Link
+                          to="./helpline-number"
+                          className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          onClick={() => setShowProfileBox(false)}
+                        >
+                          <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.66l1.38 4.14a1 1 0 01-.36 1.1l-2.26 1.7a11.042 11.042 0 005.51 5.51l1.7-2.26a1 1 0 011.1-.36l4.14 1.38a1 1 0 01.66.94V19a2 2 0 01-2 2h-1C9.94 21 3 14.06 3 6V5z" />
+                          </svg>
+                          Helpline Numbers
                         </Link>
                       )}
                       {user.userType==='User' && <Link

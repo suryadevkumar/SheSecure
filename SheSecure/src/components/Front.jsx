@@ -41,7 +41,7 @@ const Front=()=> {
       } else {
         dispatch(setToken(null));
         // Allow access to public routes (including /emergencyMap) without login
-        if(location.pathname.startsWith('/emergency-sos'));
+        if(location.pathname.startsWith('/emergency-sos') || location.pathname.startsWith('/location'));
         else if (!publicPaths.includes(location.pathname)) {
           toast.error("Please login to access this page");
           navigate('/');

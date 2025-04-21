@@ -503,25 +503,33 @@ export const getCrimesNearLocation = async (req, res) => {
             .select('-reportedBy -assignedAdmin -__v -status -FIR -suspects -witnesses')
             .lean();
 
-        // Filter reports within 10km radius
-        const nearbyCrimes = allCrimeReports.filter(report => {
-            if (!report.location) return false;
+        // Calculate distance for each report and filter within 10km radius
+        const crimesWithDistance = allCrimeReports.map(report => {
+            if (!report.location) return null;
             
             const distance = calculateDistance(
                 userLat, userLng, 
                 report.location.latitude, report.location.longitude
             );
-            return distance <= 10;
-        });
+            
+            return {
+                ...report,
+                distance
+            };
+        }).filter(report => report !== null && report.distance <= 10);
 
-        // Transform the data to include only needed fields
-        const result = nearbyCrimes.map(crime => ({
+        // Sort by distance (nearest first)
+        crimesWithDistance.sort((a, b) => a.distance - b.distance);
+
+        // Transform the data to include only needed fields plus distance
+        const result = crimesWithDistance.map(crime => ({
             _id: crime._id,
             typeOfCrime: crime.typeOfCrime,
             description: crime.description,
             crimePhotos: crime.crimePhotos,
             crimeVideos: crime.crimeVideos,
             createdAt: crime.createdAt,
+            distance: crime.distance, // Include distance in the response
             location: {
                 displayName: crime.location.displayName,
                 formattedAddress: crime.location.formattedAddress,
@@ -532,7 +540,7 @@ export const getCrimesNearLocation = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Crimes within 10km radius",
+            message: "Crimes within 10km radius sorted by distance",
             count: result.length,
             crimes: result
         });

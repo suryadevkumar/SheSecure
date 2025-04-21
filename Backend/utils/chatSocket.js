@@ -7,6 +7,7 @@ const chatSocket = (io) => {
 
     // Store online users
     const onlineUsers = new Map();
+    const userLastSeen = new Map();
 
     io.on('connection', (socket) => {
         console.log('New client connected:', socket.id);
@@ -17,11 +18,39 @@ const chatSocket = (io) => {
                 const user = await User.findById(userId);
                 if (user) {
                     onlineUsers.set(userId, socket.id);
+                    userLastSeen.set(userId, Date.now());
                     socket.userId = userId;
                     socket.userType = user.userType;
 
-                    // Notify about online status
-                    io.emit('user_status_change', { userId, status: 'online' });
+                    // Broadcast online status to ALL relevant users
+                    // Find all chat partners for this user
+                    const chatRooms = await ChatRoom.find({
+                        $or: [{ user: userId }, { counsellor: userId }],
+                        isActive: true
+                    });
+
+                    // Create a list of chat partners who should be notified
+                    const chatPartners = new Set();
+                    chatRooms.forEach(room => {
+                        const partnerId = room.user.toString() === userId ?
+                            room.counsellor.toString() : room.user.toString();
+                        chatPartners.add(partnerId);
+                    });
+
+                    // Notify each chat partner individually
+                    for (const partnerId of chatPartners) {
+                        const partnerSocketId = onlineUsers.get(partnerId);
+                        if (partnerSocketId) {
+                            io.to(partnerSocketId).emit('user_status_change', {
+                                userId,
+                                status: 'online',
+                                lastSeen: null
+                            });
+                        }
+                    }
+
+                    // Also send a global notification for any pending listeners
+                    io.emit('user_status_change', { userId, status: 'online', lastSeen: null });
 
                     // If counsellor, send all pending chat requests
                     if (user.userType === 'Counsellor') {
@@ -36,6 +65,26 @@ const chatSocket = (io) => {
                         $or: [{ user: userId }, { counsellor: userId }],
                         isActive: true
                     }).populate('user counsellor chatRequest');
+
+                    const activeChatPartners = [];
+                    for (const room of activeChatRooms) {
+                        const partnerId = room.user.toString() === userId ?
+                            room.counsellor.toString() : room.user.toString();
+
+                        if (!activeChatPartners.includes(partnerId)) {
+                            activeChatPartners.push(partnerId);
+                        }
+                    }
+
+                    // Send the online status of all chat partners
+                    for (const partnerId of activeChatPartners) {
+                        const isOnline = onlineUsers.has(partnerId);
+                        socket.emit('user_status_change', {
+                            userId: partnerId,
+                            status: isOnline ? 'online' : 'offline',
+                            lastSeen: isOnline ? null : userLastSeen.get(partnerId)
+                        });
+                    }
                     socket.emit('active_chat_rooms', activeChatRooms);
                 }
             } catch (error) {
@@ -179,6 +228,56 @@ const chatSocket = (io) => {
             }
         });
 
+        socket.on('user_typing', async (data) => {
+            try {
+                const { chatRoomId, userId } = data;
+
+                const chatRoom = await ChatRoom.findById(chatRoomId);
+                if (!chatRoom || !chatRoom.isActive) {
+                    return;
+                }
+
+                // Determine recipient
+                const recipientId = userId === chatRoom.user.toString()
+                    ? chatRoom.counsellor.toString()
+                    : chatRoom.user.toString();
+
+                const recipientSocketId = onlineUsers.get(recipientId);
+
+                // Send to recipient if online
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('user_typing', { chatRoomId, userId });
+                }
+            } catch (error) {
+                console.error('Error in user_typing:', error);
+            }
+        });
+
+        socket.on('user_stopped_typing', async (data) => {
+            try {
+                const { chatRoomId, userId } = data;
+
+                const chatRoom = await ChatRoom.findById(chatRoomId);
+                if (!chatRoom || !chatRoom.isActive) {
+                    return;
+                }
+
+                // Determine recipient
+                const recipientId = userId === chatRoom.user.toString()
+                    ? chatRoom.counsellor.toString()
+                    : chatRoom.user.toString();
+
+                const recipientSocketId = onlineUsers.get(recipientId);
+
+                // Send to recipient if online
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('user_stopped_typing', { chatRoomId });
+                }
+            } catch (error) {
+                console.error('Error in user_stopped_typing:', error);
+            }
+        });
+
         // Counsellor requests to end chat
         socket.on('request_end_chat', async (data) => {
             try {
@@ -196,10 +295,38 @@ const chatSocket = (io) => {
                     return;
                 }
 
+                // Check if the room already has a pending end request
+                const pendingEndRequest = await Message.findOne({
+                    chatRoom: chatRoomId,
+                    isSystem: true,
+                    content: { $regex: 'requested to end this chat' },
+                    createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) } // Within last 5 minutes
+                });
+
+                if (pendingEndRequest) {
+                    socket.emit('error', { message: 'An end request is already pending' });
+                    return;
+                }
+
+                // Create a system message for the end request
+                const endRequestMessage = await Message.create({
+                    chatRoom: chatRoomId,
+                    sender: counsellorId,
+                    content: 'The counselor has requested to end this chat. Please accept or decline.',
+                    isSystem: true,
+                    readBy: [counsellorId]
+                });
+
                 // Find the user socket to send the confirmation request
                 const userSocketId = onlineUsers.get(chatRoom.user.toString());
                 if (userSocketId) {
                     io.to(userSocketId).emit('end_chat_request', { chatRoomId });
+
+                    // Also send the system message
+                    const populatedMessage = await Message.findById(endRequestMessage._id)
+                        .populate('sender', 'firstName lastName userType');
+
+                    io.to(userSocketId).emit('new_message', populatedMessage);
                 } else {
                     socket.emit('error', { message: 'User is offline, try again later' });
                 }
@@ -255,6 +382,7 @@ const chatSocket = (io) => {
                     if (counsellorSocketId) {
                         io.to(counsellorSocketId).emit('end_chat_declined', { chatRoomId });
 
+                        // Create system message noting the decline
                         await Message.create({
                             chatRoom: chatRoomId,
                             sender: chatRoom.user, // User declined
@@ -263,6 +391,17 @@ const chatSocket = (io) => {
                             readBy: [chatRoom.user]
                         });
 
+                        // Clear any pending end request messages to allow counsellor to request again
+                        await Message.updateMany(
+                            {
+                                chatRoom: chatRoomId,
+                                isSystem: true,
+                                content: { $regex: 'requested to end this chat' }
+                            },
+                            { $set: { content: "End chat request was declined." } }
+                        );
+
+                        // Notify counsellor to clear the lock
                         io.to(counsellorSocketId).emit('clear_end_request_lock', { chatRoomId });
                     }
                 }
@@ -275,11 +414,47 @@ const chatSocket = (io) => {
         // User disconnects
         socket.on('disconnect', () => {
             if (socket.userId) {
-                onlineUsers.delete(socket.userId);
-                io.emit('user_status_change', { userId: socket.userId, status: 'offline' });
+                const userId = socket.userId;
+        
+                // Remove from online users
+                onlineUsers.delete(userId);
+        
+                // Set last seen time
+                const lastSeenTime = Date.now();
+                userLastSeen.set(userId, lastSeenTime);
+        
+                // Global notification
+                io.emit('user_status_change', {
+                    userId,
+                    status: 'offline',
+                    lastSeen: lastSeenTime
+                });
+        
+                // Specifically notify users in active chats about status change
+                ChatRoom.find({
+                    $or: [{ user: userId }, { counsellor: userId }],
+                    isActive: true
+                })
+                    .then(rooms => {
+                        rooms.forEach(room => {
+                            const otherUserId = room.user.toString() === userId ?
+                                room.counsellor.toString() : room.user.toString();
+        
+                            const otherUserSocketId = onlineUsers.get(otherUserId);
+                            if (otherUserSocketId) {
+                                io.to(otherUserSocketId).emit('user_status_change', {
+                                    userId,
+                                    status: 'offline',
+                                    lastSeen: lastSeenTime
+                                });
+                            }
+                        });
+                    })
+                    .catch(err => console.error('Error notifying about disconnect:', err));
             }
             console.log('Client disconnected:', socket.id);
         });
+        
     });
 
     // return io;

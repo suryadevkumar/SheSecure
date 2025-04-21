@@ -11,6 +11,9 @@ const ChatSidebar = () => {
   const chatRooms = useSelector((state) => state.chat.chatRooms);
   const activeRoom = useSelector((state) => state.chat.activeRoom);
   const unreadCounts = useSelector((state) => state.chat.unreadCounts);
+  const typingUsers = useSelector((state) => state.chat.typingUsers);
+  // Add this line to access the last seen data from Redux store
+  const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [problemType, setProblemType] = useState("");
@@ -29,8 +32,6 @@ const ChatSidebar = () => {
     (total, count) => total + count,
     0
   );
-
-  // const roomUnreadCount = unreadCounts[room._id] || 0;
 
   const handleCreateRequest = (e) => {
     e.preventDefault();
@@ -55,9 +56,6 @@ const ChatSidebar = () => {
 
     if (room) {
       dispatch(fetchMessages({ roomId: room._id, userId: user._id }));
-
-      // You would also want to mark messages as read here
-      // dispatch(markMessagesAsRead({ roomId: room._id }));
     }
   };
 
@@ -67,12 +65,48 @@ const ChatSidebar = () => {
     setShowChats(!showChats);
   };
 
+  const isUserOnline = (userId) => {
+    return onlineUsers.includes(userId);
+  };
+
+  const formatLastSeen = (timestamp) => {
+    if (!timestamp) return "Unknown";
+    const date = new Date(timestamp);
+
+    // Get current date/time
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    // Format based on how long ago
+    if (diffSecs < 60) {
+      return "Just now";
+    } else if (diffMins < 60) {
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    } else {
+      // For older timestamps, show the actual date
+      return date.toLocaleString();
+    }
+  };
+
+  // Check if a user is typing in a specific room
+  const isUserTypingInRoom = (roomId) => {
+    return typingUsers[roomId] && typingUsers[roomId] !== user?._id;
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* User Info */}
       <div className="flex items-center justify-between p-3.5 bg-blue-600 text-white shadow-md">
         <h3 className="font-semibold text-lg">
-          {user?.firstName} {user.lastName}
+          {user?.firstName} {user?.lastName}
         </h3>
         <div className="bg-blue-500 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold">
           {user?.firstName?.charAt(0)}
@@ -192,52 +226,85 @@ const ChatSidebar = () => {
             Your Chats
           </h4>
           <div className="flex-grow overflow-y-auto">
-            {chatRooms.map((room) => (
-              <div
-                key={room._id}
-                className={`px-4 py-3 cursor-pointer hover:bg-blue-50 transition duration-150 border-l-4 relative ${
-                  activeRoom?._id === room._id
-                    ? "bg-blue-50 border-blue-500"
-                    : "border-transparent"
-                } ${room.isEnded ? "opacity-70" : ""}`}
-                onClick={() => handleSetActiveRoom(room)}
-              >
-                <div className="flex justify-between">
-                  <p className="font-medium text-gray-800">
-                    {user?.userType === "User"
-                      ? `${room.counsellor.firstName} ${room.counsellor.lastName}`
-                      : `${room.user.firstName} ${room.user.lastName}`}
-                    {onlineUsers.includes(
-                      user?.userType === "User"
-                        ? room.counsellor._id
-                        : room.user._id
-                    ) && (
-                      <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
-                    )}
-                  </p>
-                  <div className="flex items-center">
-                    {room.isEnded && (
-                      <span className="mr-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
-                        Ended
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-500">
-                      {new Date(room.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-                <p className="mt-1 text-sm text-gray-600 truncate">
-                  {room.chatRequest.problemType}: {room.chatRequest.brief}
-                </p>
+            {chatRooms.map((room) => {
+              // Define partnerId based on user type - THIS FIXES THE REFERENCE ERROR
+              const partnerId =
+                user?.userType === "User"
+                  ? room.counsellor?._id
+                  : room.user?._id;
 
-                {/* Unread message counter for each chat */}
-                {unreadCounts[room._id] > 0 && (
-                  <span className="absolute right-3 bottom-3 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {unreadCounts[room._id]}
-                  </span>
-                )}
-              </div>
-            ))}
+              return (
+                <div
+                  key={room._id}
+                  className={`px-4 py-3 cursor-pointer hover:bg-blue-50 transition duration-150 border-l-4 relative ${
+                    activeRoom?._id === room._id
+                      ? "bg-blue-50 border-blue-500"
+                      : "border-transparent"
+                  } ${room.isEnded ? "opacity-70" : ""}`}
+                  onClick={() => handleSetActiveRoom(room)}
+                >
+                  <div className="flex justify-between">
+                    <p className="font-medium text-gray-800">
+                      {user?.userType === "User"
+                        ? `${room.counsellor?.firstName} ${room.counsellor?.lastName}`
+                        : `${room.user?.firstName} ${room.user?.lastName}`}
+                      {isUserOnline(partnerId) ? (
+                        <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                      ) : (
+                        <span className="ml-2 text-xs text-gray-500">
+                          Last seen: {formatLastSeen(userLastSeen[partnerId])}
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex items-center">
+                      {room.isEnded && (
+                        <span className="mr-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
+                          Ended
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-500">
+                        {new Date(room.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Typing indicator or problem brief */}
+                  <div className="mt-1 h-6 overflow-hidden">
+                    {isUserTypingInRoom(room._id) ? (
+                      <div className="text-sm text-blue-600 flex items-center transform transition-all duration-300 ease-in-out">
+                        <span className="mr-2">Typing</span>
+                        <div className="flex space-x-1">
+                          <div
+                            className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 truncate transform transition-all duration-300 ease-in-out">
+                        {room.chatRequest?.problemType}:{" "}
+                        {room.chatRequest?.brief}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Unread message counter for each chat */}
+                  {unreadCounts[room._id] > 0 && (
+                    <span className="absolute right-3 bottom-3 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {unreadCounts[room._id]}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -258,7 +325,7 @@ const ChatSidebar = () => {
                 >
                   <div className="flex justify-between">
                     <p className="font-medium text-gray-800">
-                      {request.user.firstName} {request.user.lastName}
+                      {request.user?.firstName} {request.user?.lastName}
                     </p>
                     <span className="text-xs text-gray-500">
                       {new Date(request.createdAt).toLocaleDateString()}

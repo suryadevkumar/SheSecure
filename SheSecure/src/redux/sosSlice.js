@@ -6,7 +6,7 @@ const sosSlice = createSlice({
         isSOSActive: false,
     },
     reducers: {
-        startSOSAction: (state, action) => {
+        startSOSAction: (state) => {
             state.isSOSActive = true;
         },
         stopSOSAction: (state) => {

@@ -11,7 +11,7 @@ const Dashboard = () => {
     case "User":
       return <UserDashboard />;
     case "Counsellor":
-      return ChatLayout
+      return <ChatLayout />
     case "Admin":
       return <AdminDashboard />;
     case "SuperAdmin":

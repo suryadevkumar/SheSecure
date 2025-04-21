@@ -1,0 +1,180 @@
+import { useState, useEffect, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { v4 as uuidv4 } from "uuid";
+import { startShareLocation, stopShareLocation } from "../redux/liveLocationSlice";
+import io from 'socket.io-client';
+
+const LOCATION_STORAGE_KEY = 'active_location_data';
+
+const useLiveLocation = () => {
+  const dispatch = useDispatch();
+  const [shareId, setShareId] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [locationLink, setLocationLink] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { latitude, longitude } = useSelector((state) => state.location);
+  const isLocationShared = useSelector((state) => state.liveLocation.isLocationShared);
+
+  // Initialize socket connection
+  useEffect(() => {
+    const newSocket = io("http://localhost:3000/location");
+    setSocket(newSocket);
+
+    // Check localStorage for active session on mount
+    const checkForActiveSharing = () => {
+      const savedData = localStorage.getItem(LOCATION_STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setShareId(parsedData.shareId);
+        setLocationLink(parsedData.locationLink);
+        dispatch(startShareLocation());
+        
+        // Re-join the room
+        if (newSocket) {
+          newSocket.emit("location:join", parsedData.shareId);
+        }
+      }
+    };
+    
+    checkForActiveSharing();
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [dispatch]);
+
+  // Send location updates
+  useEffect(() => {
+    if (socket && shareId && latitude && longitude && isLocationShared) {
+      socket.emit("location:update", {
+        shareId,
+        latitude,
+        longitude,
+        timestamp: Date.now()
+      });
+    }
+  }, [socket, shareId, latitude, longitude, isLocationShared]);
+
+  // Socket event handlers
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleError = (error) => {
+      setError(error.message || "Location sharing error");
+      console.error("Socket error:", error);
+    };
+    
+    const handleSessionEnded = (data) => {
+      console.log("Session ended:", data);
+      dispatch(stopShareLocation());
+      setShareId(null);
+      setLocationLink('');
+      localStorage.removeItem(LOCATION_STORAGE_KEY);
+    };
+    
+    socket.on("error", handleError);
+    socket.on("location:session_ended", handleSessionEnded);
+    
+    return () => {
+      socket.off("error", handleError);
+      socket.off("location:session_ended", handleSessionEnded);
+    };
+  }, [socket, dispatch]);
+
+  // Start sharing location
+  const startSharing = useCallback(async () => {
+    if (!latitude || !longitude) {
+      setError("Cannot share location: Location not available");
+      return null;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const newShareId = uuidv4();
+      setShareId(newShareId);
+      
+      const newLocationLink = `http://localhost:5173/location?shareId=${newShareId}`;
+      setLocationLink(newLocationLink);
+
+      // Save to localStorage
+      localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({
+        shareId: newShareId,
+        locationLink: newLocationLink
+      }));
+
+      // Join the location sharing room
+      socket.emit("location:join", newShareId, (response) => {
+        if (!response?.success) {
+          throw new Error(response?.message || "Failed to join location room");
+        }
+      });
+
+      // Send initial location
+      socket.emit("location:update", {
+        shareId: newShareId,
+        latitude,
+        longitude,
+        timestamp: Date.now()
+      });
+
+      dispatch(startShareLocation());
+
+      return newLocationLink;
+    } catch (err) {
+      setError(err.message || "Error starting location sharing");
+      console.error("Start sharing error:", err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dispatch, socket, latitude, longitude]);
+
+  // Stop sharing location
+  const stopSharing = useCallback(async () => {
+    if (!shareId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Explicitly end the session
+      socket.emit("location:end_session", shareId, (response) => {
+        if (!response?.success) {
+          console.error("Failed to end location session:", response?.message);
+        }
+      });
+      
+      // Clear localStorage
+      localStorage.removeItem(LOCATION_STORAGE_KEY);
+      
+      // Update Redux state
+      dispatch(stopShareLocation());
+      
+      // Clear local state
+      setShareId(null);
+      setLocationLink('');
+      
+      alert("Location sharing has been stopped");
+    } catch (err) {
+      setError(err.message || "Error stopping location sharing");
+      console.error("Stop sharing error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dispatch, socket, shareId]);
+
+  return {
+    startShareLocation: startSharing,
+    stopShareLocation: stopSharing,
+    locationLink,
+    shareId,
+    isLoading,
+    error,
+    isActive: isLocationShared
+  };
+};
+
+export default useLiveLocation;

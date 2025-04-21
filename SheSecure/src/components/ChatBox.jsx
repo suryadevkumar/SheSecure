@@ -7,15 +7,82 @@ const ChatBox = () => {
   const onlineUsers = useSelector((state) => state.chat.onlineUsers);
   const activeRoom = useSelector((state) => state.chat.activeRoom);
   const messages = useSelector((state) => state.chat.messages);
+  const typingUsers = useSelector((state) => state.chat.typingUsers);
 
   const [newMessage, setNewMessage] = useState("");
   const [showEndChatConfirm, setShowEndChatConfirm] = useState(false);
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  const userLastSeen = useSelector((state) => state.chat.userLastSeen);
+
+  const formatLastSeen = (timestamp) => {
+    if (!timestamp) return "Unknown";
+    const date = new Date(timestamp);
+
+    // Get current date/time
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    // Format based on how long ago
+    if (diffSecs < 60) {
+      return "Just now";
+    } else if (diffMins < 60) {
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    } else {
+      // For older timestamps, show the actual date
+      return date.toLocaleString();
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (activeRoom && user && newMessage.length > 0) {
+      // Send typing event
+      dispatch({
+        type: "socket/userTyping",
+        payload: { chatRoomId: activeRoom._id, userId: user._id },
+      });
+
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to clear typing status after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        dispatch({
+          type: "socket/userStoppedTyping",
+          payload: { chatRoomId: activeRoom._id, userId: user._id },
+        });
+      }, 2000);
+    } else if (activeRoom && user && newMessage.length === 0) {
+      // Clear typing status when message is empty
+      dispatch({
+        type: "socket/userStoppedTyping",
+        payload: { chatRoomId: activeRoom._id, userId: user._id },
+      });
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [newMessage, activeRoom, user, dispatch]);
 
   useEffect(() => {
     if (activeRoom && user && messages.length > 0) {
@@ -74,6 +141,12 @@ const ChatBox = () => {
       setShowEndChatConfirm(false);
     }
   }, [activeRoom?.pendingEndRequest, user?.userType]);
+
+  // Check if someone is typing in the current chat room
+  const isUserTyping =
+    activeRoom &&
+    typingUsers[activeRoom._id] &&
+    typingUsers[activeRoom._id] !== user?._id;
 
   if (!activeRoom) {
     return (
@@ -134,8 +207,19 @@ const ChatBox = () => {
                   user?.userType === "User"
                     ? activeRoom.counsellor._id
                     : activeRoom.user._id
-                ) && (
-                  <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
+                ) ? (
+                  <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                ) : (
+                  <span className="ml-2 text-xs text-gray-500">
+                    Last seen:{" "}
+                    {formatLastSeen(
+                      userLastSeen[
+                        user?.userType === "User"
+                          ? activeRoom.counsellor._id
+                          : activeRoom.user._id
+                      ]
+                    )}
+                  </span>
                 )}
               </h3>
               <p className="text-sm text-gray-500">
@@ -292,6 +376,28 @@ const ChatBox = () => {
               )}
             </div>
           ))}
+
+          {isUserTyping && (
+            <div className="flex justify-start mb-1">
+              <div className="flex flex-row bg-gray-200 px-3 py-2 rounded-lg shadow-sm">
+                <div className="flex space-x-1">
+                  <div
+                    className="w-1 h-1 bg-gray-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></div>
+                  <div
+                    className="w-1 h-1 bg-gray-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></div>
+                  <div
+                    className="w-1 h-1 bg-gray-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>

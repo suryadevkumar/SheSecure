@@ -4,9 +4,7 @@ import EmergencyContacts from '../models/EmergencyContacts.js'
 
 export const getEmergencyContacts = async (req, res) => {
     try {
-        console.log(req.user);
         const userId = req.user._id;
-        console.log(userId, "hai hai hai hai hai")
         const user = await User.findById(userId);
         // Ensure user has a profile
         if (!user.additionalDetails) {

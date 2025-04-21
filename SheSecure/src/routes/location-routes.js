@@ -23,31 +23,31 @@ const getPlaceDetails = async (lat, lng) => {
 
 export const sendLocationToBackend = async (lat, lng, startTime, endTime, token, userId) => {
     if (!token) return;
-    // try {
-    //     const { displayName, formattedAddress } = await getPlaceDetails(lat, lng);
-    //     const response = await fetch(api + '/location/save-userLocation', {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //             Authorization: `Bearer ${token}`,
-    //         },
-    //         body: JSON.stringify({
-    //             latitude: lat,
-    //             longitude: lng,
-    //             displayName: displayName,
-    //             formattedAddress: formattedAddress,
-    //             startTime: startTime,
-    //             endTime: endTime,
-    //             userId: userId
-    //         }),
-    //     });
+    try {
+        const { displayName, formattedAddress } = await getPlaceDetails(lat, lng);
+        const response = await fetch(api + '/location/save-userLocation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lng,
+                displayName: displayName,
+                formattedAddress: formattedAddress,
+                startTime: startTime,
+                endTime: endTime,
+                userId: userId
+            }),
+        });
 
-    //     if (!response.ok) {
-    //         console.error('Error sending location history to backend', await response.text());
-    //     }
-    // } catch (err) {
-    //     console.error('Failed to send location history:', err);
-    // }
+        if (!response.ok) {
+            console.error('Error sending location history to backend', await response.text());
+        }
+    } catch (err) {
+        console.error('Failed to send location history:', err);
+    }
 };
 
 export const fetchLocationHistory = async (date, token) => {

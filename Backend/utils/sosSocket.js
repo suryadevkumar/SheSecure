@@ -29,9 +29,14 @@ const sosSocket = (io) => {
             try {
                 // Check if this SOS exists and is active
                 const sosRecord = await SOS.findOne({ reportId, endSosTime: null });
-                
+
                 if (!sosRecord) {
-                    return socket.emit("error", { message: "SOS not active or not found" });
+                    // SOS is not active, inform the client immediately
+                    socket.emit("statusUpdate", {
+                        status: "inactive",
+                        message: "SOS not active or not found"
+                    });
+                    return;
                 }
 
                 // Initialize in-memory storage if needed
@@ -117,9 +122,27 @@ const sosSocket = (io) => {
         // Keep SOS alive
         socket.on("keepAlive", async ({ reportId }) => {
             if (!reportId) return;
-            
+
             try {
-                // Update the SOS record to show it's still active
+                // Check if SOS is still active in the database
+                const sosRecord = await SOS.findOne({ reportId, endSosTime: null });
+
+                if (!sosRecord) {
+                    // SOS has been deactivated in the database, inform the client
+                    io.to(reportId).emit("statusUpdate", {
+                        status: "inactive",
+                        message: "SOS has been deactivated"
+                    });
+
+                    // Clean up in-memory data
+                    if (global.activeSOS?.[reportId]) {
+                        delete global.activeSOS[reportId];
+                    }
+
+                    return;
+                }
+
+                // Update the last activity time
                 await SOS.findOneAndUpdate(
                     { reportId, endSosTime: null },
                     { lastActivity: new Date() }
@@ -129,12 +152,49 @@ const sosSocket = (io) => {
             }
         });
 
+        //leave sos
         socket.on("leaveSOS", (reportId) => {
             if (!reportId) return;
             socket.leave(reportId);
             console.log(`Client left SOS room ${reportId}`);
         });
+        
+        //end sos
+        socket.on("endSOS", async ({ reportId }) => {
+            if (!reportId) return;
 
+            try {
+                // Update database
+                const sosRecord = await SOS.findOneAndUpdate(
+                    { reportId, endSosTime: null },
+                    { endSosTime: new Date() },
+                    { new: true }
+                );
+
+                if (!sosRecord) {
+                    return socket.emit("error", { message: "SOS not active or not found" });
+                }
+
+                // Clean up in-memory data
+                if (global.activeSOS?.[reportId]) {
+                    delete global.activeSOS[reportId];
+                }
+
+                // Broadcast to all clients in this room IMMEDIATELY
+                io.to(reportId).emit("statusUpdate", {
+                    status: "inactive",
+                    startTime: sosRecord.startSosTime,
+                    endTime: sosRecord.endSosTime
+                });
+
+                console.log(`SOS ${reportId} ended by client ${socket.id}`);
+            } catch (error) {
+                console.error("Error in endSOS socket event:", error);
+                socket.emit("error", { message: "Server error ending SOS" });
+            }
+        });
+
+        //socket disconnect
         socket.on("disconnect", () => {
             console.log("User disconnected from SOS system");
         });

@@ -17,8 +17,14 @@ export const fetchChatRooms = createAsyncThunk(
   'chat/fetchRooms',
   async (userId, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`/api/chat/rooms?userId=${userId}`);
-      return res.data;
+      const [roomsRes, countsRes] = await Promise.all([
+        axios.get(`/api/chat/rooms?userId=${userId}`),
+      ]);
+
+      return {
+        rooms: roomsRes.data,
+        unreadCounts: countsRes.data
+      };
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to fetch chat rooms');
     }
@@ -31,15 +37,37 @@ export const fetchMessages = createAsyncThunk(
     try {
       const res = await axios.get(`/api/chat/messages?chatRoomId=${roomId}`);
 
-      // Mark messages as read
-      await axios.post("/api/chat/messages/read", {
-        chatRoomId: roomId,
-        userId: userId,
-      });
+      // Mark messages as read only if they're not already read by this user
+      const unreadMessages = res.data.filter(
+        message => !message.readBy?.includes(userId)
+      );
 
-      return res.data;
+      if (unreadMessages.length > 0) {
+        await axios.post("/api/chat/messages/read", {
+          chatRoomId: roomId,
+          userId: userId,
+        });
+      }
+
+      return res.data.map(message => ({
+        ...message,
+        isRead: message.readBy?.includes(userId) || false
+      }));
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to fetch messages');
+    }
+  }
+);
+
+// In your chatSlice.js
+export const fetchUnreadCounts = createAsyncThunk(
+  'chat/fetchUnreadCounts',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/chat/messages/unread?userId=${userId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
     }
   }
 );
@@ -56,6 +84,8 @@ const chatSlice = createSlice({
     pendingEndRequests: [],
     unreadCounts: {},
     onlineUsers: [],
+    userLastSeen: {},
+    typingUsers: {}
   },
   reducers: {
     setUserOnline: (state, action) => {
@@ -65,8 +95,11 @@ const chatSlice = createSlice({
       }
     },
     setUserOffline: (state, action) => {
-      const { userId } = action.payload;
+      const { userId, lastSeen } = action.payload;
       state.onlineUsers = state.onlineUsers.filter(id => id !== userId);
+      if (lastSeen) {
+        state.userLastSeen[userId] = lastSeen;
+      }
     },
     setActiveRoom: (state, action) => {
       state.activeRoom = action.payload;
@@ -120,10 +153,10 @@ const chatSlice = createSlice({
     markMessageRead: (state, action) => {
       const { messageId, userId } = action.payload;
       state.messages = state.messages.map(message => {
-        if (message._id === messageId && !message.readBy.includes(userId)) {
+        if (message._id === messageId && (!message.readBy || !message.readBy.includes(userId))) {
           return {
             ...message,
-            readBy: [...message.readBy, userId]
+            readBy: [...(message.readBy || []), userId]
           };
         }
         return message;
@@ -168,6 +201,15 @@ const chatSlice = createSlice({
     clearUnreadCount: (state, action) => {
       const { chatRoomId } = action.payload;
       state.unreadCounts[chatRoomId] = 0;
+    },
+    // New reducers for typing indicators
+    setUserTyping: (state, action) => {
+      const { chatRoomId, userId } = action.payload;
+      state.typingUsers[chatRoomId] = userId;
+    },
+    clearUserTyping: (state, action) => {
+      const { chatRoomId } = action.payload;
+      delete state.typingUsers[chatRoomId];
     }
   },
   extraReducers: (builder) => {
@@ -187,7 +229,8 @@ const chatSlice = createSlice({
         state.loading = true;
       })
       .addCase(fetchChatRooms.fulfilled, (state, action) => {
-        state.chatRooms = action.payload;
+        state.chatRooms = action.payload.rooms;
+        state.unreadCounts = action.payload.unreadCounts;
         state.loading = false;
       })
       .addCase(fetchChatRooms.rejected, (state, action) => {
@@ -205,6 +248,9 @@ const chatSlice = createSlice({
         state.error = action.payload;
         state.loading = false;
       });
+    builder.addCase(fetchUnreadCounts.fulfilled, (state, action) => {
+      state.unreadCounts = action.payload;
+    });
   }
 });
 
@@ -223,7 +269,10 @@ export const {
   incrementUnreadCount,
   clearUnreadCount,
   setUserOnline,
-  setUserOffline
+  setUserOffline,
+  markMessageRead,
+  setUserTyping,
+  clearUserTyping
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
