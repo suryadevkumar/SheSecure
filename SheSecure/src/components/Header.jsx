@@ -1,11 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo1.png";
 import { useSelector, useDispatch } from "react-redux";
 import { setToken } from "../redux/authSlice";
 import useSosSocket from "../utils/useSOSSystem";
+import {
+  Bell,
+  Menu,
+  Home,
+  UserPlus,
+  LogIn,
+  LayoutDashboard,
+  AlertCircle,
+  UserCircle,
+  Edit,
+  History,
+  MessageCircle,
+  MapPin,
+  HelpCircle,
+  ThumbsUp,
+  ShieldCheck,
+  LogOut,
+} from "lucide-react";
 
 const Header = () => {
+  const location = useLocation();
   const token = useSelector((state) => state.auth.token);
   const user = useSelector((state) => state.auth.user);
   const isSOSActive = useSelector((state) => state.sos.isSOSActive);
@@ -35,54 +54,63 @@ const Header = () => {
 
   return (
     <>
-      {!token && (
-        <nav className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg h-[4.5rem] py-2 lg:px-20 sm:px-2 flex justify-between items-center fixed w-full top-0 z-50">
-          <Link to="/" className="flex items-center cursor-pointer">
-            <img src={logo} alt="SheSecure Logo" className="h-14" />
-          </Link>
-          <div className="space-x-4">
-            <Link
-              to="/"
-              className="text-white hover:text-yellow-200 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
-            >
-              Home
+      {!token && location.pathname !== "/" && (
+        <>
+          <nav className=" bg-white shadow-lg h-[4rem] py-2 lg:px-20 sm:px-2 flex justify-between items-center fixed w-full top-0 z-50">
+            <Link to="/" className="flex items-center cursor-pointer">
+              <img src={logo} alt="SheSecure Logo" className="h-14" />
             </Link>
-            <Link
-              to="/signup"
-              className="text-white hover:text-yellow-200 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
-            >
-              Sign Up
-            </Link>
-            <Link
-              to="/login"
-              className="bg-white text-blue-600 hover:bg-blue-50 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
-            >
-              Login
-            </Link>
-          </div>
-        </nav>
+            <div className="space-x-4">
+              <Link
+                to="/"
+                className="hover:text-blue-600 font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+              >
+                Home
+              </Link>
+              <Link
+                to="/signup"
+                className="hover:text-blue-600 font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+              >
+                Sign Up
+              </Link>
+              <Link
+                to="/login"
+                className="hover:text-blue-600 font-semibold text-sm py-2 px-4 rounded-md transition-colors duration-200"
+              >
+                Login
+              </Link>
+            </div>
+          </nav>
+          <div className="h-[4rem]"></div>
+        </>
       )}
 
       {token && (
         <>
-          <nav className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg h-[4 rem] py-1 lg:px-20 sm:px-2 flex justify-between items-center fixed w-full top-0 z-50">
-            <Link
-              to="/dashboard"
-              className="flex items-center cursor-pointer"
-            >
+          <nav className="bg-white shadow-lg h-[4 rem] py-1 lg:px-20 sm:px-2 flex justify-between items-center fixed w-full top-0 z-50">
+            <Link to="/dashboard" className="flex items-center cursor-pointer">
               <img src={logo} alt="SheSecure Logo" className="h-14" />
             </Link>
             <div className="flex items-center space-x-6" ref={profileRef}>
               <Link
                 to="/dashboard"
-                className="text-white hover:text-yellow-200 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
+                className="flex gap-2 hover:text-blue-600 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
               >
+                <LayoutDashboard size={18} />
                 Dashboard
               </Link>
-              {user.userType === 'User' && (
+              <div className="relative">
+                <Bell className="h-6 w-6 text-gray-600 cursor-pointer" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
+                  3
+                </span>
+              </div>
+              {user.userType === "User" && (
                 <button
                   className={`${
-                    isSOSActive ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+                    isSOSActive
+                      ? "bg-green-500 hover:bg-green-600"
+                      : "bg-red-500 hover:bg-red-600"
                   } font-semibold text-white text-sm px-4 py-2 rounded-lg transition-colors duration-200 shadow-md cursor-pointer flex items-center`}
                   onClick={isSOSActive ? stopSOS : startSOS}
                 >
@@ -100,7 +128,7 @@ const Header = () => {
                 </button>
               )}
               <div className="relative">
-                <div 
+                <div
                   className="flex items-center space-x-2 cursor-pointer group"
                   onClick={() => setShowProfileBox(!showProfileBox)}
                 >
@@ -114,80 +142,108 @@ const Header = () => {
                   <div className="absolute right-0 top-[53px] w-64 shadow-xl bg-white rounded-lg overflow-hidden z-50 border border-gray-200">
                     <div className="py-2">
                       <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                        <p className="text-sm font-medium text-gray-800">{user.firstName} {user.lastName}</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {user.firstName} {user.lastName}
+                        </p>
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
                       <Link
                         to="/profile"
-                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                        className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
                         onClick={() => setShowProfileBox(false)}
                       >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
+                        <UserCircle size={16} />
                         My Profile
                       </Link>
-                      {user.userType === 'User' && (
+                      <Link
+                        to="/Profile-update"
+                        onClick={() => setShowProfileBox(false)}
+                        className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                      >
+                        <Edit size={16} /> Edit Profile
+                      </Link>
+
+                      {user?.userType === "User" && (
+                        <>
+                          <Link
+                            to="/location-history"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <History size={16} /> Location History
+                          </Link>
+                          <Link
+                            to="/chat"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <MessageCircle size={16} /> Contact Counselor
+                          </Link>
+                          <Link
+                            to="/crimeReport"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <ShieldCheck size={16} /> Crime Report
+                          </Link>
+                          <Link
+                            to="/map-view"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <MapPin size={16} /> Nearest Services
+                          </Link>
+                          <Link
+                            to="/helpline-number"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <HelpCircle size={16} /> Helpline Numbers
+                          </Link>
+                          <Link
+                            to="/contactToCustomerCare"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <HelpCircle size={16} /> Customer Care
+                          </Link>
+                          <Link
+                            to="/feedback"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <ThumbsUp size={16} /> Feedback
+                          </Link>
+                        </>
+                      )}
+
+                      {user?.userType === "Counsellor" && (
                         <Link
-                          to="./map-view"
-                          className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          to="/chat"
                           onClick={() => setShowProfileBox(false)}
+                          className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
                         >
-                          <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          Nearest Services
+                          <MessageCircle size={16} /> Contact User
                         </Link>
                       )}
-                      {user.userType === 'User' && (
-                        <Link
-                          to="./helpline-number"
-                          className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
-                          onClick={() => setShowProfileBox(false)}
-                        >
-                          <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.66l1.38 4.14a1 1 0 01-.36 1.1l-2.26 1.7a11.042 11.042 0 005.51 5.51l1.7-2.26a1 1 0 011.1-.36l4.14 1.38a1 1 0 01.66.94V19a2 2 0 01-2 2h-1C9.94 21 3 14.06 3 6V5z" />
-                          </svg>
-                          Helpline Numbers
-                        </Link>
-                      )}
-                      {user.userType==='User' && <Link
-                        to="./location-history"
-                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
-                        onClick={() => setShowProfileBox(false)}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Location History
-                      </Link>}
-                      {(user.userType==='User' || user.userType==='Counsellor') && <Link
-                        to="./chat"
-                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
-                        onClick={() => setShowProfileBox(false)}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        {user.userType === "User" ? "Contact Counsellor" : "Contact User"}
-                      </Link>}
-                      {(user.userType==='User' || user.userType==='Admin') && <Link
-                        to="/crimeReport"
-                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
-                        onClick={() => setShowProfileBox(false)}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        Crime Report
-                      </Link>}
-                      <div 
+
+                      <div
                         className="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors duration-150"
                         onClick={Logout}
                       >
-                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        <svg
+                          className="w-5 h-5 mr-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                          />
                         </svg>
                         Logout
                       </div>
@@ -198,7 +254,7 @@ const Header = () => {
             </div>
           </nav>
           {/* Add padding to the top of the page content to account for fixed header */}
-          <div className="h-[4.5rem]"></div>
+          <div className="h-[4rem]"></div>
         </>
       )}
     </>

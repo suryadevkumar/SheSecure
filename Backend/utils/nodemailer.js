@@ -11,12 +11,12 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const mailSender = async (email, otp) => {
+const mailSender = async (email, subject, body) => {
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: "SheSecure <noreply@shesecure.com>",
         to: email,
-        subject: "Your OTP Code",
-        text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`
+        subject: `${subject}`,
+        html: `${body}`
     };
 
     return new Promise((resolve, reject) => {

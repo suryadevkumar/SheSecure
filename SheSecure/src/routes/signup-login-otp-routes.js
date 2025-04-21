@@ -165,3 +165,26 @@ export const logIn = async (email, emailOTP) => {
         throw err;
     }
 };
+
+export const submitCustomerCareRequest = async (formData, token) => {
+    try {
+        const response = await fetch(api + `/auth/customer-care`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to submit request');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error submitting customer care request:', error);
+        throw error;
+    }
+};

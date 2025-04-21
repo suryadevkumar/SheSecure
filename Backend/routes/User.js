@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, signUp, userExist, sendOTP, verifyOTP, sendMobileOTP, verifyMobileOTP, allUser } from '../controllers/User.js';
+import { login, signUp, userExist, sendOTP, verifyOTP, sendMobileOTP, verifyMobileOTP, allUser, customerCare } from '../controllers/User.js';
 import { authenticateUser } from '../utils/authenticateUser.js';
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.post("/verify-otp", verifyOTP);
 router.post("/send-mobile-otp", sendMobileOTP);
 router.post("/verify-mobile-otp", verifyMobileOTP);
 router.get("/allUsers", authenticateUser, allUser);
+router.post("/customer-care", authenticateUser, customerCare);
 
 export default router;

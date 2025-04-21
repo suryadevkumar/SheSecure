@@ -15,7 +15,7 @@ function AppWrapper() {
 
   return (
     <>
-      <ToastContainer />
+      <ToastContainer position="top-center" autoClose={3000}/>
       <Header />
       <Front />
       <Footer />

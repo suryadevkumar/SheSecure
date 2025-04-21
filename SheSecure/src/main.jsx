@@ -18,6 +18,8 @@ import UpdateProfile from "./components/UpdateProfile";
 import EmergencyContacts from "./components/EmergencyContacts";
 import EmergencyNumbers from "./components/HelplineNumbers";
 import UnifiedMap from "./components/LocationMap";
+import Feedback from './components/Feedback';
+import CustomerCareForm from './components/CustomerCareForm';
 import { FullMapView, HistoryMapView } from "./components/MapView";
 
 
@@ -86,7 +88,15 @@ const appRouter = createBrowserRouter([
       {
         path: "helpline-number",
         element: <EmergencyNumbers />
-      }
+      },
+      {
+        path:'feedback',
+        element:<Feedback/>,
+      },
+      {
+        path:'contactToCustomerCare',
+        element:<CustomerCareForm/>,
+      },
     ],
   },
 ]);

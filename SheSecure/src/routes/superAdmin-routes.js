@@ -35,3 +35,26 @@ export const rejectAdmin = async (token, userId) => {
         throw err;
     }
 };
+
+// API calling function (separate from component)
+export const submitContactForm = async (formData) => {
+    try {
+        const response = await fetch(`${api}/superadmin/contactUs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to send message');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error submitting contact form:', error);
+        throw error; // Re-throw to be caught in the component
+    }
+};

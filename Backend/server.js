@@ -19,6 +19,7 @@ import crimeRoutes from './routes/CrimeReport.js';
 import crimeInteractionRoutes from './routes/CrimeReportsInteraction.js';
 import profileRoutes from './routes/Profile.js';
 import emergencyContactRoutes from './routes/emergencyContacts.js';
+import feedbackRoutes from "./routes/Feedback.js";
 import chatSocket from './utils/chatSocket.js';
 import sosSocket from './utils/sosSocket.js';
 import { liveLocationSocket } from './utils/liveLocationSocket.js';
@@ -112,6 +113,7 @@ app.use("/api/admin",adminRoutes);
 app.use("/api/superAdmin",superAdminRoutes);
 app.use("/api/profile",profileRoutes);
 app.use("/api/emergency-contacts",emergencyContactRoutes);
+app.use("/api/feedback",feedbackRoutes);
 
 const port = process.env.PORT || 3000;
 

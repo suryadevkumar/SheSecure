@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { checkUserExist, logIn, sendEmailOTP } from '../routes/signup-login-otp-routes';
-import background from '../assets/background1.jpg';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
-  const [emailOTP, setEmailOTP] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [emailTimer, setEmailTimer] = useState(0);
   const [otpVisible, setOtpVisible] = useState(false);
   const [buttonText, setButtonText] = useState('Send OTP');
+  const otpInputRefs = useRef([]);
   const navigate = useNavigate();
 
-  //email timer
+  // Email timer
   useEffect(() => {
     let emailInterval = null;
     if (emailTimer > 0) {
@@ -35,7 +36,6 @@ const Login = () => {
     return () => clearInterval(emailInterval);
   }, [emailTimer, otpVisible]);
 
-  //user existance check and send otp
   const handleSendOTPClick = async (e) => {
     e.preventDefault();
     if (!otpVisible) {
@@ -68,68 +68,119 @@ const Login = () => {
     }
   };
 
+  const handleOtpChange = (index, value) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto focus to next input
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    // Handle backspace
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1].focus();
+    }
+  };
+
+  const handleLogin = () => {
+    const fullOtp = otp.join('');
+    logIn(email, fullOtp);
+  };
+
   return (
-    <div className='flex items-center justify-center bg-cover bg-center h-[calc(100vh-4rem)]'style={{ backgroundImage: `url(${background})` }}>
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md ml-[40%] lg:ml-[50%] relative">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              className={`appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                otpVisible ? 'cursor-not-allowed' : ''
-              }`}
-              id="email"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              disabled={otpVisible}
-            />
+    <div className="h-[calc(100vh-5rem)] bg-gradient-to-b from-pink-400 to-white flex items-center justify-center p-4 my-auto">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="bg-pink-600 p-6 text-center">
+          <div className="flex justify-center mb-4">
+            <ShieldCheck className="w-12 h-12 text-white" />
           </div>
+          <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+          <p className="text-pink-100 mt-1">Sign in to your SheSecure account</p>
+        </div>
 
-          {otpVisible && (
+        <div className="p-8">
+          <div className={`${otpVisible? 'space-y-3' : 'space-y-6'}`}>
             <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="emailOTP">
-                OTP
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="email">
+                Email Address
               </label>
               <input
-                className="appearance-none border rounded w-full py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                type="text"
-                name="emailOTP"
-                id="emailOTP"
-                value={emailOTP}
-                onChange={(e) => setEmailOTP(e.target.value)}
-                placeholder="Enter your email OTP"
+                className={`w-full px-4 py-3 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition ${
+                  otpVisible ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                }`}
+                id="email"
+                type="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                disabled={otpVisible}
               />
             </div>
-          )}
 
-          <button
-            className={`text-white font-bold py-1 px-4 rounded focus:outline-none focus:shadow-outline ${
-              otpVisible ? 'w-[48%]' : 'w-full'
-            } ${otpVisible && emailTimer > 0 ? 'bg-blue-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'}`}
-            onClick={handleSendOTPClick}
-            disabled={otpVisible && emailTimer > 0}
-          >
-            {buttonText}
-          </button>
+            {otpVisible && (
+              <div className="animate-fade-in">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Verification Code
+                </label>
+                <div className="flex justify-between space-x-2">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <input
+                      key={index}
+                      ref={(el) => (otpInputRefs.current[index] = el)}
+                      className="w-full h-14 text-center text-xl border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none transition"
+                      type="text"
+                      maxLength="1"
+                      value={otp[index]}
+                      onChange={(e) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {otpVisible && (
-            <button
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-4 ml-[4%] rounded focus:outline-none focus:shadow-outline w-[48%] mt-4 ${
-                emailOTP ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-              }`}
-              onClick={() => logIn(email, emailOTP)}
-              disabled={!emailOTP}
-            >
-              Login
-            </button>
-          )}
+            <div className="flex flex-col space-y-4">
+              <button
+                className={`py-3 px-6 rounded-lg font-semibold text-white transition ${
+                  otpVisible && emailTimer > 0 
+                    ? 'bg-pink-400 cursor-not-allowed' 
+                    : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
+                }`}
+                onClick={handleSendOTPClick}
+                disabled={otpVisible && emailTimer > 0}
+              >
+                {buttonText}
+              </button>
+
+              {otpVisible && (
+                <button
+                  className={`py-3 px-6 rounded-lg font-semibold text-white transition ${
+                    otp.join('').length === 6
+                      ? 'bg-pink-600 hover:bg-pink-700 cursor-pointer' 
+                      : 'bg-pink-400 cursor-not-allowed'
+                  }`}
+                  onClick={handleLogin}
+                  disabled={otp.join('').length !== 6}
+                >
+                  Verify & Login
+                </button>
+              )}
+            </div>
+
+            <div className="text-center pt-4">
+              <p className="text-gray-600">
+                Don't have an account?{' '}
+                <a href="/signup" className="text-pink-600 font-semibold hover:underline">
+                  Sign up
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

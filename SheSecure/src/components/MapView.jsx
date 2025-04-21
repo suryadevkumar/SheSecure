@@ -352,16 +352,16 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
   // Main render
   return (
-    <div className="h-[calc(100vh-7rem)]">
+    <div className="h-[calc(100vh-5rem)]">
       {isHistoryMode ? (
         <div
           className="bg-gray-50 p-2"
-          style={{ minHeight: "calc(100vh - 14rem)" }}
+          style={{ h: "calc(100vh - 5rem)" }}
         >
           {/* History Mode UI */}
           <div className="w-full mx-auto">
             <div className="bg-white p-2 rounded-lg shadow-sm mb-2">
-              <h1 className="text-2xl text-center font-bold text-gray-800 mb-4">
+              <h1 className="text-2xl text-center font-bold text-gray-800">
                 Location History
               </h1>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
