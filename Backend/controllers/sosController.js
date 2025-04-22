@@ -1,5 +1,6 @@
 import SOS from '../models/SOS.js';
 import User from '../models/User.js';
+import sendWhatsAppMessage from '../utils/whatsAppSender.js';
 
 export const startSOS = async (req, res) => {
   const { reportId, latitude, longitude, userId } = req.body;
@@ -240,5 +241,38 @@ export const keepAlive = async (req, res) => {
       message: "Failed to keep SOS alive",
       error: error.message
     });
+  }
+};
+
+// send sos link to helper
+export const sendWhatsAppLink = async (req, res) => {
+  try {
+      const { mobileNumber } = req.body;
+
+      if (!mobileNumber) {
+          return res.status(400).json({
+              success: false,
+              message: "WhatsApp number is required"
+          });
+      }
+
+      // Send WhatsApp message
+      const result = await sendWhatsAppMessage({
+          phoneNumber: '+91' + mobileNumber,
+          templateType: 'LIVE_LOCATION',
+      });
+
+      res.json({
+          success: true,
+          message: "Link sent successfully",
+          messageId: result.messageId
+      });
+  } catch (error) {
+      console.error('Link sending error:', error);
+      res.status(500).json({
+          success: false,
+          message: error.error || 'Failed to send Link',
+          ...(process.env.NODE_ENV === 'development' ? { debug: error } : {})
+      });
   }
 };

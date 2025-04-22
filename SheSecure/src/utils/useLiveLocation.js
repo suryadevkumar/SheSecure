@@ -10,9 +10,7 @@ const useLiveLocation = () => {
   const dispatch = useDispatch();
   const [shareId, setShareId] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [locationLink, setLocationLink] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+
   const { latitude, longitude } = useSelector((state) => state.location);
   const isLocationShared = useSelector((state) => state.liveLocation.isLocationShared);
 
@@ -61,7 +59,6 @@ const useLiveLocation = () => {
     if (!socket) return;
     
     const handleError = (error) => {
-      setError(error.message || "Location sharing error");
       console.error("Socket error:", error);
     };
     
@@ -85,19 +82,15 @@ const useLiveLocation = () => {
   // Start sharing location
   const startSharing = useCallback(async () => {
     if (!latitude || !longitude) {
-      setError("Cannot share location: Location not available");
+      console.log("Cannot share location: Location not available");
       return null;
     }
-
-    setIsLoading(true);
-    setError(null);
 
     try {
       const newShareId = uuidv4();
       setShareId(newShareId);
       
       const newLocationLink = `http://localhost:5173/location?shareId=${newShareId}`;
-      setLocationLink(newLocationLink);
 
       // Save to localStorage
       localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({
@@ -124,20 +117,14 @@ const useLiveLocation = () => {
 
       return newLocationLink;
     } catch (err) {
-      setError(err.message || "Error starting location sharing");
       console.error("Start sharing error:", err);
       return null;
-    } finally {
-      setIsLoading(false);
     }
   }, [dispatch, socket, latitude, longitude]);
 
   // Stop sharing location
   const stopSharing = useCallback(async () => {
     if (!shareId) return;
-
-    setIsLoading(true);
-    setError(null);
 
     try {
       // Explicitly end the session
@@ -159,21 +146,13 @@ const useLiveLocation = () => {
       
       alert("Location sharing has been stopped");
     } catch (err) {
-      setError(err.message || "Error stopping location sharing");
       console.error("Stop sharing error:", err);
-    } finally {
-      setIsLoading(false);
     }
   }, [dispatch, socket, shareId]);
 
   return {
     startShareLocation: startSharing,
     stopShareLocation: stopSharing,
-    locationLink,
-    shareId,
-    isLoading,
-    error,
-    isActive: isLocationShared
   };
 };
 

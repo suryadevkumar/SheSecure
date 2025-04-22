@@ -51,3 +51,17 @@ export const keepAlive = async (reportId) => {
     });
     return response;
 };
+
+export const sendWhatsAppLink = async (mobileNumber, token) => {
+    console.log(mobileNumber);
+    const response = await fetch(api + "/sos/send-sos-link", {
+        method: "POST",
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mobileNumber }),
+    });
+};
+

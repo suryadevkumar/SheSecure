@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useSelector, useDispatch } from "react-redux";
 import { startSOSAction, stopSOSAction } from "../redux/sosSlice";
 import io from 'socket.io-client';
-import { endSOS, saveSOS, checkActiveSOS } from "../routes/sosSystem-routes";
+import { endSOS, saveSOS, checkActiveSOS, sendWhatsAppLink } from "../routes/sosSystem-routes";
 
 const SOS_STORAGE_KEY = 'active_sos_data';
 
@@ -181,6 +181,14 @@ const useSosSocket = () => {
 
       // Show the SOS link to the user
       console.log(`SOS Activated! Share this link: ${data.link}`);
+
+      const result = await getEmergencyContacts(token);
+      if (result.success && result.contacts && result.contacts.length) {
+        result.contacts.map(contact=>{
+          console.log(contact.contactNumber);
+          // sendWhatsAppLink(contact.contactNumber, token);
+        })
+      }
 
       return data.link;
     } catch (err) {

@@ -39,7 +39,7 @@ const formatDateTime = (timestamp) => {
   };
 };
 
-const UnifiedMap = () => {
+const SharedMap = () => {
   const [searchParams] = useSearchParams();
   const reportId = searchParams.get("reportId");
   const shareId = searchParams.get("shareId");
@@ -850,4 +850,4 @@ const UnifiedMap = () => {
   );
 };
 
-export default UnifiedMap;
+export default SharedMap;

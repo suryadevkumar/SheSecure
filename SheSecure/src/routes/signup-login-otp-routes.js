@@ -1,7 +1,8 @@
 import { toast } from "react-toastify";
 import { api } from "../config/config";
+import axios from 'axios';
 
-export const sendEmailOTP = (setEmailTimer, email, onEmailStatus) => {
+export const sendEmailOTP = (setEmailTimer, email) => {
     setEmailTimer(59);
     fetch(api + '/auth/send-otp', {
         method: 'POST',
@@ -12,44 +13,73 @@ export const sendEmailOTP = (setEmailTimer, email, onEmailStatus) => {
         .then((response) => response.json())
         .then((data) => {
             if (data.success) {
-                onEmailStatus({ success: true, message: 'Email sent successfully!' });
+                toast.success('Email sent successfully!');
             } else {
-                onEmailStatus({ success: false, message: data.message });
+                toast.error(data.message);
             }
         })
         .catch((error) => {
-            onEmailStatus({ success: false, message: 'An error occurred while sending the email.' });
+            toast.error('An error occurred while sending the email.');
         });
 };
 
-export const verifyEmail = (emailOTP) => {
-    return new Promise((resolve, reject) => {
-        fetch(api + '/auth/verify-otp', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emailOTP }),
+export const verifyEmail = (emailOTP, setIsEmailVerify) => {
+    fetch(api + '/auth/verify-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailOTP }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setIsEmailVerify(true);
+            } else {
+                toast.error(data.message);
+            }
         })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    resolve(true);
-                } else {
-                    reject(data.message);
-                }
-            })
-            .catch((error) => {
-                reject('An unexpected error occurred while verifying OTP.');
-            });
-    });
+        .catch((error) => {
+            toast.error('An unexpected error occurred while verifying OTP.');
+        });
 };
 
-export const sendMobileOTP = (setMobileTimer, mobile) => {
-    setMobileTimer(59);
+export const sendWhatsAppOTP = async (setMobileTimer, mobile) => {
+    setMobileTimer(5);
+    try {
+        const result = await axios.post('/api/auth/send-whatsApp-otp', {
+            mobileNumber: mobile,
+        });
+        if (result.data.success) {
+            toast.success('OTP sent successfully!');
+        } else {
+            toast.error(result.data.message);
+        }
+    } catch (err) {
+        toast.error('An error occurred while sending the otp.');
+        console.log(err)
+    }
 }
 
-export const verifyMobile = (setIsMobileVerify, mobileOTP) => {
-    setIsMobileVerify(true);
+export const verifyMobile = (mobileOTP, setIsMobileVerify) => {
+    fetch(api + '/auth/verify-mobile-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileOTP }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setIsMobileVerify(true);
+            } else {
+                toast.error(data.message);
+            }
+        })
+        .catch((error) => {
+            toast.error('An unexpected error occurred while verifying OTP.');
+        });
 }
 
 export const checkUserExist = async (email) => {

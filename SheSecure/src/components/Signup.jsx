@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { sendEmailOTP, sendMobileOTP, verifyEmail, verifyMobile, checkUserExist, signUp } from '../routes/signup-login-otp-routes';
-import background from '../assets/background1.jpg'
+import { sendEmailOTP, sendWhatsAppOTP, verifyEmail, verifyMobile, checkUserExist, signUp } from '../routes/signup-login-otp-routes';
 import { MdDelete } from "react-icons/md";
 import { toast } from 'react-toastify';
+import { UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Signup = () => {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', MobileNumber: '', userType: '', });
@@ -20,6 +21,7 @@ const Signup = () => {
 
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const navigate = useNavigate();
 
   //go to next page function
   const nextPage = () => {
@@ -89,14 +91,8 @@ const Signup = () => {
   const handleChecked = () => {
     setShowUserDetails(false);
     setPage(3);
-    sendMobileOTP(setMobileTimer, formData.MobileNumber);
-    sendEmailOTP(setEmailTimer, formData.email, (status) => {
-      if (status.success) {
-        toast.success(status.message);
-      } else {
-        toast.error(status.message);
-      }
-    });
+    sendWhatsAppOTP(setMobileTimer, formData.MobileNumber);
+    sendEmailOTP(setEmailTimer, formData.email);
   }
 
   //timer for email otp
@@ -134,239 +130,382 @@ const Signup = () => {
     else{
       if (formData.userType == 'User') {
         setPage(3);
-        sendMobileOTP(setMobileTimer, formData.MobileNumber);
-        sendEmailOTP(setEmailTimer, formData.email, (status) => {
-          if (status.success) {
-            toast.success(status.message);
-          } else {
-            toast.error(status.message);
-          }
-        });
+        sendWhatsAppOTP(setMobileTimer, formData.MobileNumber);
+        sendEmailOTP(setEmailTimer, formData.email);
       }
       else setPage(2);
     }
   };
 
-  //email otp verification
-  const emailVerification = () => {
-    if (!emailOTP) {
-      toast.error('Please Enter OTP!');
-      return;
-    }
-    verifyEmail(emailOTP)
-      .then(() => {
-        setIsEmailVerify(true);
-        toast.success('Email verification successful!');
-      })
-      .catch((error) => {
-        toast.error(error);
-      });
-  };
-
   return (
-    <div className='bg-cover bg-center h-[calc(100vh-4rem)]' style={{ backgroundImage: `url(${background})` }}>
-      <div className='flex items-center justify-center'>
-        <div className="bg-white p-8 mt-[4%] rounded-lg shadow-md w-full max-w-md ml-[40%] lg:ml-[50%]">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Sign Up</h2>
+    <div className="h-[calc(100vh-5rem)] bg-white flex items-center justify-center">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="bg-pink-600 p-3 text-center">
+          <div className="flex justify-center mb-1">
+            <UserPlus className="w-12 h-12 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Create Account</h2>
+          <p className="text-pink-100">Join SheSecure today</p>
+        </div>
 
-          {page == 1 && <form onSubmit={sendOTP} className="space-y-4">
-            <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="firstName">
-                First Name <span className='text-red-600'>*</span>
-              </label>
-              <input
-                className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                id="firstName"
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="Enter your first name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="lastName">
-                Last Name <span className='text-red-600'>*</span>
-              </label>
-              <input
-                className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                id="lastName"
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="Enter your last name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="email">
-                Email <span className='text-red-600'>*</span>
-              </label>
-              <input
-                className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                id="email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="mobileNumber">
-                Mobile Number <span className='text-red-600'>*</span>
-              </label>
-              <input
-                className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                id="mobileNumber"
-                type="tel"
-                name="mobileNumber"
-                value={formData.MobileNumber}
-                onChange={(e) => setFormData({ ...formData, MobileNumber: e.target.value })}
-                placeholder="Enter your mobile number"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="userType">
-                User Type <span className='text-red-600'>*</span>
-              </label>
-              <select
-                className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                id="userType"
-                name="userType"
-                value={formData.userType}
-                onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
-              >
-                <option value="">Select User Type</option>
-                <option value="User">User</option>
-                <option value="Counsellor">Counsellor</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-            <p><span className='text-red-600 font-bold'>* </span>indicates required</p>
-            <button
-              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 cursor-pointer"
-              type="submit"
-            >
-              Next
-            </button>
-          </form>}
-
-          {page == 2 && <div>
-            {coursesData.length > 0 && (
+        <div className="px-8 py-2">
+          {page === 1 && (
+            <form onSubmit={sendOTP} className="space-y-2">
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">Added Course:</label>
-                <div className="mb-4 p-2 h-32 border rounded-lg bg-gray-50 overflow-y-auto">
-                  {coursesData.map((course, index) => (
-                    <div key={index} className="border-b mb-1 py-2 flex justify-between items-center">
-                      <div className="flex items-start w-full">
-                        <div className="mt-6 mr-2 flex-shrink-0">
-                          <p className="text-center font-bold bg-black text-white h-6 w-7 rounded-full">{index + 1}</p>
-                        </div>
-                        <div className="flex-grow min-w-0">
-                          <p className="truncate">
-                            <strong>Course:</strong>
-                            <span className="ml-1">{course.courseName}</span>
-                          </p>
-                          <p><strong>Percentage:</strong> {course.percentage || "N/A"}</p>
-                          <p className="truncate">
-                            <strong>Certificate:</strong>
-                            <span className="ml-1 text-blue-500 underline cursor-pointer" onClick={() => handleCertificateView(course.certificate)}>{course.certificate.name}</span>
-                          </p>
-                        </div>
-                        <div className="ml-2 mt-6 hover:opacity-50 cursor-pointer flex-shrink-0">
-                          <MdDelete size="1.5em" onClick={() => removeCourse(index)} />
+                <label className="block text-gray-700 font-medium mb-1" htmlFor="firstName">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
+                  id="firstName"
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Enter your first name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-1" htmlFor="lastName">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
+                  id="lastName"
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Enter your last name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-1" htmlFor="email">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="your@email.com"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-1" htmlFor="mobileNumber">
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
+                  id="mobileNumber"
+                  type="tel"
+                  name="mobileNumber"
+                  value={formData.MobileNumber}
+                  onChange={(e) => setFormData({ ...formData, MobileNumber: e.target.value })}
+                  placeholder="Enter your mobile number"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-1" htmlFor="userType">
+                  User Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition cursor-pointer bg-white"
+                  id="userType"
+                  name="userType"
+                  value={formData.userType}
+                  onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
+                  required
+                >
+                  <option value="">Select User Type</option>
+                  <option value="User">User</option>
+                  <option value="Counsellor">Counsellor</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
+              
+              <p className="text-sm text-gray-600"><span className="text-red-500 font-bold">*</span> indicates required</p>
+              
+              <button
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 cursor-pointer"
+                type="submit"
+              >
+                Next
+              </button>
+              
+              <div className="text-center pt-1">
+                <p className="text-gray-600">
+                  Already have an account?{' '}
+                  <a href="/login" className="text-pink-600 font-semibold hover:underline">
+                    Log in
+                  </a>
+                </p>
+              </div>
+            </form>
+          )}
+
+          {page === 2 && (
+            <div className="space-y-2">
+              {coursesData.length > 0 && (
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">Added Courses:</label>
+                  <div className="mb-2 px-3 py-1 border-2 rounded-lg bg-gray-50 h-30 overflow-y-auto">
+                    {coursesData.map((course, index) => (
+                      <div key={index} className="border-b border-gray-200 mb-2 py-2 flex justify-between items-center">
+                        <div className="flex items-start w-full">
+                          <div className="mt-6 mr-2 flex-shrink-0">
+                            <p className="text-center font-bold bg-pink-600 text-white h-6 w-6 rounded-full">{index + 1}</p>
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <p className="truncate">
+                              <span className="font-medium">Course:</span> {course.courseName}
+                            </p>
+                            <p><span className="font-medium">Percentage:</span> {course.percentage || "N/A"}</p>
+                            <p className="truncate">
+                              <span className="font-medium">Certificate:</span>{' '}
+                              <span 
+                                className="text-pink-600 underline cursor-pointer" 
+                                onClick={() => handleCertificateView(course.certificate)}
+                              >
+                                {course.certificate.name}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="ml-2 mt-6 hover:opacity-70 cursor-pointer flex-shrink-0">
+                            <MdDelete size="1.3em" onClick={() => removeCourse(index)} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            <div className="space-y-4">
+              )}
+              
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">Course Name <span className='text-red-600'>*</span></label>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Course Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   name="courseName"
                   value={courseData.courseName}
                   onChange={(e) => setCourseData({ ...courseData, courseName: e.target.value })}
-                  className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
                   placeholder="Enter course name"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">Percentage</label>
+                <label className="block text-gray-700 font-medium mb-1">Percentage</label>
                 <input
                   type="number"
                   name="percentage"
                   value={courseData.percentage}
                   onChange={(e) => setCourseData({ ...courseData, percentage: e.target.value })}
-                  className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="Enter percentage percentage"
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white"
+                  placeholder="Enter percentage"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">Qualification Certificate <span className='text-red-600'>*</span></label>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Qualification Certificate <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="file"
                   name="certificate"
-                  onClick={()=>setCourseData({ ...courseData, certificate: null })}
+                  onClick={() => setCourseData({ ...courseData, certificate: null })}
                   onChange={(e) => setCourseData({ ...courseData, certificate: e.target.files[0] })}
-                  className="w-full border rounded-lg py-1 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-4 py-2 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition bg-white cursor-pointer"
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={addCourse}
-                className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 cursor-pointer"
-              >
-                Add More Courses
-              </button>
-              <div>
+              <div className="flex space-x-4 pt-2">
                 <button
                   type="button"
                   onClick={() => setPage(1)}
-                  className="w-[48%] bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 cursor-pointer"
+                  className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 rounded-lg transition duration-300 cursor-pointer"
                 >
                   Back
                 </button>
                 <button
-                  className="w-[48%] ml-[4%] bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 cursor-pointer"
-                  onClick={nextPage}
+                  type="button"
+                  onClick={addCourse}
+                  className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 rounded-lg transition duration-300 cursor-pointer"
                 >
-                  Next
+                  Add Course
+                </button>
+              </div>
+              
+              <button
+                type="button"
+                onClick={nextPage}
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 rounded-lg transition duration-300 cursor-pointer"
+              >
+                Continue
+              </button>
+            </div>
+          )}
+
+          {page === 3 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Verify Your Email</label>
+                <div className="w-full">
+                  <input
+                    className="w-[62%] px-4 py-3 rounded-lg border-2 bg-gray-100 cursor-not-allowed"
+                    value={formData.email}
+                    disabled
+                  />
+                  <button
+                    className={`w-[35%] ml-2 px-4 py-3 rounded-lg font-semibold text-white transition ${
+                      emailTimer > 0 || isEmailVerify 
+                        ? 'bg-pink-400 cursor-not-allowed' 
+                        : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
+                    }`}
+                    onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
+                    disabled={emailTimer > 0 || isEmailVerify}
+                  >
+                    {emailTimer > 0 ? `Resend in ${emailTimer}s` : 'Resend'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="w-full">
+                <input
+                  className={`w-[62%] px-4 py-3 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition ${
+                    isEmailVerify ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  type="text"
+                  value={emailOTP}
+                  onChange={(e) => setEmailOTP(e.target.value)}
+                  placeholder="Enter email OTP"
+                  disabled={isEmailVerify}
+                />
+                <button
+                  className={`w-[35%] ml-2 px-4 py-3 rounded-lg font-semibold text-white transition ${
+                    isEmailVerify 
+                      ? 'bg-green-500 cursor-not-allowed' 
+                      : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
+                  }`}
+                  onClick={() => verifyEmail(emailOTP, setIsEmailVerify)}
+                  disabled={isEmailVerify}
+                >
+                  {isEmailVerify ? 'Verified' : 'Verify'}
+                </button>
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Verify Your Mobile</label>
+                <div className="w-full">
+                  <input
+                    className="w-[62%] px-4 py-3 rounded-lg border-2 bg-gray-100 cursor-not-allowed"
+                    value={formData.MobileNumber}
+                    disabled
+                  />
+                  <button
+                    className={`w-[35%] ml-2 px-4 py-3 rounded-lg font-semibold text-white transition ${
+                      mobileTimer > 0 || isMobileVerify 
+                        ? 'bg-pink-400 cursor-not-allowed' 
+                        : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
+                    }`}
+                    onClick={() => sendWhatsAppOTP(setMobileTimer, formData.MobileNumber)}
+                    disabled={mobileTimer > 0 || isMobileVerify}
+                  >
+                    {mobileTimer > 0 ? `Resend in ${mobileTimer}s` : 'Resend'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="w-full">
+                <input
+                  className={`w-[62%] px-4 py-3 rounded-lg border-2 focus:border-pink-500 focus:outline-none transition ${
+                    isMobileVerify ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  type="text"
+                  value={mobileOTP}
+                  onChange={(e) => setMobileOTP(e.target.value)}
+                  placeholder="Enter mobile OTP"
+                  disabled={isMobileVerify}
+                />
+                <button
+                  className={`w-[35%] ml-2 px-4 py-3 rounded-lg font-semibold text-white transition ${
+                    isMobileVerify 
+                      ? 'bg-green-500 cursor-not-allowed' 
+                      : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
+                  }`}
+                  onClick={() => verifyMobile(mobileOTP, setIsMobileVerify)}
+                  disabled={isMobileVerify}
+                >
+                  {isMobileVerify ? 'Verified' : 'Verify'}
+                </button>
+              </div>
+              
+              <div className="flex space-x-4 pt-2">
+                <button
+                  onClick={back}
+                  className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 rounded-lg transition duration-300 cursor-pointer"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isEmailVerify && isMobileVerify) {
+                      signUp(formData, coursesData, setIsSigningUp);
+                    }
+                  }}
+                  className={`flex-1 font-semibold py-3 rounded-lg transition duration-300 ${
+                    isEmailVerify && isMobileVerify && !isSigningUp
+                      ? 'bg-pink-600 hover:bg-pink-700 text-white cursor-pointer'
+                      : 'bg-pink-300 text-white cursor-not-allowed'
+                  }`}
+                  disabled={!isEmailVerify || !isMobileVerify || isSigningUp}
+                >
+                  {isSigningUp ? 'Processing...' : 'Sign Up'}
                 </button>
               </div>
             </div>
-          </div>}
+          )}
 
           {showUserDetails && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-              <div className="bg-white p-8 rounded-lg shadow-lg w-[550px]">
-                <h2 className="text-2xl font-bold mb-4">Confirm Your Details</h2>
-                <p className="text-lg"><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
-                <p className="text-lg"><strong>Email:</strong> {formData.email}</p>
-                <p className="text-lg"><strong>Mobile:</strong> {formData.MobileNumber}</p>
-                <p className="text-lg"><strong>User Type:</strong> {formData.userType}</p>
+              <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Confirm Your Details</h2>
+                <div className="space-y-3">
+                  <p><span className="font-medium">Name:</span> {formData.firstName} {formData.lastName}</p>
+                  <p><span className="font-medium">Email:</span> {formData.email}</p>
+                  <p><span className="font-medium">Mobile:</span> {formData.MobileNumber}</p>
+                  <p><span className="font-medium">User Type:</span> {formData.userType}</p>
+                </div>
 
-                <div className="mt-5">
-                  <h3 className="text-xl font-bold mb-2">Courses</h3>
-                  <div className="max-h-62 overflow-y-auto">
+                <div className="mt-4">
+                  <h3 className="font-bold text-gray-800 mb-2">Courses</h3>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
                     {coursesData.map((course, index) => (
-                      <div key={index} className="mb-3 p-3 border rounded-lg bg-gray-100">
-                        <p className="text-lg"><strong>Course:</strong> {course.courseName}</p>
-                        <p className="text-lg"><strong>Percentage:</strong> {course.percentage || "N/A"}</p>
-                        <p className="text-lg"><strong>Certificate: </strong>{course.certificate && (<span className="text-blue-500 underline cursor-pointer truncate"
-                          onClick={() => handleCertificateView(course.certificate)}
-                          title={course.certificate.name}>{course.certificate.name}</span>)}
+                      <div key={index} className="p-3 border border-gray-200 rounded-lg">
+                        <p><span className="font-medium">Course:</span> {course.courseName}</p>
+                        <p><span className="font-medium">Percentage:</span> {course.percentage || "N/A"}</p>
+                        <p>
+                          <span className="font-medium">Certificate: </span>
+                          {course.certificate && (
+                            <span 
+                              className="text-pink-600 underline cursor-pointer"
+                              onClick={() => handleCertificateView(course.certificate)}
+                            >
+                              {course.certificate.name}
+                            </span>
+                          )}
                         </p>
                       </div>
                     ))}
@@ -374,8 +513,18 @@ const Signup = () => {
                 </div>
 
                 <div className="mt-6 flex justify-between">
-                  <button onClick={() => setShowUserDetails(false)} className="bg-red-500 text-white w-[100px] py-2 rounded-lg text-lg font-bold cursor-pointer hover:bg-red-400">Edit</button>
-                  <button onClick={handleChecked} className="bg-green-500 text-white w-[100px] py-2 rounded-lg font-bold text-lg cursor-pointer hover:bg-green-400">Confirm</button>
+                  <button 
+                    onClick={() => setShowUserDetails(false)} 
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={handleChecked} 
+                    className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg font-medium cursor-pointer"
+                  >
+                    Confirm
+                  </button>
                 </div>
               </div>
             </div>
@@ -383,7 +532,7 @@ const Signup = () => {
 
           {selectedCertificate && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-[60]">
-              <div className="relative max-w-[70%] max-h-[70%]">
+              <div className="relative max-w-[90%] max-h-[90%]">
                 <button
                   onClick={() => setSelectedCertificate(null)}
                   className="absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full hover:bg-red-400 z-50 cursor-pointer"
@@ -411,111 +560,6 @@ const Signup = () => {
                   className="max-w-full max-h-[90vh] object-contain"
                 />
               </div>
-            </div>
-          )}
-
-          {page === 3 && (
-            <div>
-              <div>
-                <label className="block text-gray-700 text-md font-bold mb-1" htmlFor="email">
-                  Verify Your Email
-                </label>
-                <input
-                  className="appearance-none border rounded w-[67%] py-1 px-3 text-gray-700 leading-tight cursor-not-allowed"
-                  id="userEmail"
-                  value={formData.email}
-                  disabled={true}
-                />
-                <button
-                  className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${emailTimer > 0 || isEmailVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
-                    }`}
-                  onClick={() => sendEmailOTP(setEmailTimer, formData.email)}
-                  disabled={isEmailVerify}
-                >
-                  {emailTimer > 0 && !isEmailVerify ? `Resend in ${emailTimer}s` : 'Resend'}
-                </button>
-              </div>
-              <div>
-                <input
-                  className={`appearance-none border rounded w-[67%] py-1 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isEmailVerify ? 'cursor-not-allowed' : ''}`}
-                  type="text"
-                  name="emailOTP"
-                  id="emailOTP"
-                  value={emailOTP}
-                  onChange={(e) => setEmailOTP(e.target.value)}
-                  placeholder="Enter your email OTP"
-                  required
-                  disabled={isEmailVerify}
-                />
-                <button
-                  className={`text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${isEmailVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
-                    }`}
-                  onClick={emailVerification}
-                  disabled={isEmailVerify}
-                >
-                  {isEmailVerify ? 'Verified' : 'Verify'}
-                </button>
-
-              </div>
-              <div>
-                <label className="block text-gray-700 text-md font-bold mb-1 mt-2" htmlFor="MobileNumber">
-                  Verify Your Mobile Number
-                </label>
-                <input
-                  className="appearance-none border rounded w-[67%] py-1 px-3 text-gray-700 leading-tight cursor-not-allowed"
-                  value={formData.MobileNumber}
-                  id="userMobile"
-                  disabled={true}
-                />
-                <button
-                  className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${mobileTimer > 0 || isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'
-                    }`}
-                  onClick={() => sendMobileOTP(setMobileTimer, formData.MobileNumber)}
-                  disabled={isMobileVerify}
-                >
-                  {mobileTimer > 0 && !isMobileVerify ? `Resend in ${mobileTimer}s` : 'Resend'}
-                </button>
-              </div>
-              <div>
-                <input
-                  className={`appearance-none border rounded w-[67%] py-1 px-3 my-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${isMobileVerify ? 'cursor-not-allowed' : ''}`}
-                  type="text"
-                  name="mobileOTP"
-                  id="mobileOTP"
-                  value={mobileOTP}
-                  onChange={(e) => setMobileOTP(e.target.value)}
-                  placeholder="Enter your mobile OTP"
-                  required
-                  disabled={isMobileVerify}
-                />
-                <button
-                  className={`bg-blue-500 text-white text-md py-1 px-1 ml-[2%] rounded focus:outline-none focus:shadow-outline w-[31%] ${isMobileVerify ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 cursor-pointer'
-                    }`}
-                  onClick={() => verifyMobile(setIsMobileVerify, mobileOTP)}
-                  disabled={isMobileVerify}
-                >
-                  {isMobileVerify ? 'Verified' : 'Verify'}
-                </button>
-              </div>
-              <button
-                className={`bg-blue-500 hover:bg-blue-700 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ${isEmailVerify && isMobileVerify ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 cursor-pointer'}`}
-                onClick={back}
-                disabled={isEmailVerify && isMobileVerify}
-              >
-                Back
-              </button>
-              <button
-                className={`bg-blue-500 text-white text-md py-1 px-1 mt-1 rounded focus:outline-none focus:shadow-outline w-[48%] ml-[4%] ${isEmailVerify && isMobileVerify && !isSigningUp ? 'hover:bg-blue-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (isEmailVerify && isMobileVerify) {
-                    signUp(formData, coursesData, setIsSigningUp);
-                  }
-                }}
-                disabled={!isEmailVerify || !isMobileVerify || isSigningUp}
-              >
-                {isSigningUp ? 'Processing...' : 'Submit'}
-              </button>
             </div>
           )}
         </div>

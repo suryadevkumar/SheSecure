@@ -17,7 +17,7 @@ import MyProfile from "./components/MyProfile";
 import UpdateProfile from "./components/UpdateProfile";
 import EmergencyContacts from "./components/EmergencyContacts";
 import EmergencyNumbers from "./components/HelplineNumbers";
-import UnifiedMap from "./components/LocationMap";
+import SharedMap from "./components/SharedMap";
 import Feedback from './components/Feedback';
 import CustomerCareForm from './components/CustomerCareForm';
 import { FullMapView, HistoryMapView } from "./components/MapView";
@@ -59,11 +59,11 @@ const appRouter = createBrowserRouter([
       },
       {
         path: "emergency-sos",
-        element: <UnifiedMap />,
+        element: <SharedMap />,
       },
       {
         path: "location",
-        element: <UnifiedMap />,
+        element: <SharedMap />,
       },
       { 
         path: "chat", 

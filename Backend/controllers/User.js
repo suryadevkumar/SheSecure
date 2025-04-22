@@ -1,105 +1,16 @@
 import otpGenerator from 'otp-generator';
 import jwt from 'jsonwebtoken';
-import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 import { uploadToCloudinary } from '../utils/uploadToCloudinary.js';
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 import Qualification from '../models/Qualification.js';
 import mailSender from "../utils/nodemailer.js";
-import {sendotp} from '../mails/sendotp.js';
+import sendWhatsAppMessage from '../utils/whatsAppSender.js';
+import { sendotp } from '../mails/sendotp.js';
 import { sendCustomerCareEmail } from '../mails/customerCare.js';
 
 dotenv.config();
-
-import serviceAccount from '../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json' assert { type: 'json' };;
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-});
-
-//send otp for mobile verification
-export const sendMobileOTP = async (req, res) => {
-    try {
-        const { phoneNumber } = req.body;
-
-        if (!phoneNumber) {
-            return res.status(400).json({ success: false, message: "Phone number is required" });
-        }
-
-        // Generate an OTP for phone authentication
-        const user = await admin.auth().createUser({ phoneNumber });
-
-        // Send OTP
-        const customToken = await admin.auth().createCustomToken(user.uid);
-
-        res.status(200).json({
-            success: true,
-            message: "OTP sent successfully",
-            token: customToken,
-        });
-
-    } catch (error) {
-        console.error("Error sending OTP:", error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-// const admin = require("firebase-admin");
-// const serviceAccount = require("../config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json");
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount)
-// });
-
-//send otp for mobile verification
-// exports.sendMobileOTP = async (req, res) => {
-//     try {
-//       const { phoneNumber } = req.body;
-
-//       if (!phoneNumber) {
-//         return res.status(400).json({ success: false, message: "Phone number is required" });
-//       }
-
-//       // Generate an OTP for phone authentication
-//       const user = await admin.auth().createUser({ phoneNumber });
-
-//       // Send OTP
-//       const customToken = await admin.auth().createCustomToken(user.uid);
-
-//       res.status(200).json({
-//         success: true,
-//         message: "OTP sent successfully",
-//         token: customToken,
-//       });
-
-//     } catch (error) {
-//       console.error("Error sending OTP:", error);
-//       res.status(500).json({ success: false, message: error.message });
-//     }
-//   };
-
-//verify otp for mobile verification
-// exports.verifyMobileOTP = async (req, res) => {
-//     try {
-//         const { phoneNumber, otp } = req.body;
-
-//         if (!phoneNumber || !otp) {
-//             return res.status(400).json({ success: false, message: "Phone number and OTP are required" });
-//         }
-
-//         // Verify OTP using Firebase
-//         const verifyResult = await admin.auth().verifyIdToken(otp);
-
-//         if (!verifyResult) {
-//             return res.status(400).json({ success: false, message: "Invalid OTP" });
-//         }
-
-//         return res.status(200).json({ success: true, message: "OTP verified successfully" });
-
-//     } catch (error) {
-//         console.error("OTP Verification Error:", error);
-//         return res.status(500).json({ success: false, message: error.message });
-//     }
-// };
 
 // Function to assign admin in a round-robin fashion
 const getNextAdmin = async () => {
@@ -116,30 +27,6 @@ const getNextAdmin = async () => {
     // Select the next admin in a round-robin manner
     const nextAdminIndex = (lastAdminIndex + 1) % admins.length;
     return admins[nextAdminIndex]._id;
-};
-
-//verify otp for mobile verification
-export const verifyMobileOTP = async (req, res) => {
-    try {
-        const { phoneNumber, otp } = req.body;
-
-        if (!phoneNumber || !otp) {
-            return res.status(400).json({ success: false, message: "Phone number and OTP are required" });
-        }
-
-        // Verify OTP using Firebase
-        const verifyResult = await admin.auth().verifyIdToken(otp);
-
-        if (!verifyResult) {
-            return res.status(400).json({ success: false, message: "Invalid OTP" });
-        }
-
-        return res.status(200).json({ success: true, message: "OTP verified successfully" });
-
-    } catch (error) {
-        console.error("OTP Verification Error:", error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
 };
 
 // Helper function to cleanup all created resources
@@ -166,6 +53,93 @@ async function cleanupResources(qualificationIds = [], profile = null, user = nu
         console.error("Cleanup failed:", cleanupError);
     }
 }
+
+//send otp for whatsapp verification
+export const sendWhatsAppOTP = async (req, res) => {
+    try {
+        const { mobileNumber } = req.body;
+        console.log(mobileNumber)
+
+        if (!mobileNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "WhatsApp number is required"
+            });
+        }
+
+        const otp = otpGenerator.generate(6, { 
+            digits: true, 
+            alphabets: false, 
+            upperCase: false, 
+            specialChars: false 
+        });
+
+        // Store OTP in session
+        req.session.whatsAppOTP = otp;
+        req.session.whatsAppOTPExpiresAt = Date.now() + 5 * 60 * 1000;
+
+        // Send WhatsApp message
+        const result = await sendWhatsAppMessage({
+            phoneNumber: '+91' + mobileNumber,
+            templateType: 'SIGNUP_OTP',
+            variables: { otp }
+        });
+
+        res.json({
+            success: true,
+            message: "OTP sent successfully",
+            messageId: result.messageId
+        });
+    } catch (error) {
+        console.error('OTP sending error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.error || 'Failed to send OTP',
+            ...(process.env.NODE_ENV === 'development' ? { debug: error } : {})
+        });
+    }
+};
+
+//verify otp for mobile verification
+export const verifyWhatsAppOTP = async (req, res) => {
+    try {
+        const { whatsAppOTP } = req.body;
+
+        // Check if OTP exists and has not expired
+        if (!req.session.whatsAppOTP || Date.now() > req.session.whatsAppOTPExpiresAt) {
+            req.session.whatsAppOTP = null; // Clear OTP after expiration
+            req.session.whatsAppOTPExpiresAt = null;
+            return res.status(400).json({
+                success: false,
+                message: "OTP has expired or not found"
+            });
+        }
+
+        // Validate OTP
+        if (req.session.whatsAppOTP !== whatsAppOTP) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP"
+            });
+        }
+
+        // OTP is valid, clear session data
+        req.session.whatsAppOTP = null;
+        req.session.whatsAppOTPExpiresAt = null;
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP verified successfully"
+        });
+
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 //check user exist or not
 export const userExist = async (req, res) => {

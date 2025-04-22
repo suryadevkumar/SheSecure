@@ -15,71 +15,95 @@ import {
 } from "react-icons/fa";
 import { MdSecurity, MdLocalPolice, MdLocalHospital } from "react-icons/md";
 import { MinimalMapView } from "./MapView";
+import ContactSelector from "./ContactSelector";
 import useSosSocket from "../utils/useSOSSystem";
+import { useState } from "react";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { startSOS, stopSOS } = useSosSocket();
-    
 
   const {
     startShareLocation,
     stopShareLocation,
-    isLoading,
-    locationLink
   } = useLiveLocation();
+
+  const [showContactSelector, setShowContactSelector] = useState(false);
+  const [tempLocationLink, setTempLocationLink] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Redux data for location, crime, police stations and hospitals
   const crimesData = useSelector((state) => state.crime.crimeReports);
   const policeStations = useSelector((state) => state.police.policeStations);
   const hospitals = useSelector((state) => state.hospital.hospitals);
-  const isSOSActive = useSelector((state)=>state.sos.isSOSActive);
-  const isLocationShared = useSelector((state)=>state.liveLocation.isLocationShared);
-  
-  // Find the nearest crime and its distance
-  const nearestCrime = crimesData && crimesData.length > 0 ? crimesData[0] : null;
-  const nearestCrimeDistance = nearestCrime ? nearestCrime.distance : null;
+  const isSOSActive = useSelector((state) => state.sos.isSOSActive);
+  const isLocationShared = useSelector((state) => state.liveLocation.isLocationShared);
 
+  // Find the nearest crime and its distance
+  const nearestCrime =
+    crimesData && crimesData.length > 0 ? crimesData[0] : null;
+  const nearestCrimeDistance = nearestCrime ? nearestCrime.distance : null;
 
   const handleClick = async () => {
     if (!isLocationShared) {
-      const link = await startShareLocation();
-      console.log('SOS Activated. Share link:', link);
+      try {
+        setIsLoading(true);
+        const link = await startShareLocation();
+        setTempLocationLink(link);
+        setShowContactSelector(true);
+        console.log("SOS Activated. Share link:", link);
+      } catch (err) {
+        console.error("Error starting location sharing:", err);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       await stopShareLocation();
-      console.log('SOS Deactivated');
+      console.log("Location sharing stopped");
     }
   };
-  
+
+  const handleContactSelectionComplete = (success) => {
+    setShowContactSelector(false);
+    if (!success) {
+      // User cancelled or didn't select any contacts
+      stopShareLocation();
+      setTempLocationLink(null);
+    }
+  };
+
   // Calculate safety score based on nearest crime distance
   // If no crimes, score is 100
   // If crime is very close (0.1km or less), score is low (10)
   // If crime is far (5km or more), score is high (90)
   const calculateSafetyScore = () => {
     if (!nearestCrimeDistance) return 100;
-    
+
     // Scale: 0.1km -> 10 points, 5km -> 90 points
-    const score = Math.min(90, Math.max(10, (nearestCrimeDistance / 5) * 80 + 10));
+    const score = Math.min(
+      90,
+      Math.max(10, (nearestCrimeDistance / 5) * 80 + 10)
+    );
     return Math.round(score);
   };
-  
+
   const safetyScore = calculateSafetyScore();
-  
+
   // Get gradient colors based on safety score
   const getGradientColors = () => {
     if (safetyScore >= 80) {
-      return 'from-green-500 to-teal-600';
+      return "from-green-500 to-teal-600";
     } else if (safetyScore >= 60) {
-      return 'from-green-500 to-yellow-500';
+      return "from-green-500 to-yellow-500";
     } else if (safetyScore >= 40) {
-      return 'from-yellow-500 to-orange-500';
+      return "from-yellow-500 to-orange-500";
     } else if (safetyScore >= 20) {
-      return 'from-orange-500 to-red-500';
+      return "from-orange-500 to-red-500";
     } else {
-      return 'from-red-500 to-pink-600';
+      return "from-red-500 to-pink-600";
     }
   };
-  
+
   // Get safety status message
   const getSafetyMessage = () => {
     if (safetyScore >= 80) {
@@ -96,14 +120,16 @@ const UserDashboard = () => {
   };
 
   const handleServiceClick = (service) => {
-    navigate('/map-view', { state: { selectedService: service } });
+    navigate("/map-view", { state: { selectedService: service } });
   };
 
   return (
     <div className="pt-28 p-4 lg:mb-8 sm:mb-24 md:p-6 space-y-8 max-w-6xl mx-auto">
       <div className="w-full space-y-8">
         {/* Safety Status Banner */}
-        <div className={`rounded-2xl p-6 shadow-lg text-white bg-gradient-to-r ${getGradientColors()}`}>
+        <div
+          className={`rounded-2xl p-6 shadow-lg text-white bg-gradient-to-r ${getGradientColors()}`}
+        >
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -111,11 +137,15 @@ const UserDashboard = () => {
               </h2>
               <p className="mt-2">
                 {getSafetyMessage()}
-                {crimesData?.length > 0 && ` (${crimesData.length} crime${crimesData.length !== 1 ? 's' : ''} reported nearby)`}
+                {crimesData?.length > 0 &&
+                  ` (${crimesData.length} crime${
+                    crimesData.length !== 1 ? "s" : ""
+                  } reported nearby)`}
               </p>
               {nearestCrimeDistance !== null && (
                 <p className="mt-1 text-sm text-white/90">
-                  Nearest incident: {nearestCrimeDistance.toFixed(1)} km away • {nearestCrime.typeOfCrime}
+                  Nearest incident: {nearestCrimeDistance.toFixed(1)} km away •{" "}
+                  {nearestCrime.typeOfCrime}
                 </p>
               )}
             </div>
@@ -162,7 +192,9 @@ const UserDashboard = () => {
             onClick={handleClick}
             disabled={isLoading}
             className={`p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center transition-colors cursor-pointer ${
-              isLocationShared ? "bg-blue-600 text-white" : "bg-white hover:bg-blue-50"
+              isLocationShared
+                ? "bg-blue-600 text-white"
+                : "bg-white hover:bg-blue-50"
             }`}
           >
             <div
@@ -171,12 +203,18 @@ const UserDashboard = () => {
               }`}
             >
               <FaLocationArrow
-                  className={`text-xl ${
+                className={`text-xl ${
                   isLocationShared ? "text-white" : "text-blue-600"
                 }`}
               />
             </div>
-            <span className="font-medium">Share Live Location</span>
+            <span className="font-medium">
+              {isLoading
+                ? "Starting..."
+                : isLocationShared
+                ? "Location Shared"
+                : "Share Live Location"}
+            </span>
           </button>
 
           <Link
@@ -197,9 +235,11 @@ const UserDashboard = () => {
               <FaMapMarkerAlt className="text-red-500" /> Live Location & Safety
             </h2>
             <p className="text-gray-500 text-sm">
-              {crimesData?.length > 0 
-                ? `${crimesData.length} crime${crimesData.length !== 1 ? 's' : ''} reported nearby` 
-                : 'No crimes reported nearby'}
+              {crimesData?.length > 0
+                ? `${crimesData.length} crime${
+                    crimesData.length !== 1 ? "s" : ""
+                  } reported nearby`
+                : "No crimes reported nearby"}
             </p>
           </div>
 
@@ -236,15 +276,18 @@ const UserDashboard = () => {
               <div className="h-60 overflow-y-auto">
                 {policeStations && policeStations.length > 0 ? (
                   policeStations.map((station, index) => (
-                    <div 
+                    <div
                       key={index}
                       onClick={() => handleServiceClick(station)}
                       className="flex justify-between items-center p-3 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer border-b border-gray-100"
                     >
                       <div>
-                        <h4 className="font-medium">{station.displayName?.text}</h4>
+                        <h4 className="font-medium">
+                          {station.displayName?.text}
+                        </h4>
                         <p className="text-sm text-gray-500">
-                          {station.distance?.toFixed(1)} km away • {station.formattedAddress}
+                          {station.distance?.toFixed(1)} km away •{" "}
+                          {station.formattedAddress}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -255,9 +298,7 @@ const UserDashboard = () => {
                         >
                           <FaPhoneAlt />
                         </a>
-                        <button 
-                          className="bg-blue-100 text-blue-700 p-2 rounded-full hover:bg-blue-200 transition-colors cursor-pointer"
-                        >
+                        <button className="bg-blue-100 text-blue-700 p-2 rounded-full hover:bg-blue-200 transition-colors cursor-pointer">
                           <FaExternalLinkAlt />
                         </button>
                       </div>
@@ -280,15 +321,18 @@ const UserDashboard = () => {
               <div className="h-60 overflow-y-auto">
                 {hospitals && hospitals.length > 0 ? (
                   hospitals.map((hospital, index) => (
-                    <div 
+                    <div
                       key={index}
                       onClick={() => handleServiceClick(hospital)}
                       className="flex justify-between items-center p-3 hover:bg-green-50 rounded-lg transition-colors cursor-pointer border-b border-gray-100"
                     >
                       <div>
-                        <h4 className="font-medium">{hospital.displayName?.text}</h4>
+                        <h4 className="font-medium">
+                          {hospital.displayName?.text}
+                        </h4>
                         <p className="text-sm text-gray-500">
-                          {hospital.distance?.toFixed(1)} km away • {hospital.formattedAddress}
+                          {hospital.distance?.toFixed(1)} km away •{" "}
+                          {hospital.formattedAddress}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -299,9 +343,7 @@ const UserDashboard = () => {
                         >
                           <FaPhoneAlt />
                         </a>
-                        <button 
-                          className="bg-green-100 text-green-700 p-2 rounded-full hover:bg-green-200 transition-colors cursor-pointer"
-                        >
+                        <button className="bg-green-100 text-green-700 p-2 rounded-full hover:bg-green-200 transition-colors cursor-pointer">
                           <FaExternalLinkAlt />
                         </button>
                       </div>
@@ -351,6 +393,19 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+
+      {showContactSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <ContactSelector 
+              locationLink={tempLocationLink}
+              onComplete={handleContactSelectionComplete}
+              requireSelection={true}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
