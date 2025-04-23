@@ -550,7 +550,7 @@ const CrimeReportForm = () => {
 
         {isSubmitting && (
           <div className="fixed top-0 left-0 right-0 z-50">
-            <div className="max-w-md mx-auto p-4">
+            <div className="max-w-md mx-auto p-4 mt-4 shadow-2xl">
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div
                   className="bg-rose-600 h-2.5 rounded-full transition-all duration-300"

@@ -25,7 +25,6 @@ const useLiveLocation = () => {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         setShareId(parsedData.shareId);
-        setLocationLink(parsedData.locationLink);
         dispatch(startShareLocation());
         
         // Re-join the room
@@ -66,7 +65,6 @@ const useLiveLocation = () => {
       console.log("Session ended:", data);
       dispatch(stopShareLocation());
       setShareId(null);
-      setLocationLink('');
       localStorage.removeItem(LOCATION_STORAGE_KEY);
     };
     
@@ -142,7 +140,6 @@ const useLiveLocation = () => {
       
       // Clear local state
       setShareId(null);
-      setLocationLink('');
       
       alert("Location sharing has been stopped");
     } catch (err) {

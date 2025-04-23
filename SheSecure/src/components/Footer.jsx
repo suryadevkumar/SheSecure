@@ -16,7 +16,7 @@ const Footer = () => {
           <div className="flex space-x-6 mb-4 md:mb-0">
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               <span className="sr-only">Facebook</span>
               <svg
@@ -34,7 +34,7 @@ const Footer = () => {
             </a>
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               <span className="sr-only">Twitter</span>
               <svg
@@ -48,7 +48,7 @@ const Footer = () => {
             </a>
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               <span className="sr-only">Instagram</span>
               <svg
@@ -70,19 +70,19 @@ const Footer = () => {
           <div className="text-sm flex flex-nowrap space-x-6 justify-center">
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               Privacy Policy
             </a>
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               Terms of Service
             </a>
             <a
               href="#"
-              className="hover:text-yellow-200 transition-colors duration-200"
+              className="hover:text-rose-500 transition-colors duration-200"
             >
               Contact Us
             </a>

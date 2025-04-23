@@ -243,20 +243,8 @@ const UserDashboard = () => {
             </p>
           </div>
 
-          <div className="h-96">
+          <div className="h-[34rem]">
             <MinimalMapView />
-          </div>
-
-          <div className="p-5 bg-gray-50 flex flex-wrap justify-between gap-4">
-            <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:bg-purple-50 transition-colors">
-              <FaTaxi className="text-purple-600" /> Safe Ride
-            </button>
-            <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:bg-blue-50 transition-colors">
-              <MdSecurity className="text-blue-600" /> Share Trip
-            </button>
-            <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:bg-green-50 transition-colors">
-              <FaFirstAid className="text-green-600" /> First Aid
-            </button>
           </div>
         </div>
 
@@ -395,8 +383,8 @@ const UserDashboard = () => {
       </div>
 
       {showContactSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-transparent bg-opacity-10 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+          <div className="bg-white shadow-2xl rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <ContactSelector 
               locationLink={tempLocationLink}
               onComplete={handleContactSelectionComplete}
