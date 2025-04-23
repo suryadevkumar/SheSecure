@@ -56,7 +56,7 @@ const ContactSelector = ({ locationLink, onComplete, requireSelection }) => {
         const phoneNumbers = contactsToSend.map(c => c.contactNumber);
         
         const message = `🚨 EMERGENCY ALERT 🚨\n\nI need help! Please check my live location:\n${locationLink}\n\nI may be in danger.`;
-        await sendWhatsAppLink(phoneNumbers, token);
+        // await sendWhatsAppLink(phoneNumbers, token);
       }
       
       onComplete(true); // Notify parent of successful completion
