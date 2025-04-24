@@ -67,12 +67,7 @@ export const sendWhatsAppOTP = async (req, res) => {
             });
         }
 
-        const otp = otpGenerator.generate(6, { 
-            digits: true, 
-            alphabets: false, 
-            upperCase: false, 
-            specialChars: false 
-        });
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
         // Store OTP in session
         req.session.whatsAppOTP = otp;
@@ -107,7 +102,7 @@ export const verifyWhatsAppOTP = async (req, res) => {
 
         // Check if OTP exists and has not expired
         if (!req.session.whatsAppOTP || Date.now() > req.session.whatsAppOTPExpiresAt) {
-            req.session.whatsAppOTP = null; // Clear OTP after expiration
+            req.session.whatsAppOTP = null;
             req.session.whatsAppOTPExpiresAt = null;
             return res.status(400).json({
                 success: false,

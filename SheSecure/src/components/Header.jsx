@@ -218,13 +218,41 @@ const Header = () => {
                       )}
 
                       {user?.userType === "Counsellor" && (
-                        <Link
-                          to="/chat"
-                          onClick={() => setShowProfileBox(false)}
-                          className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
-                        >
-                          <MessageCircle size={16} /> Contact User
-                        </Link>
+                        <>
+                          <Link
+                            to="/chat"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <MessageCircle size={16} /> Contact User
+                          </Link>
+                          <Link
+                            to="/contactToCustomerCare"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <HelpCircle size={16} /> Customer Care
+                          </Link>
+                        </>
+                      )}
+
+                      {user?.userType === "Admin" && (
+                        <>
+                          <Link
+                            to="/crimeReport"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <ShieldCheck size={16} /> Crime Report
+                          </Link>
+                          <Link
+                            to="/contactToCustomerCare"
+                            onClick={() => setShowProfileBox(false)}
+                            className="flex gap-4 items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <HelpCircle size={16} /> Customer Care
+                          </Link>
+                        </>
                       )}
 
                       <div

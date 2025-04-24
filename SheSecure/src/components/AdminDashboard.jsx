@@ -197,7 +197,7 @@ const AdminDashboard = () => {
           <div className="flex border-b">
             <button
               onClick={() => setSelectedTab('requests')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'requests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              className={`px-6 py-3 font-medium cursor-pointer ${selectedTab === 'requests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
             >
               <div className="flex items-center">
                 <FaUserClock className="mr-2" />
@@ -206,7 +206,7 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => setSelectedTab('verified')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'verified' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              className={`px-6 py-3 font-medium cursor-pointer ${selectedTab === 'verified' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
             >
               <div className="flex items-center">
                 <FaUserCheck className="mr-2" />
@@ -215,7 +215,7 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => setSelectedTab('users')}
-              className={`px-6 py-3 font-medium ${selectedTab === 'users' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
+              className={`px-6 py-3 font-medium cursor-pointer ${selectedTab === 'users' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
             >
               <div className="flex items-center">
                 <FaUsers className="mr-2" />
@@ -455,14 +455,14 @@ const AdminDashboard = () => {
                 <h2 className="text-2xl font-bold text-gray-800">
                   {selectedUser.userType === 'Counsellor' ? 'Counsellor' : 'User'} Profile
                 </h2>
-                <div className="flex space-x-2">
+                <div className="flex space-x-6">
                   {selectedTab === 'requests' && 
                    selectedUser.userType === 'Counsellor' && 
                    selectedUser.approved === 'Unverified' && (
                     <button
                       onClick={() => handleApproveCounsellor(selectedUser._id)}
                       disabled={isApproving}
-                      className={`flex items-center px-4 py-2 text-white rounded-lg shadow transition-all ${isApproving ? 'bg-green-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
+                      className={`flex items-center px-4 py-2 text-white rounded-lg shadow transition-all cursor-pointer ${isApproving ? 'bg-green-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
                     >
                       <FaCheck className="mr-2" />
                       Approve
@@ -472,7 +472,7 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => handleRejectCounsellor(selectedUser._id)}
                       disabled={isRejecting}
-                      className={`flex items-center px-4 py-2 text-white rounded-lg shadow transition-all ${isRejecting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'}`}
+                      className={`flex items-center px-4 py-2 text-white rounded-lg shadow transition-all cursor-pointer ${isRejecting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'}`}
                     >
                       <FaTimes className="mr-2" />
                       Reject
@@ -480,7 +480,7 @@ const AdminDashboard = () => {
                   )}
                   <button
                     onClick={() => setSelectedUser(null)}
-                    className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <FaTimes size={20} />
                   </button>

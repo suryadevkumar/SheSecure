@@ -28,6 +28,8 @@ const SuperAdminDashboard = () => {
     pendingRequests: 0,
   });
   const [selectedTab, setSelectedTab] = useState("requests");
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [userToReject, setUserToReject] = useState(null);
 
   const token = useSelector((state)=>state.auth.token);
 
@@ -88,13 +90,24 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  // Handle admin rejection confirmation
+  const confirmRejectAdmin = (user) => {
+    setUserToReject(user);
+    setShowRejectConfirm(true);
+  };
+
   // Handle admin rejection
-  const handleRejectAdmin = async (userId) => {
+  const handleRejectAdmin = async () => {
     try {
-      await rejectAdmin(token, userId);
-      const updatedUsers = allUsers.filter((user) => user._id !== userId);
+      await rejectAdmin(token, userToReject._id);
+      const updatedUsers = allUsers.filter((user) => user._id !== userToReject._id);
       setAllUsers(updatedUsers);
       calculateStats(updatedUsers);
+      setShowRejectConfirm(false);
+      setUserToReject(null);
+      if (selectedUser && selectedUser._id === userToReject._id) {
+        setSelectedUser(null);
+      }
     } catch (error) {
       console.error("Error rejecting admin:", error);
     }
@@ -140,6 +153,47 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Reject Confirmation Modal */}
+      {showRejectConfirm && (
+        <div className="fixed inset-0 bg-transparent bg-opacity-10 backdrop-blur-lg shadow-2xl flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 animate-in fade-in-50 zoom-in-95">
+            <div className="flex flex-col items-center">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <FaTimes className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:mt-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {selectedTab === "requests" ? "Reject Admin Request" : "Revoke Admin Status"}
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to {selectedTab === "requests" ? "reject" : "revoke"} admin for{" "}
+                    <span className="font-semibold">{userToReject?.firstName} {userToReject?.lastName}</span>?
+                    {selectedTab === "admins" && " This will remove their admin privileges."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-6 flex justify-center space-x-4">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer"
+                onClick={() => setShowRejectConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 cursor-pointer"
+                onClick={handleRejectAdmin}
+              >
+                Confirm {selectedTab === "requests" ? "Reject" : "Revoke"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto p-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -216,7 +270,7 @@ const SuperAdminDashboard = () => {
           <div className="flex border-b">
             <button
               onClick={() => setSelectedTab("requests")}
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium cursor-pointer ${
                 selectedTab === "requests"
                   ? "text-indigo-600 border-b-2 border-indigo-600"
                   : "text-gray-500"
@@ -226,7 +280,7 @@ const SuperAdminDashboard = () => {
             </button>
             <button
               onClick={() => setSelectedTab("admins")}
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium cursor-pointer ${
                 selectedTab === "admins"
                   ? "text-indigo-600 border-b-2 border-indigo-600"
                   : "text-gray-500"
@@ -236,7 +290,7 @@ const SuperAdminDashboard = () => {
             </button>
             <button
               onClick={() => setSelectedTab("counselors")}
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium cursor-pointer ${
                 selectedTab === "counselors"
                   ? "text-indigo-600 border-b-2 border-indigo-600"
                   : "text-gray-500"
@@ -246,7 +300,7 @@ const SuperAdminDashboard = () => {
             </button>
             <button
               onClick={() => setSelectedTab("users")}
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium cursor-pointer ${
                 selectedTab === "users"
                   ? "text-indigo-600 border-b-2 border-indigo-600"
                   : "text-gray-500"
@@ -273,7 +327,7 @@ const SuperAdminDashboard = () => {
                       Detailed information about this user
                     </p>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-6">
                     {selectedTab === "requests" &&
                       selectedUser.approved === "Unverified" && (
                         <button
@@ -281,7 +335,7 @@ const SuperAdminDashboard = () => {
                             handleVerifyAdmin(selectedUser._id);
                             setSelectedUser(null);
                           }}
-                          className="flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow hover:shadow-md transition-all"
+                          className="flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
                           title="Approve Admin"
                         >
                           <FaCheck className="mr-1" size={16} />
@@ -291,11 +345,8 @@ const SuperAdminDashboard = () => {
                     {(selectedTab === "requests" ||
                       selectedTab === "admins") && (
                       <button
-                        onClick={() => {
-                          handleRejectAdmin(selectedUser._id);
-                          setSelectedUser(null);
-                        }}
-                        className="flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow hover:shadow-md transition-all"
+                        onClick={() => confirmRejectAdmin(selectedUser)}
+                        className="flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
                         title="Reject Admin"
                       >
                         <FaTimes className="mr-1" size={16} />
@@ -304,7 +355,7 @@ const SuperAdminDashboard = () => {
                     )}
                     <button
                       onClick={() => setSelectedUser(null)}
-                      className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
+                      className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                       title="Close"
                     >
                       <FaTimes size={18} />
@@ -561,7 +612,7 @@ const SuperAdminDashboard = () => {
                             </span>
                           </td>
                           <td
-                            className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                            className="px-4 py-4 whitespace-nowrap text-sm font-medium"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex space-x-2">
@@ -573,8 +624,8 @@ const SuperAdminDashboard = () => {
                                 <FaCheck />
                               </button>
                               <button
-                                onClick={() => handleRejectAdmin(admin._id)}
-                                className="text-white bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
+                                onClick={() => confirmRejectAdmin(admin)}
+                                className="text-white bg-red-500 hover:bg-red-600 ml-2 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
                                 title="Reject Admin"
                               >
                                 <FaTimes />
@@ -674,8 +725,8 @@ const SuperAdminDashboard = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
-                              onClick={() => handleRejectAdmin(admin._id)}
-                              className="text-white bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
+                              onClick={() => confirmRejectAdmin(admin)}
+                              className="text-white bg-red-500 hover:bg-red-600 ml-4 p-2 rounded-full transition-colors duration-200 shadow hover:shadow-md"
                               title="Revoke Admin"
                             >
                               <FaTimes />

@@ -46,27 +46,33 @@ export const verifyEmail = (emailOTP, setIsEmailVerify) => {
 
 export const sendWhatsAppOTP = async (setMobileTimer, mobile) => {
     setMobileTimer(5);
-    try {
-        const result = await axios.post('/api/auth/send-whatsApp-otp', {
-            mobileNumber: mobile,
+
+    fetch(api + '/auth/send-whatsApp-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: mobile }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                toast.success('OTP sent successfully!');
+            } else {
+                toast.error(data.message || 'Failed to send OTP');
+            }
+        })
+        .catch((error) => {
+            toast.error('An error occurred while sending the email.');
         });
-        if (result.data.success) {
-            toast.success('OTP sent successfully!');
-        } else {
-            toast.error(result.data.message);
-        }
-    } catch (err) {
-        toast.error('An error occurred while sending the otp.');
-        console.log(err)
-    }
-}
+};
+
 
 export const verifyMobile = (mobileOTP, setIsMobileVerify) => {
     fetch(api + '/auth/verify-mobile-otp', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileOTP }),
+        body: JSON.stringify({ whatsAppOTP: mobileOTP }),
     })
         .then((response) => response.json())
         .then((data) => {

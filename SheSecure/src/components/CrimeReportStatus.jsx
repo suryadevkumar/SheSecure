@@ -27,6 +27,8 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
   const userType = useSelector((state) => state.auth.user.userType);
   const token = useSelector((state) => state.auth.token);
 
@@ -50,17 +52,12 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
 
   // Remove crime report
   const removeCrimeReport = async (reportId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this report? This action cannot be undone."
-    );
-    if (!confirmDelete) return;
-
     setIsProcessing(true);
     try {
       const response = await crimeReportRemove(token, reportId);
       if (response.success) {
         toast.success(response.message);
-        onReportRemoved(reportId); // Update parent state
+        onReportRemoved(reportId);
       } else {
         toast.error(response.message);
       }
@@ -68,6 +65,7 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
       toast.error("Failed to delete report");
     } finally {
       setIsProcessing(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -112,6 +110,45 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
               className="w-full h-full object-contain max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-transparent bg-opacity-50 backdrop-blur-xl shadow-2xl flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 animate-in fade-in-50 zoom-in-95">
+            <div className="flex flex-col items-center">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <FiAlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:mt-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Delete Crime Report
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to delete this crime report? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-6 flex justify-center space-x-4">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 cursor-pointer"
+                onClick={() => removeCrimeReport(reportToDelete)}
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -247,7 +284,10 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
                                 ? "opacity-50 cursor-not-allowed"
                                 : "cursor-pointer"
                             }`}
-                            onClick={() => removeCrimeReport(report._id)}
+                            onClick={() => {
+                              setReportToDelete(report._id);
+                              setShowDeleteConfirm(true);
+                            }}
                             disabled={isProcessing}
                           >
                             {isProcessing ? "Processing..." : "Delete"}
@@ -598,7 +638,10 @@ const CrimeReportStatus = ({ reports, onReportVerified, onReportRemoved }) => {
                               ? "opacity-50 cursor-not-allowed"
                               : "cursor-pointer"
                           }`}
-                          onClick={() => removeCrimeReport(report._id)}
+                          onClick={() => {
+                            setReportToDelete(report._id);
+                            setShowDeleteConfirm(true);
+                          }}
                           disabled={isProcessing}
                         >
                           {isProcessing ? "Processing..." : "Delete"}
