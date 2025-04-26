@@ -14,6 +14,7 @@ import {
 import { Loader } from "@googlemaps/js-api-loader";
 import { googleMapAPI } from "../config/config";
 import { submitCrimeReport } from "../routes/crime-report-routes";
+import { toast } from "react-toastify";
 
 const CrimeReportForm = () => {
   const [suspects, setSuspects] = useState([]);
@@ -376,13 +377,13 @@ const CrimeReportForm = () => {
         },
         (error) => {
           console.log("Geolocation error:", error);
-          alert(
+          toast.error(
             "Could not get your current location. Please make sure location services are enabled."
           );
         }
       );
     } else {
-      alert("Geolocation is not supported by this browser.");
+      toast.error("Geolocation is not supported by this browser.");
     }
   };
 
@@ -511,7 +512,7 @@ const CrimeReportForm = () => {
       setError(error.response?.data?.message || "Failed to submit report");
       setIsSubmitting(false);
       setUploadProgress(0);
-      alert("There was an error submitting your report. Please try again.");
+      toast.error("There was an error submitting your report. Please try again.");
       throw error;
     }
   };

@@ -134,16 +134,20 @@ const CrimeReport = () => {
           <h3 className="mt-4 text-lg font-medium text-gray-900">
             No crime reports submitted yet
           </h3>
-          <p className="mt-1 text-gray-500 mb-6">
-            Be the first to report a crime in your area
-          </p>
-          <button
-            onClick={handleNewReportClick}
-            className="flex items-center mx-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-          >
-            <FiPlusCircle className="mr-2" />
-            Report a Crime
-          </button>
+          {userType == "User" && (
+            <div>
+              <p className="mt-1 text-gray-500 mb-6">
+                Be the first to report a crime in your area
+              </p>
+              <button
+                onClick={handleNewReportClick}
+                className="flex items-center mx-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer"
+              >
+                <FiPlusCircle className="mr-2" />
+                Report a Crime
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

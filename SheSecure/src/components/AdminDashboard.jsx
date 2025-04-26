@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaUserClock, FaUserCheck, FaCheck, FaTimes, FaSearch, FaUser, FaUsers, FaExternalLinkAlt } from 'react-icons/fa';
+import { FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useSelector } from "react-redux";
 import { fetchAllUser, approveCounsellor, rejectCounsellor } from '../routes/admin-routes';
@@ -18,6 +19,9 @@ const AdminDashboard = () => {
   const [selectedTab, setSelectedTab] = useState('requests');
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const token = useSelector((state)=>state.auth.token);
 
@@ -60,13 +64,16 @@ const AdminDashboard = () => {
 
   // Action handlers
   const handleApproveCounsellor = async (userId) => {
-    if (!window.confirm('Are you sure you want to approve this counsellor?')) return;
-    
+    setSelectedUserId(userId);
+    setShowApproveConfirm(true);
+  };
+
+  const confirmApproveCounsellor = async () => {
     setIsApproving(true);
     try {
-      await approveCounsellor(token, userId);
+      await approveCounsellor(token, selectedUserId);
       const updatedUsers = users.map(user => 
-        user._id === userId ? { ...user, approved: 'Verified' } : user
+        user._id === selectedUserId ? { ...user, approved: 'Verified' } : user
       );
       setUsers(updatedUsers);
       calculateStats(updatedUsers);
@@ -76,16 +83,21 @@ const AdminDashboard = () => {
       toast.error(error.message || 'Failed to approve counsellor');
     } finally {
       setIsApproving(false);
+      setShowApproveConfirm(false);
+      setSelectedUserId(null);
     }
   };
 
   const handleRejectCounsellor = async (userId) => {
-    if (!window.confirm('Are you sure you want to reject this counsellor?')) return;
-    
+    setSelectedUserId(userId);
+    setShowRejectConfirm(true);
+  };
+
+  const confirmRejectCounsellor = async () => {
     setIsRejecting(true);
     try {
-      await rejectCounsellor(token, userId);
-      const updatedUsers = users.filter(user => user._id !== userId);
+      await rejectCounsellor(token, selectedUserId);
+      const updatedUsers = users.filter(user => user._id !== selectedUserId);
       setUsers(updatedUsers);
       calculateStats(updatedUsers);
       toast.success('Counsellor rejected successfully');
@@ -94,6 +106,8 @@ const AdminDashboard = () => {
       toast.error(error.message || 'Failed to reject counsellor');
     } finally {
       setIsRejecting(false);
+      setShowRejectConfirm(false);
+      setSelectedUserId(null);
     }
   };
 
@@ -132,6 +146,88 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Approve Confirmation Dialog */}
+      {showApproveConfirm && (
+        <div className="fixed inset-0 bg-transparent bg-opacity-50 backdrop-blur-xl shadow-2xl flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 animate-in fade-in-50 zoom-in-95">
+            <div className="flex flex-col items-center">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                <FiAlertCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="mt-3 text-center sm:mt-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Approve Counsellor
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to approve this counsellor? They will gain access to counsellor privileges.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-6 flex justify-center space-x-4">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer"
+                onClick={() => setShowApproveConfirm(false)}
+                disabled={isApproving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 cursor-pointer"
+                onClick={confirmApproveCounsellor}
+                disabled={isApproving}
+              >
+                {isApproving ? 'Approving...' : 'Confirm Approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Confirmation Dialog */}
+      {showRejectConfirm && (
+        <div className="fixed inset-0 bg-transparent bg-opacity-50 backdrop-blur-xl shadow-2xl flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 animate-in fade-in-50 zoom-in-95">
+            <div className="flex flex-col items-center">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <FiAlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:mt-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Reject Counsellor
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to reject this counsellor? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-6 flex justify-center space-x-4">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer"
+                onClick={() => setShowRejectConfirm(false)}
+                disabled={isRejecting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 cursor-pointer"
+                onClick={confirmRejectCounsellor}
+                disabled={isRejecting}
+              >
+                {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto p-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

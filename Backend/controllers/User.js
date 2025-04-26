@@ -200,6 +200,8 @@ export const sendOTP = async (req, res) => {
 
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
+        console.log(otp);   
+        
         req.session.emailOTP = otp;
         req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
 
@@ -384,7 +386,7 @@ export const signUp = async (req, res) => {
 
         // Send email (non-critical operation)
         if (createdUser.approved === "Unverified") {
-            mailSender(email,
+            mailSender(email,"Account created & Pending for Verification",
                 `A new ${userType} has signed up and is awaiting approval.\n\nName: ${firstName} ${lastName}\nEmail: ${email}\n\nApprove or reject in the admin panel.`
             ).catch(console.error);
         }

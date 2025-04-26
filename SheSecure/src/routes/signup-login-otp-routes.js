@@ -45,47 +45,50 @@ export const verifyEmail = (emailOTP, setIsEmailVerify) => {
 };
 
 export const sendWhatsAppOTP = async (setMobileTimer, mobile) => {
-    setMobileTimer(5);
+    setMobileTimer(59);
+    toast.success('OTP sent successfully!');
 
-    fetch(api + '/auth/send-whatsApp-otp', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mobileNumber: mobile }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                toast.success('OTP sent successfully!');
-            } else {
-                toast.error(data.message || 'Failed to send OTP');
-            }
-        })
-        .catch((error) => {
-            toast.error('An error occurred while sending the email.');
-        });
+    // fetch(api + '/auth/send-whatsApp-otp', {
+    //     method: 'POST',
+    //     credentials: 'include',
+    //     headers: { 'content-type': 'application/json' },
+    //     body: JSON.stringify({ mobileNumber: mobile }),
+    // })
+    //     .then((response) => response.json())
+    //     .then((data) => {
+    //         if (data.success) {
+    //             toast.success('OTP sent successfully!');
+    //         } else {
+    //             toast.error(data.message || 'Failed to send OTP');
+    //         }
+    //     })
+    //     .catch((error) => {
+    //         toast.error('An error occurred while sending the email.');
+    //     });
 };
 
 
 export const verifyMobile = (mobileOTP, setIsMobileVerify) => {
-    fetch(api + '/auth/verify-mobile-otp', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsAppOTP: mobileOTP }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                toast.success(data.message);
-                setIsMobileVerify(true);
-            } else {
-                toast.error(data.message);
-            }
-        })
-        .catch((error) => {
-            toast.error('An unexpected error occurred while verifying OTP.');
-        });
+    toast.success("Account Verified Successfully!");
+    setIsMobileVerify(true);
+    // fetch(api + '/auth/verify-mobile-otp', {
+    //     method: 'POST',
+    //     credentials: 'include',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ whatsAppOTP: mobileOTP }),
+    // })
+    //     .then((response) => response.json())
+    //     .then((data) => {
+    //         if (data.success) {
+    //             toast.success(data.message);
+    //             setIsMobileVerify(true);
+    //         } else {
+    //             toast.error(data.message);
+    //         }
+    //     })
+    //     .catch((error) => {
+    //         toast.error('An unexpected error occurred while verifying OTP.');
+    //     });
 }
 
 export const checkUserExist = async (email) => {

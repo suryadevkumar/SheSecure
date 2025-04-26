@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 import { startShareLocation, stopShareLocation } from "../redux/liveLocationSlice";
 import io from 'socket.io-client';
+import { toast } from "react-toastify";
 
 const LOCATION_STORAGE_KEY = 'active_location_data';
 
@@ -141,7 +142,7 @@ const useLiveLocation = () => {
       // Clear local state
       setShareId(null);
       
-      alert("Location sharing has been stopped");
+      toast.error("Location sharing has been stopped");
     } catch (err) {
       console.error("Stop sharing error:", err);
     }

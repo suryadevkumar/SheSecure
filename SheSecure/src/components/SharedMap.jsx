@@ -14,6 +14,7 @@ import calculateDistance from "../utils/calculateDistance";
 import victimIcon from "../assets/location1.png";
 import helperIcon from "../assets/liveLocation.png";
 import liveIcon from "../assets/location1.png";
+import { toast } from "react-toastify";
 
 const libraries = ["places", "directions"];
 const mapContainerStyle = {
@@ -439,14 +440,14 @@ const SharedMap = () => {
           },
           (error) => {
             console.error("Geolocation error:", error);
-            alert("Error getting location. Please enable location services.");
+            toast.error("Error getting location. Please enable location services.");
           },
           { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
         setWatchId(id);
         setShowHelperLocation(true);
       } else {
-        alert("Geolocation not supported by this browser");
+        toast.error("Geolocation not supported by this browser");
       }
     } else {
       if (watchId) navigator.geolocation.clearWatch(watchId);

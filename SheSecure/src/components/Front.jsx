@@ -26,7 +26,7 @@ const Front=()=> {
             }
             dispatch({ type: 'socket/initialize' });
           } else {
-            alert("Session expired, please login again");
+            toast.error("Session expired, please login again");
             localStorage.removeItem('token');
             dispatch(setToken(null));
             navigate('/login');
