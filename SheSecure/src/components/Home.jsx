@@ -225,12 +225,12 @@ const HeroSection = () => {
             SheSecure empowers women with real-time alerts, tracking & emergency
             features to ensure safety wherever you go.
           </p>
-          <a
-            href="/signup"
+          <Link
+            to="/signup"
             className="mt-6 mx-auto md:mx-0 bg-pink-600 text-white px-6 py-3 rounded-2xl text-lg hover:bg-pink-700 transition-all duration-300 transform hover:scale-105"
           >
             Get Started
-          </a>
+          </Link>
         </div>
 
         <div className="w-full md:w-1/2">
