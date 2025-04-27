@@ -1,6 +1,11 @@
 import SOS from '../models/SOS.js';
 import User from '../models/User.js';
-import sendWhatsAppMessage from '../utils/whatsAppSender.js';
+import twilio from 'twilio';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
 
 export const startSOS = async (req, res) => {
   const { reportId, latitude, longitude, userId } = req.body;
@@ -40,18 +45,18 @@ export const startSOS = async (req, res) => {
     // Create shareable link
     const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${reportId}`;
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'SOS started successfully', 
+    res.status(201).json({
+      success: true,
+      message: 'SOS started successfully',
       sos,
       link: sosLink
     });
   } catch (error) {
     console.error("Start SOS error:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to start SOS', 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start SOS',
+      error: error.message
     });
   }
 };
@@ -67,9 +72,9 @@ export const endSOS = async (req, res) => {
     );
 
     if (!sos) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'No active SOS found with this reportId' 
+      return res.status(404).json({
+        success: false,
+        message: 'No active SOS found with this reportId'
       });
     }
 
@@ -83,17 +88,17 @@ export const endSOS = async (req, res) => {
       await req.session.save();
     }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'SOS ended successfully', 
-      sos 
+    res.status(200).json({
+      success: true,
+      message: 'SOS ended successfully',
+      sos
     });
   } catch (error) {
     console.error("End SOS error:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to end SOS', 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to end SOS',
+      error: error.message
     });
   }
 };
@@ -101,13 +106,13 @@ export const endSOS = async (req, res) => {
 export const fetchSosLocation = async (req, res) => {
   try {
     const { reportId } = req.body;
-    
+
     // Find the SOS record
     const sosRecord = await SOS.findOne({ reportId });
     if (!sosRecord) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "Invalid SOS link" 
+        message: "Invalid SOS link"
       });
     }
 
@@ -137,12 +142,12 @@ export const fetchSosLocation = async (req, res) => {
         }
       });
 
-      if (!user || !user.additionalDetails) {
-        return res.status(404).json({ 
-          success: false,
-          message: "User profile not found" 
-        });
-      }
+    if (!user || !user.additionalDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "User profile not found"
+      });
+    }
 
     // Get live locations from active SOS if available
     const liveLocations = global.activeSOS?.[reportId]?.locations || [];
@@ -159,9 +164,9 @@ export const fetchSosLocation = async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching SOS data:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: "Error fetching SOS data" 
+      error: "Error fetching SOS data"
     });
   }
 };
@@ -169,23 +174,23 @@ export const fetchSosLocation = async (req, res) => {
 // New endpoint to check if a user has an active SOS
 export const checkActiveSOSForUser = async (req, res) => {
   const { userId } = req.body;
-  
+
   try {
     // Check database for active SOS
     const activeSOS = await SOS.findOne({
       userId,
       endSosTime: null
     });
-    
+
     if (!activeSOS) {
       return res.json({
         isActive: false
       });
     }
-    
+
     // Create shareable link
     const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${activeSOS.reportId}`;
-    
+
     // Initialize global state if needed
     if (!global.activeSOS) global.activeSOS = {};
     if (!global.activeSOS[activeSOS.reportId]) {
@@ -195,7 +200,7 @@ export const checkActiveSOSForUser = async (req, res) => {
         startTime: activeSOS.startSosTime
       };
     }
-    
+
     res.json({
       isActive: true,
       reportId: activeSOS.reportId,
@@ -214,22 +219,22 @@ export const checkActiveSOSForUser = async (req, res) => {
 // KeepAlive endpoint to ensure SOS remains active
 export const keepAlive = async (req, res) => {
   const { reportId } = req.body;
-  
+
   try {
     // Verify SOS exists and is active
     const sos = await SOS.findOne({ reportId, endSosTime: null });
-    
+
     if (!sos) {
       return res.status(404).json({
         success: false,
         message: "No active SOS found with this reportId"
       });
     }
-    
+
     // Update last activity timestamp
     sos.lastActivity = new Date();
     await sos.save();
-    
+
     res.json({
       success: true,
       message: "SOS session kept alive"
@@ -244,35 +249,52 @@ export const keepAlive = async (req, res) => {
   }
 };
 
-// send sos link to helper
-export const sendWhatsAppLink = async (req, res) => {
+export const sendLink = async (req, res) => {
   try {
-      const { mobileNumber } = req.body;
+    const { contacts, link_type, origin, link_id } = req.body;
+    const userId = req.user._id;
+    const user = await User.findById(userId);
 
-      if (!mobileNumber) {
-          return res.status(400).json({
-              success: false,
-              message: "WhatsApp number is required"
-          });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let message;
+    if (link_type === "SOS") {
+      message = `Emergency Alert: ${user.firstName} ${user.lastName} needs help!
+      Phone: ${user.mobileNumber}
+      Track their live location here: ${origin}/emergency-sos/?reportId=${link_id}
+      Please respond immediately.`;
+    } else {
+      message = `Live Location Update:
+      ${user.firstName} ${user.lastName}'s latest location:
+      Phone: ${user.mobileNumber}
+      Track here: ${origin}/live-location/?shareId=${link_id}
+      Stay connected for further updates.`;
+    }
+
+    console.log(message, contacts);
+
+    for (let number of contacts) {
+      const phoneNumber= "+91"+number
+      try {
+        const response = await client.messages.create({
+          body: message,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: phoneNumber
+        });
+        console.log(`Message sent to ${phoneNumber}: SID ${response.sid}`);
+      } catch (error) {
+        console.error(`Failed to send message to ${phoneNumber}: ${error.message}`);
       }
+    }
 
-      // Send WhatsApp message
-      const result = await sendWhatsAppMessage({
-          phoneNumber: '+91' + mobileNumber,
-          templateType: 'LIVE_LOCATION',
-      });
+    res.status(200).json({ message: "Messages sent successfully" });
 
-      res.json({
-          success: true,
-          message: "Link sent successfully",
-          messageId: result.messageId
-      });
   } catch (error) {
-      console.error('Link sending error:', error);
-      res.status(500).json({
-          success: false,
-          message: error.error || 'Failed to send Link',
-          ...(process.env.NODE_ENV === 'development' ? { debug: error } : {})
-      });
+    console.error("Error in sendLink:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+
+

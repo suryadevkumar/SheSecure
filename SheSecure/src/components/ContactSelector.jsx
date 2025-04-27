@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { sendWhatsAppLink } from '../routes/sosSystem-routes';
+import { sendLink } from '../routes/sosSystem-routes';
 import { FaWhatsapp, FaTimes, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { getEmergencyContacts } from '../routes/emergency-contact-routes';
 
-const ContactSelector = ({ locationLink, onComplete, requireSelection }) => {
+const ContactSelector = ({ location_id, onComplete, requireSelection }) => {
   const [contacts, setContacts] = useState([]);
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,13 +53,11 @@ const ContactSelector = ({ locationLink, onComplete, requireSelection }) => {
     try {
       if (selectedContacts.length > 0) {
         const contactsToSend = contacts.filter(c => selectedContacts.includes(c._id));
-        const phoneNumbers = contactsToSend.map(c => c.contactNumber);
-        
-        const message = `🚨 EMERGENCY ALERT 🚨\n\nI need help! Please check my live location:\n${locationLink}\n\nI may be in danger.`;
-        // await sendWhatsAppLink(phoneNumbers, token);
+        const contactNumbers = contactsToSend.map(c => c.contactNumber);
+        sendLink(contactNumbers, "Live_Location", location_id, token);
       }
       
-      onComplete(true); // Notify parent of successful completion
+      onComplete(true);
     } catch (err) {
       setError('Failed to send messages. Please try again.');
       console.error(err);

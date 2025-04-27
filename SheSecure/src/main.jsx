@@ -62,7 +62,7 @@ const appRouter = createBrowserRouter([
         element: <SharedMap />,
       },
       {
-        path: "location",
+        path: "live-location",
         element: <SharedMap />,
       },
       { 

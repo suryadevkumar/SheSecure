@@ -29,7 +29,7 @@ const UserDashboard = () => {
   } = useLiveLocation();
 
   const [showContactSelector, setShowContactSelector] = useState(false);
-  const [tempLocationLink, setTempLocationLink] = useState(null);
+  const [tempLocationId, setTempLocationId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Redux data for location, crime, police stations and hospitals
@@ -48,10 +48,9 @@ const UserDashboard = () => {
     if (!isLocationShared) {
       try {
         setIsLoading(true);
-        const link = await startShareLocation();
-        setTempLocationLink(link);
+        const location_id = await startShareLocation();
+        setTempLocationId(location_id);
         setShowContactSelector(true);
-        console.log("SOS Activated. Share link:", link);
       } catch (err) {
         console.error("Error starting location sharing:", err);
       } finally {
@@ -68,7 +67,7 @@ const UserDashboard = () => {
     if (!success) {
       // User cancelled or didn't select any contacts
       stopShareLocation();
-      setTempLocationLink(null);
+      setTempLocationId(null);
     }
   };
 
@@ -386,7 +385,7 @@ const UserDashboard = () => {
         <div className="fixed inset-0 bg-transparent bg-opacity-10 backdrop-blur-lg flex items-center justify-center z-50 p-4">
           <div className="bg-white shadow-2xl rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <ContactSelector 
-              locationLink={tempLocationLink}
+              location_id={tempLocationId}
               onComplete={handleContactSelectionComplete}
               requireSelection={true}
             />

@@ -6,7 +6,6 @@ import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 import Qualification from '../models/Qualification.js';
 import mailSender from "../utils/nodemailer.js";
-import sendWhatsAppMessage from '../utils/whatsAppSender.js';
 import { sendotp } from '../mails/sendotp.js';
 import { sendCustomerCareEmail } from '../mails/customerCare.js';
 
@@ -53,88 +52,6 @@ async function cleanupResources(qualificationIds = [], profile = null, user = nu
         console.error("Cleanup failed:", cleanupError);
     }
 }
-
-//send otp for whatsapp verification
-export const sendWhatsAppOTP = async (req, res) => {
-    try {
-        const { mobileNumber } = req.body;
-        console.log(mobileNumber)
-
-        if (!mobileNumber) {
-            return res.status(400).json({
-                success: false,
-                message: "WhatsApp number is required"
-            });
-        }
-
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Store OTP in session
-        req.session.whatsAppOTP = otp;
-        req.session.whatsAppOTPExpiresAt = Date.now() + 5 * 60 * 1000;
-
-        // Send WhatsApp message
-        const result = await sendWhatsAppMessage({
-            phoneNumber: '+91' + mobileNumber,
-            templateType: 'SIGNUP_OTP',
-            variables: { otp }
-        });
-
-        res.json({
-            success: true,
-            message: "OTP sent successfully",
-            messageId: result.messageId
-        });
-    } catch (error) {
-        console.error('OTP sending error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.error || 'Failed to send OTP',
-            ...(process.env.NODE_ENV === 'development' ? { debug: error } : {})
-        });
-    }
-};
-
-//verify otp for mobile verification
-export const verifyWhatsAppOTP = async (req, res) => {
-    try {
-        const { whatsAppOTP } = req.body;
-
-        // Check if OTP exists and has not expired
-        if (!req.session.whatsAppOTP || Date.now() > req.session.whatsAppOTPExpiresAt) {
-            req.session.whatsAppOTP = null;
-            req.session.whatsAppOTPExpiresAt = null;
-            return res.status(400).json({
-                success: false,
-                message: "OTP has expired or not found"
-            });
-        }
-
-        // Validate OTP
-        if (req.session.whatsAppOTP !== whatsAppOTP) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP"
-            });
-        }
-
-        // OTP is valid, clear session data
-        req.session.whatsAppOTP = null;
-        req.session.whatsAppOTPExpiresAt = null;
-
-        return res.status(200).json({
-            success: true,
-            message: "OTP verified successfully"
-        });
-
-    } catch (error) {
-        console.error(error.message);
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 
 //check user exist or not
 export const userExist = async (req, res) => {

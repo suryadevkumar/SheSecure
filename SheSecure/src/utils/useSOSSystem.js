@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useSelector, useDispatch } from "react-redux";
 import { startSOSAction, stopSOSAction } from "../redux/sosSlice";
 import io from 'socket.io-client';
-import { endSOS, saveSOS, checkActiveSOS, sendWhatsAppLink } from "../routes/sosSystem-routes";
+import { endSOS, saveSOS, checkActiveSOS, sendLink } from "../routes/sosSystem-routes";
+import { getEmergencyContacts } from "../routes/emergency-contact-routes";
 
 const SOS_STORAGE_KEY = 'active_sos_data';
 
@@ -155,14 +156,14 @@ const useSosSocket = () => {
     setError(null);
 
     try {
-      const newReportId = `${uuidv4()}_${uuidv4()}`;
+      const newReportId = uuidv4();
       const response = await saveSOS(token, newReportId, latitude, longitude, user._id);
-
-      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to start SOS');
       }
+
+      const data = await response.json();
 
       setReportId(newReportId);
       setSosLink(data.link);
@@ -179,15 +180,10 @@ const useSosSocket = () => {
       // Update Redux state
       dispatch(startSOSAction());
 
-      // Show the SOS link to the user
-      console.log(`SOS Activated! Share this link: ${data.link}`);
-
       const result = await getEmergencyContacts(token);
       if (result.success && result.contacts && result.contacts.length) {
-        result.contacts.map(contact=>{
-          console.log(contact.contactNumber);
-          // sendWhatsAppLink(contact.contactNumber, token);
-        })
+        const contactNumbers = result?.contacts.map(c => c.contactNumber);
+          sendLink(contactNumbers, "SOS", newReportId, token);
       }
 
       return data.link;

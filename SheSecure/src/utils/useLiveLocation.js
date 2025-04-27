@@ -88,13 +88,10 @@ const useLiveLocation = () => {
     try {
       const newShareId = uuidv4();
       setShareId(newShareId);
-      
-      const newLocationLink = `http://localhost:5173/location?shareId=${newShareId}`;
 
       // Save to localStorage
       localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({
         shareId: newShareId,
-        locationLink: newLocationLink
       }));
 
       // Join the location sharing room
@@ -114,7 +111,7 @@ const useLiveLocation = () => {
 
       dispatch(startShareLocation());
 
-      return newLocationLink;
+      return newShareId;
     } catch (err) {
       console.error("Start sharing error:", err);
       return null;
