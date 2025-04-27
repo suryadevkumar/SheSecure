@@ -75,7 +75,7 @@ const Header = () => {
               </Link>
               <Link
                 to="/login"
-                className="hover:text-blue-600 font-semibold text-sm py-2 px-4 rounded-md transition-colors duration-200"
+                className="hover:text-blue-600 font-semibold py-2 px-4 rounded-md transition-colors duration-200"
               >
                 Login
               </Link>
