@@ -15,6 +15,13 @@ import { submitContactForm } from "../routes/superAdmin-routes";
 import logo1 from "../assets/logo.png";
 import logo from "../assets/logo1.png";
 import front from "../assets/Front.png";
+import locationTrack from "../assets/locationTrack.png";
+import sosImg from "../assets/SOS.png";
+import hospital from "../assets/hospital.png";
+import police from "../assets/police.png";
+import guidance from "../assets/Guidance.png";
+import mission from "../assets/misssion.png";
+import vision from "../assets/vision.png";
 import { toast } from "react-toastify";
 
 // Animation styles
@@ -305,35 +312,35 @@ const Features = () => {
       title: "Location Sharing",
       description:
         "Share your real-time location with loved ones and decide who can track you and for how long. Whether you're commuting late at night or out for a run, this feature helps keep you safe and reassures those who care about you.",
-      image: "src/assets/locationTrack.png",
+      image: {locationTrack},
     },
     {
       top: "Instant Emergency Alerts",
       title: "SOS Alert",
       description:
         "In any dangerous situation, just press the SOS button to send an instant alert to your emergency contacts and nearby authorities. The alert includes your current location and a distress message so that help can reach you as quickly as possible. Because every second matters.",
-      image: "src/assets/SOS.png",
+      image: {sosImg},
     },
     {
       top: "Nearest Hospitals",
       title: "Nearby Hospitals",
       description:
         "Access a list of nearby hospitals and emergency rooms within seconds. Whether it's for first aid or medical emergencies, this feature helps you find the fastest route to care. Powered by real-time location services and Google Maps integration.",
-      image: "src/assets/hospital.png",
+      image: {hospital},
     },
     {
       top: "Nearest Police Stations",
       title: "Nearby Police Stations",
       description:
         "SheSecure helps you locate the nearest police station using real-time data and your location. You can get directions instantly and even call directly from the app. In emergencies, this feature ensures that legal help is never far away.",
-      image: "src/assets/police.png",
+      image: {police},
     },
     {
       top: "24/7 Guidance",
       title: "Counselor Guidance",
       description:
         "Sometimes safety means emotional support too. SheSecure connects you with verified counselors and support professionals who are here to listen, guide, and help — whether you're dealing with anxiety, fear, or trauma. Your conversations are private, secure, and judgment-free.",
-      image: "src/assets/Guidance Background Removed.png",
+      image: {guidance},
     },
   ];
 
@@ -430,7 +437,7 @@ const OurMissionVision = () => {
               <div className="md:w-1/2 mb-6 md:mb-0">
                 <div className="h-80 w-full flex items-center justify-center overflow-hidden rounded-lg">
                   <img
-                    src="/src/assets/mission.png"
+                    src={mission}
                     alt="Mission Illustration"
                     className="h-full w-auto object-contain mx-auto transition-transform duration-500 hover:scale-105"
                     style={imageAnimation.initial}
@@ -479,7 +486,7 @@ const OurMissionVision = () => {
               <div className="w-full max-w-[120%]">
                 <div className="mx-auto h-80 w-[75%] overflow-hidden rounded-lg">
                   <img
-                    src="src/assets/_vision-Picsart-BackgroundChanger.png"
+                    src={vision}
                     alt="Vision Illustration"
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                     style={imageAnimation.initial}
