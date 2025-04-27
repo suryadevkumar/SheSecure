@@ -18,7 +18,7 @@ import front from "../assets/Front.png";
 import locationTrack from "../assets/locationTrack.png";
 import sosImg from "../assets/SOS.png";
 import hospital from "../assets/hospital.png";
-import police from "../assets/Police.png";
+import police from "../assets/police.png";
 import guidance from "../assets/Guidance.png";
 import mission from "../assets/mission.png";
 import vision from "../assets/vision.png";
