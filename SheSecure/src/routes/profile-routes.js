@@ -23,6 +23,13 @@ export const updateProfile = async (token, formData) => {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to update profile");
-  return res.json();
+  const data = await res.json();
+  console.log(data);
+
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to update profile");
+  }
+
+  localStorage.setItem('user', JSON.stringify(data.user));
+  return data;
 };

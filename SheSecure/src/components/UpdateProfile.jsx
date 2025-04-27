@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateProfile, getUserDetails } from "../routes/profile-routes";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Phone,
   Calendar,
@@ -12,6 +12,7 @@ import {
   Pencil,
   BadgeInfo,
 } from "lucide-react";
+import { setUser } from "../redux/authSlice";
 
 const UpdateProfile = () => {
   const [formData, setFormData] = useState({
@@ -20,29 +21,34 @@ const UpdateProfile = () => {
     dob: "",
     displayPicture: null,
   });
-  const [user, setUser] = useState(null);
-  const fileInputRef = useRef(null);
+  const [initialFormData, setInitialFormData] = useState({}); // To track initial data
+  const [isSubmitting, setIsSubmitting] = useState(false); // For disabling button during submit
   const navigate = useNavigate();
-  const token=useSelector((state)=>state.auth.token);
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token);
+  const user = useSelector((state) => state.auth.user);
 
+  // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await getUserDetails(token);
-        setUser(res.user);
+        dispatch(setUser(res.user));
         const details = res.user.additionalDetails || {};
-        setFormData({
+        const dataToSet = {
           gender: details.gender || "",
           address: details.address || "",
           dob: details.dob?.split("T")[0] || "",
           displayPicture: null,
-        });
+        };
+        setFormData(dataToSet);
+        setInitialFormData(dataToSet); // Set initial form data
       } catch {
         toast.error("Failed to load profile data");
       }
     };
     fetchProfile();
-  }, []);
+  }, [token, dispatch]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -54,16 +60,42 @@ const UpdateProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true); // Disable button during submission
+
     const data = new FormData();
+    let hasUpdates = false;
+
+    // Compare initial form data with current form data
     Object.entries(formData).forEach(([key, value]) => {
-      if (value) data.append(key, value);
+      if (key === "displayPicture") {
+        if (value) {
+          hasUpdates = true;
+          data.append(key, value);
+        }
+      } else if (value !== initialFormData[key]) {
+        hasUpdates = true;
+        data.append(key, value);
+      }
     });
+
+    // If no updates, show info message and stop submission
+    if (!hasUpdates) {
+      toast.info("No changes to update.");
+      setIsSubmitting(false); // Enable button again
+      return;
+    }
+
+    // Send the data to the API
     try {
-      const res=await updateProfile(token, data);
-      toast.success(res.message);
-      navigate("/profile");
+      const res = await updateProfile(token, data);
+      if (res.success) {
+        toast.success(res.message);
+        navigate("/profile");
+      }
     } catch {
       toast.error("Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -111,8 +143,9 @@ const UpdateProfile = () => {
         <button
           type="submit"
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm shadow transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer"
+          disabled={isSubmitting} // Disable button while submitting
         >
-          Save Changes
+          {isSubmitting ? "Saving..." : "Save Changes"}
         </button>
       </div>
 

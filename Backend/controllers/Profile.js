@@ -47,11 +47,11 @@ export const updateProfile = async (req, res) => {
 
         let imageUrl = null;
 
-        //Check if a new display picture is uploaded
+        // Check if a new display picture is uploaded
         if (req.files && req.files.displayPicture) {
             const displayPicture = req.files.displayPicture;
 
-            //Upload image to Cloudinary
+            // Upload image to Cloudinary
             const image = await uploadToCloudinary(
                 displayPicture,
                 process.env.FOLDER_NAME,
@@ -62,10 +62,10 @@ export const updateProfile = async (req, res) => {
 
             imageUrl = image.secure_url;
         }
+
         const { address, dob, gender } = req.body;
 
-
-        //Ensure at least one field is being updated
+        // Ensure at least one field is being updated
         if (!imageUrl && !address && !dob && !gender) {
             return res.status(200).json({ success: true, message: "No any update found." });
         }
@@ -75,26 +75,32 @@ export const updateProfile = async (req, res) => {
         if (gender !== undefined) updateData.gender = gender;
         if (address !== undefined) updateData.address = address;
         if (dob !== undefined) updateData.dob = dob;
+        if (imageUrl !== null) updateData.image = imageUrl;
 
-        console.log(updateData)
+        console.log(updateData);
 
-
-        // Update profile with the provided fields
+        // Update profile
         const updatedProfile = await Profile.findByIdAndUpdate(
             user.additionalDetails,
             { $set: updateData },
             { new: true, runValidators: true }
-        )
-            .populate("emergencyContacts")
+        ).populate("emergencyContacts");
 
         if (!updatedProfile) {
             return res.status(404).json({ success: false, message: "Profile not found." });
         }
 
+        // 🔵 Now, fetch full user info with populated profile
+        const updatedUser = await User.findById(userId)
+            .populate({
+                path: "additionalDetails",
+                populate: { path: "emergencyContacts" }
+            });
+
         return res.status(200).json({
             success: true,
             message: "Profile updated successfully.",
-            profile: updatedProfile
+            user: updatedUser,
         });
 
     } catch (error) {
