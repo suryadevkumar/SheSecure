@@ -14,6 +14,7 @@ import { getAllFeedbacks } from "../routes/feedback-routes";
 import { submitContactForm } from "../routes/superAdmin-routes";
 import logo1 from "../assets/logo.png";
 import logo from "../assets/logo1.png";
+import front from "../assets/Front.png";
 import { toast } from "react-toastify";
 
 // Animation styles
@@ -235,7 +236,7 @@ const HeroSection = () => {
 
         <div className="w-full md:w-1/2">
           <img
-            src="/src/assets/Front.png"
+            src={front}
             alt="Safety Illustration"
             className="w-full max-w-md mx-auto transition-all duration-500 hover:scale-105"
             style={imageAnimation.initial}
