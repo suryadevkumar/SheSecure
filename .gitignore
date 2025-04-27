@@ -19,8 +19,6 @@ dist-ssr
 
 # 🔹 Environment & Config Files
 .env
-shesecure/src/config/config.js
-backend/config/she-576ee-firebase-adminsdk-fbsvc-fe4f4d89e5.json
 
 # 🔹 Editor & System Files
 .vscode/*
