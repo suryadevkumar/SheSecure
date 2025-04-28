@@ -142,7 +142,7 @@ export const logIn = async (email, emailOTP) => {
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                window.location.href = '/login';
+                window.location.href = '/dashboard';
             } else {
                 toast.error('Login failed. Server error.');
             }

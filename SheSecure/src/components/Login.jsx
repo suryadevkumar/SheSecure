@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { checkUserExist, logIn, sendEmailOTP } from '../routes/signup-login-otp-routes';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ShieldCheck } from 'lucide-react';
 
@@ -11,7 +10,6 @@ const Login = () => {
   const [otpVisible, setOtpVisible] = useState(false);
   const [buttonText, setButtonText] = useState('Send OTP');
   const otpInputRefs = useRef([]);
-  const navigate = useNavigate();
 
   // Email timer
   useEffect(() => {
