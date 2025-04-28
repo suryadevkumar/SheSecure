@@ -5,6 +5,7 @@ import { startSOSAction, stopSOSAction } from "../redux/sosSlice";
 import io from 'socket.io-client';
 import { endSOS, saveSOS, checkActiveSOS, sendLink } from "../routes/sosSystem-routes";
 import { getEmergencyContacts } from "../routes/emergency-contact-routes";
+import { wsUrl } from "../config/config";
 
 const SOS_STORAGE_KEY = 'active_sos_data';
 
@@ -22,7 +23,7 @@ const useSosSocket = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const newSocket = io("http://localhost:3000/sos");
+    const newSocket = io(wsUrl+"/sos");
     setSocket(newSocket);
 
     return () => {

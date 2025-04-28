@@ -32,7 +32,7 @@ const server = http.createServer(app);
 // Setup socket.io
 const io = new Server(server, {
   cors: {
-    origin: "https://shesecure.vercel.app",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -45,7 +45,7 @@ cloudinaryConnect();
 // CORS configuration
 app.use(
   cors({
-    origin: 'https://shesecure.vercel.app/',
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true
