@@ -6,7 +6,7 @@ const Footer = () => {
 
   return (
     <>
-      {location.pathname!=="/" ? (<footer className="bg-white py-1 px-6 fixed bottom-0 left-0 w-full shadow-lg border-t border-gray-100 z-40">
+      {location.pathname!=="/" ? (<footer className="bg-white py-1 px-6 bottom-0 left-0 w-full shadow-lg border-t border-gray-100 z-40">
         <div className="container mx-auto flex flex-col lg:flex-row justify-between items-center">
           <div className="flex items-center mb-4 md:mb-0">
             <span className="text-xl font-bold mr-2">SheSecure</span>

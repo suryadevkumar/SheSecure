@@ -8,6 +8,7 @@ import {
 import { MdDelete } from "react-icons/md";
 import { toast } from "react-toastify";
 import { UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -179,7 +180,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-5rem)] bg-white flex items-center justify-center">
+    <div className=" bg-white flex p-4 my-4 justify-center">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden">
         <div className="bg-pink-600 p-3 text-center">
           <div className="flex justify-center mb-1">
@@ -191,7 +192,7 @@ const Signup = () => {
 
         <div className="px-8 py-2">
           {page === 1 && (
-            <form onSubmit={sendOTP} className="space-y-2">
+            <form onSubmit={sendOTP} className="space-y-2 py-4">
               <div>
                 <label
                   className="block text-gray-700 font-medium mb-1"
@@ -315,12 +316,12 @@ const Signup = () => {
               <div className="text-center pt-1">
                 <p className="text-gray-600">
                   Already have an account?{" "}
-                  <a
-                    href="/login"
+                  <Link
+                    to="/login"
                     className="text-pink-600 font-semibold hover:underline"
                   >
                     Log in
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

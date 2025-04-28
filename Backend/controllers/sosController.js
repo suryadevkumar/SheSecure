@@ -43,7 +43,7 @@ export const startSOS = async (req, res) => {
     }
 
     // Create shareable link
-    const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${reportId}`;
+    const sosLink = `${process.env.FRONTEND_URL }/emergency-sos/?reportId=${reportId}`;
 
     res.status(201).json({
       success: true,
@@ -189,7 +189,7 @@ export const checkActiveSOSForUser = async (req, res) => {
     }
 
     // Create shareable link
-    const sosLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/emergency-sos/?reportId=${activeSOS.reportId}`;
+    const sosLink = `${process.env.FRONTEND_URL}/emergency-sos/?reportId=${activeSOS.reportId}`;
 
     // Initialize global state if needed
     if (!global.activeSOS) global.activeSOS = {};
