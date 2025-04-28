@@ -22,6 +22,7 @@ import {
   setUserTyping,
   clearUserTyping
 } from '../redux/chatSlice';
+import { wsUrl } from '../config/config';
 
 const chatSocket = store => {
   let socket = null;
@@ -39,7 +40,7 @@ const chatSocket = store => {
       if (socket) socket.disconnect();
 
       // Create new socket
-      socket = io('http://localhost:3000/chat');
+      socket = io(wsUrl+'/chat');
 
       // Socket event handlers
       socket.on('connect', () => {

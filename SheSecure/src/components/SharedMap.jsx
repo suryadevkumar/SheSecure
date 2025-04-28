@@ -9,7 +9,7 @@ import {
 } from "@react-google-maps/api";
 import { useSearchParams } from "react-router-dom";
 import io from "socket.io-client";
-import { api, googleMapAPI1 } from "../config/config";
+import { api, googleMapAPI1, wsUrl } from "../config/config";
 import calculateDistance from "../utils/calculateDistance";
 import victimIcon from "../assets/location1.png";
 import helperIcon from "../assets/liveLocation.png";
@@ -87,7 +87,7 @@ const SharedMap = () => {
       namespace = "/location";
     }
 
-    const newSocket = io(`http://localhost:3000${namespace}`);
+    const newSocket = io(`${wsUrl}${namespace}`);
     setSocket(newSocket);
 
     // Join appropriate room

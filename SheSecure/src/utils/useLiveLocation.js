@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { startShareLocation, stopShareLocation } from "../redux/liveLocationSlice";
 import io from 'socket.io-client';
 import { toast } from "react-toastify";
+import { wsUrl } from "../config/config";
 
 const LOCATION_STORAGE_KEY = 'active_location_data';
 
@@ -17,7 +18,7 @@ const useLiveLocation = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const newSocket = io("http://localhost:3000/location");
+    const newSocket = io(wsUrl+"/location");
     setSocket(newSocket);
 
     // Check localStorage for active session on mount

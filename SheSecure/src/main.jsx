@@ -21,10 +21,11 @@ import SharedMap from "./components/SharedMap";
 import Feedback from './components/Feedback';
 import CustomerCareForm from './components/CustomerCareForm';
 import { FullMapView, HistoryMapView } from "./components/MapView";
+import { wsUrl } from "./config/config";
 
 
 // Set default axios base URL
-axios.defaults.baseURL = 'http://localhost:3000';
+axios.defaults.baseURL = wsUrl;
 
 
 const appRouter = createBrowserRouter([
