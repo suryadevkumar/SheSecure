@@ -279,7 +279,7 @@ export const signUp = async (req, res) => {
 
         // Set approval status
         let approved = "Unverified";
-        if (userType === "User" || userType === "SuperAdmin") {
+        if (userType === "User") {
             approved = "Verified";
         }
 
@@ -288,7 +288,7 @@ export const signUp = async (req, res) => {
             firstName,
             lastName,
             email,
-            mobileNumber: mobileNumber, // Consistent field name
+            mobileNumber: mobileNumber,
             userType,
             additionalDetails: createdProfile._id,
             qualification: createdQualifications,

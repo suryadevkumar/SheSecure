@@ -127,7 +127,7 @@ const CrimeReport = () => {
           />
         </>
       ) : (
-        <div className="text-center py-16 bg-white rounded-xl shadow-md">
+        <div className="my-31 text-center py-16 bg-white rounded-xl shadow-md">
           <div className="mx-auto h-24 w-24 text-gray-400">
             <FiPlusCircle className="w-full h-full" />
           </div>

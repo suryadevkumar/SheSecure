@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   GoogleMap,
@@ -21,6 +21,7 @@ import { crimeInteraction } from "../routes/crime-report-interaction-routes";
 import { fetchLocationHistory } from "../routes/location-routes";
 import { FaThumbsUp, FaThumbsDown } from "react-icons/fa";
 import { FiClock, FiCalendar, FiMapPin, FiAlertCircle } from "react-icons/fi";
+import { useMediaQuery } from "react-responsive";
 
 // MapView modes
 export const MAP_MODES = {
@@ -33,8 +34,10 @@ const MAP_LIBRARIES = ["places"];
 
 const MapView = ({ mode = MAP_MODES.FULL }) => {
   const isFullMode = mode === MAP_MODES.FULL;
-  const isMinimalMode = mode === MAP_MODES.MINIMAL;
   const isHistoryMode = mode === MAP_MODES.HISTORY;
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Common state
   const [mapCenter, setMapCenter] = useState(null);
@@ -43,7 +46,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
   const dispatch = useDispatch();
 
   // Full/Minimal mode state
-  const [showPlaceButton, setShowPlaceButton] = useState(true);
+  const [showPlaceButton, setShowPlaceButton] = useState(!isMobile);
   const [showPoliceStations, setShowPoliceStations] = useState(isFullMode);
   const [showHospitals, setShowHospitals] = useState(isFullMode);
   const [showCrimes, setShowCrimes] = useState(true);
@@ -63,6 +66,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [timeRange, setTimeRange] = useState({ start: "", end: "" });
+  const [showLocationList, setShowLocationList] = useState(!isMobile);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: googleMapAPI,
@@ -288,6 +292,10 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
     fetchCrimeInteractions();
   };
 
+  const toggleLocationList = () => {
+    setShowLocationList(!showLocationList);
+  };
+
   // Render helpers
   const renderMarkers = useCallback(
     (places, icon, show) => {
@@ -352,14 +360,11 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
   // Main render
   return (
-    <div className="h-[calc(100vh-5rem)]">
+    <div className="h-[calc(100vh-6.5rem)]">
       {isHistoryMode ? (
-        <div
-          className="bg-gray-50 p-2"
-          style={{ h: "calc(100vh - 5rem)" }}
-        >
+        <div className="bg-gray-50 p-2 h-full">
           {/* History Mode UI */}
-          <div className="w-full mx-auto">
+          <div className="w-full mx-auto h-full">
             <div className="bg-white p-2 rounded-lg shadow-sm mb-2">
               <h1 className="text-2xl text-center font-bold text-gray-800">
                 Location History
@@ -431,21 +436,21 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center" style={{ height: "calc(100vh - 14rem)" }}>
+              <div className="flex items-center justify-center h-[calc(100%-10rem)]">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
                   <p className="mt-3 text-gray-600">Loading location history...</p>
                 </div>
               </div>
             ) : error ? (
-              <div className="flex items-center justify-center" style={{ height: "calc(100vh - 14rem)" }}>
+              <div className="flex items-center justify-center h-[calc(100%-10rem)]">
                 <div className="text-center text-red-600">
                   <FiAlertCircle className="mx-auto h-12 w-12" />
                   <p className="mt-3 text-lg">Error: {error}</p>
                 </div>
               </div>
             ) : filteredLocations.length === 0 ? (
-              <div className="bg-white p-8 rounded-lg shadow-sm text-center" style={{ minHeight: "calc(100vh - 14rem)" }}>
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center h-[calc(100%-10rem)] flex flex-col justify-center">
                 <FiMapPin className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">
                   No locations available
@@ -457,132 +462,141 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="p-4 bg-gray-50 border-b">
-                    <h3 className="font-medium text-gray-900 flex items-center">
-                      <FiMapPin className="mr-2" />
-                      Locations ({filteredLocations.length})
-                    </h3>
-                  </div>
-                  <div
-                    className="divide-y divide-gray-200 overflow-y-auto"
-                    style={{ maxHeight: "calc(100vh - 18rem)" }}
+              <div className="flex flex-col md:flex-row h-[calc(100%-7.5rem)] gap-2">
+                {isMobile && (
+                  <button
+                    onClick={toggleLocationList}
+                    className="md:hidden bg-blue-500 text-white p-2 rounded-md"
                   >
-                    {filteredLocations.map((loc) => (
-                      <div
-                        id={`loc-${loc.id}`}
-                        key={loc.id}
-                        className={`p-4 cursor-pointer transition-colors ${
-                          selectedMarker?.id === loc.id
-                            ? "bg-blue-50 border-l-4 border-blue-500"
-                            : "hover:bg-gray-50"
-                        }`}
-                        onClick={() => handleLocationClick(loc)}
-                      >
-                        <div className="flex items-start">
-                          <div
-                            className={`h-3 w-3 rounded-full mt-1 mr-3 ${
-                              selectedMarker?.id === loc.id
-                                ? "bg-blue-500"
-                                : "bg-gray-300"
-                            }`}
-                          ></div>
-                          <div>
-                            <h4 className="font-medium text-gray-900">
-                              {loc.displayName}
-                            </h4>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {new Date(loc.startTime).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                            <p className="text-sm text-gray-400 mt-1 truncate">
-                              {loc.formattedAddress}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-3">
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full">
-                    <GoogleMap
-                      mapContainerStyle={{ width: "100%", height: "100%" }}
-                      center={mapCenter}
-                      zoom={12}
-                      options={{
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: false,
-                      }}
-                      onLoad={(map) => {
-                        mapRef.current = map;
-                        if (filteredLocations.length > 0) {
-                          const bounds = new window.google.maps.LatLngBounds();
-                          filteredLocations.forEach((loc) => {
-                            bounds.extend(
-                              new window.google.maps.LatLng(
-                                loc.latitude,
-                                loc.longitude
-                              )
-                            );
-                          });
-                          map.fitBounds(bounds);
-                        }
-                      }}
+                    {showLocationList ? "Hide List" : "Show List"}
+                  </button>
+                )}
+                
+                {(showLocationList || !isMobile) && (
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden w-full md:w-1/3">
+                    <div className="p-4 bg-gray-50 border-b">
+                      <h3 className="font-medium text-gray-900 flex items-center">
+                        <FiMapPin className="mr-2" />
+                        Locations ({filteredLocations.length})
+                      </h3>
+                    </div>
+                    <div
+                      className="divide-y divide-gray-200 overflow-y-auto"
+                      style={{ height: isMobile ? "300px" : "100%" }}
                     >
                       {filteredLocations.map((loc) => (
-                        <Marker
+                        <div
+                          id={`loc-${loc.id}`}
                           key={loc.id}
-                          position={{ lat: loc.latitude, lng: loc.longitude }}
-                          icon={{
-                            url: pathIcon,
-                            scaledSize: new window.google.maps.Size(10, 10),
-                          }}
+                          className={`p-4 cursor-pointer transition-colors ${
+                            selectedMarker?.id === loc.id
+                              ? "bg-blue-50 border-l-4 border-blue-500"
+                              : "hover:bg-gray-50"
+                          }`}
                           onClick={() => handleLocationClick(loc)}
-                        />
-                      ))}
-
-                      {selectedMarker && (
-                        <InfoWindow
-                          position={{
-                            lat: selectedMarker.latitude,
-                            lng: selectedMarker.longitude,
-                          }}
-                          options={{
-                            disableAutoPan: true,
-                            pixelOffset: new window.google.maps.Size(0, -9),
-                          }}
-                          onCloseClick={() => setSelectedMarker(null)}
                         >
-                          <div className="max-w-xs">
-                            <h4 className="font-bold text-gray-900">
-                              {selectedMarker.displayName}
-                            </h4>
-                            <p className="text-sm text-gray-700 mt-1">
-                              {selectedMarker.formattedAddress}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              <span className="font-medium">Time:</span>{" "}
-                              {new Date(
-                                selectedMarker.startTime
-                              ).toLocaleTimeString()}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              <span className="font-medium">Date:</span>{" "}
-                              {new Date(
-                                selectedMarker.startTime
-                              ).toLocaleDateString()}
-                            </p>
+                          <div className="flex items-start">
+                            <div
+                              className={`h-3 w-3 rounded-full mt-1 mr-3 ${
+                                selectedMarker?.id === loc.id
+                                  ? "bg-blue-500"
+                                  : "bg-gray-300"
+                              }`}
+                            ></div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">
+                                {loc.displayName}
+                              </h4>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {new Date(loc.startTime).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              <p className="text-sm text-gray-400 mt-1 truncate">
+                                {loc.formattedAddress}
+                              </p>
+                            </div>
                           </div>
-                        </InfoWindow>
-                      )}
-                    </GoogleMap>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                )}
+
+                <div className={`${showLocationList && isMobile ? "hidden" : "block"} flex-1 bg-white rounded-lg shadow-sm overflow-hidden`}>
+                  <GoogleMap
+                    mapContainerStyle={{ width: "100%", height: "100%" }}
+                    center={mapCenter}
+                    zoom={12}
+                    options={{
+                      streetViewControl: false,
+                      mapTypeControl: false,
+                      fullscreenControl: false,
+                    }}
+                    onLoad={(map) => {
+                      mapRef.current = map;
+                      if (filteredLocations.length > 0) {
+                        const bounds = new window.google.maps.LatLngBounds();
+                        filteredLocations.forEach((loc) => {
+                          bounds.extend(
+                            new window.google.maps.LatLng(
+                              loc.latitude,
+                              loc.longitude
+                            )
+                          );
+                        });
+                        map.fitBounds(bounds);
+                      }
+                    }}
+                  >
+                    {filteredLocations.map((loc) => (
+                      <Marker
+                        key={loc.id}
+                        position={{ lat: loc.latitude, lng: loc.longitude }}
+                        icon={{
+                          url: pathIcon,
+                          scaledSize: new window.google.maps.Size(10, 10),
+                        }}
+                        onClick={() => handleLocationClick(loc)}
+                      />
+                    ))}
+
+                    {selectedMarker && (
+                      <InfoWindow
+                        position={{
+                          lat: selectedMarker.latitude,
+                          lng: selectedMarker.longitude,
+                        }}
+                        options={{
+                          disableAutoPan: true,
+                          pixelOffset: new window.google.maps.Size(0, -9),
+                        }}
+                        onCloseClick={() => setSelectedMarker(null)}
+                      >
+                        <div className="max-w-xs">
+                          <h4 className="font-bold text-gray-900">
+                            {selectedMarker.displayName}
+                          </h4>
+                          <p className="text-sm text-gray-700 mt-1">
+                            {selectedMarker.formattedAddress}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            <span className="font-medium">Time:</span>{" "}
+                            {new Date(
+                              selectedMarker.startTime
+                            ).toLocaleTimeString()}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            <span className="font-medium">Date:</span>{" "}
+                            {new Date(
+                              selectedMarker.startTime
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </InfoWindow>
+                    )}
+                  </GoogleMap>
                 </div>
               </div>
             )}
@@ -593,7 +607,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
         <div className="flex h-full">
           <div
             className={`${
-              isFullMode && showPlaceButton ? "w-[73%]" : "w-full"
+              isFullMode && showPlaceButton && !isMobile ? "w-full md:w-[73%]" : "w-full"
             } transition-all duration-300`}
           >
             <GoogleMap
@@ -752,19 +766,30 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
           {isFullMode && (
             <>
-              <button
-                className="absolute top-[4.5rem] right-0 w-[3%] mt-0.5 p-1 bg-blue-600 text-white hover:opacity-50 cursor-pointer"
-                onClick={() => setShowPlaceButton(!showPlaceButton)}
-              >
-                {showPlaceButton ? ">>" : "<<"}
-              </button>
+              {!isMobile && (
+                <button
+                  className="absolute top-[4.5rem] right-0 w-[3%] mt-0.5 p-1 bg-blue-600 text-white hover:opacity-50 cursor-pointer"
+                  onClick={() => setShowPlaceButton(!showPlaceButton)}
+                >
+                  {showPlaceButton ? ">>" : "<<"}
+                </button>
+              )}
 
               {showPlaceButton && (
                 <div
-                  className={`w-[27%] transition-all duration-300 ${
-                    showCrimes ? "h-[calc(100vh-13rem)]" : "h-[calc(100vh-9rem)]"
-                  }`}
+                  className={`${isMobile ? "fixed bottom-0 left-0 right-0 z-10" : "static"} 
+                  w-full md:w-[27%] transition-all duration-300 ${
+                    showCrimes ? "h-[calc(50vh)]" : "h-[calc(40vh)]"
+                  } bg-white shadow-lg md:shadow-none`}
                 >
+                  {isMobile && (
+                    <button
+                      onClick={() => setShowPlaceButton(false)}
+                      className="w-full bg-blue-500 text-white p-2"
+                    >
+                      Close Panel
+                    </button>
+                  )}
                   <div className="border-white border-2 bg-green-500 p-1">
                     <label className="text-white text-sm py-1 mx-3 text-center w-[90%]">
                       <input
@@ -890,6 +915,15 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {isMobile && !showPlaceButton && (
+                <button
+                  onClick={() => setShowPlaceButton(true)}
+                  className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-10"
+                >
+                  Show Controls
+                </button>
               )}
             </>
           )}

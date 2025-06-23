@@ -8,13 +8,12 @@ const ChatBox = () => {
   const activeRoom = useSelector((state) => state.chat.activeRoom);
   const messages = useSelector((state) => state.chat.messages);
   const typingUsers = useSelector((state) => state.chat.typingUsers);
+  const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
   const [newMessage, setNewMessage] = useState("");
   const [showEndChatConfirm, setShowEndChatConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-
-  const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
   const formatLastSeen = (timestamp) => {
     if (!timestamp) return "Unknown";

@@ -97,14 +97,8 @@ const Header = () => {
                 className="flex gap-2 hover:text-blue-600 font-bold text-sm py-2 px-4 rounded-md transition-colors duration-200"
               >
                 <LayoutDashboard size={18} />
-                Dashboard
+                <span className="hidden lg:block">Dashboard</span>
               </Link>
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 cursor-pointer" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
-                  3
-                </span>
-              </div>
               {user.userType === "User" && (
                 <button
                   className={`${

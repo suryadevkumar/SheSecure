@@ -107,7 +107,7 @@ const UpdateProfile = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto mt-30 bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200"
+      className="max-w-2xl mx-auto my-20 lg:my-27 bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200"
     >
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4 relative">

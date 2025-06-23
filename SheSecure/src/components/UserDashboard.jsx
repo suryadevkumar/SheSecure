@@ -123,7 +123,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="pt-28 p-4 lg:mb-8 sm:mb-24 md:p-6 space-y-8 max-w-6xl mx-auto">
+    <div className="p-4 lg:mb-8 sm:mb-24 md:p-6 space-y-8 max-w-6xl mx-auto">
       <div className="w-full space-y-8">
         {/* Safety Status Banner */}
         <div

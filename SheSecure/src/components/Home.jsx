@@ -484,7 +484,7 @@ const OurMissionVision = () => {
 
               {/* Image Section */}
               <div className="w-full max-w-[120%]">
-                <div className="mx-auto h-80 w-[75%] overflow-hidden rounded-lg">
+                <div className="mx-auto w-[100%] lg:w-[75%] overflow-hidden rounded-lg">
                   <img
                     src={vision}
                     alt="Vision Illustration"

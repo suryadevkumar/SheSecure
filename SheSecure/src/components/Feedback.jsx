@@ -72,7 +72,7 @@ const Feedback = () => {
 
   if (userFeedback) {
     return (
-      <div className="mt-33 max-w-md mx-4 sm:mx-auto bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg overflow-hidden p-6 my-8 border-2 border-green-100">
+      <div className="my-45 max-w-md mx-4 sm:mx-auto bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg overflow-hidden p-6 border-2 border-green-100">
         <div className="flex items-center gap-2 text-green-600 mb-4">
           <CheckCircle className="w-6 h-6 text-green-500" />
           <h2 className="text-xl font-bold text-green-800">Your Feedback</h2>

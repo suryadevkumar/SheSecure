@@ -16,8 +16,8 @@ import {
     };
   
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4 mb-32 lg:mb-10">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-6/12 transition-all duration-300 hover:shadow-2xl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4 lg:mb-10">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full md:max-w-xl transition-all duration-300 hover:shadow-2xl">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
             <h1 className="text-3xl font-bold text-white text-center">National Numbers</h1>
             <p className="text-blue-100 text-center mt-2">

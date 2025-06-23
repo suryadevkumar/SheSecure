@@ -12,7 +12,6 @@ const ChatSidebar = () => {
   const activeRoom = useSelector((state) => state.chat.activeRoom);
   const unreadCounts = useSelector((state) => state.chat.unreadCounts);
   const typingUsers = useSelector((state) => state.chat.typingUsers);
-  // Add this line to access the last seen data from Redux store
   const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
@@ -227,7 +226,7 @@ const ChatSidebar = () => {
           </h4>
           <div className="flex-grow overflow-y-auto">
             {chatRooms.map((room) => {
-              // Define partnerId based on user type - THIS FIXES THE REFERENCE ERROR
+              // Define partnerId based on user type
               const partnerId =
                 user?.userType === "User"
                   ? room.counsellor?._id

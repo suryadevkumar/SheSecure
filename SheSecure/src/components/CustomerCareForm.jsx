@@ -48,7 +48,7 @@ const CustomerCareForm = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-5rem)] bg-gradient-to-br from-blue-50 to-indigo-50 sm:px-6 lg:px-8">
+    <div className="h-[calc(100vh-6.5rem)] bg-gradient-to-br from-blue-50 to-indigo-50 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-4">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Customer Support</h2>

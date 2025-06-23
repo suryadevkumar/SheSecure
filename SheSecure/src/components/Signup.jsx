@@ -180,7 +180,7 @@ const Signup = () => {
   };
 
   return (
-    <div className=" bg-white flex p-4 my-4 justify-center">
+    <div className="bg-white flex p-4 my-4 justify-center">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden">
         <div className="bg-pink-600 p-3 text-center">
           <div className="flex justify-center mb-1">

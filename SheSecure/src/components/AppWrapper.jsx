@@ -9,9 +9,9 @@ function AppWrapper() {
   const userType = useSelector((state) => state.auth.user?.userType);
   const token = useSelector((state) => state.auth.token);
   
-    if (userType === 'User' && token) {
-      useLocationTracking();
-    }
+  if (userType === 'User' && token) {
+    useLocationTracking();
+  }
 
   return (
     <>

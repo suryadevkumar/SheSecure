@@ -90,7 +90,7 @@ const Login = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-5rem)] bg-white flex items-center justify-center p-4 my-auto">
+    <div className="h-[calc(100vh-6.5rem)] bg-white flex items-center justify-center p-4 my-auto">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden">
         <div className="bg-pink-600 p-6 text-center">
           <div className="flex justify-center mb-4">
