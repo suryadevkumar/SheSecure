@@ -5,10 +5,10 @@ import Message from '../models/Message.js';
 export const getChatRequests = async (req, res) => {
   try {
     const { userId, status } = req.query;
-    
+    console.log(req.query);
     let query = {};
     if (userId) query.user = userId;
-    if (status) query.status = status;
+    query.status = "Pending";
     
     const chatRequests = await ChatRequest.find(query)
       .populate('user', 'firstName lastName')
@@ -34,8 +34,8 @@ export const getChatRooms = async (req, res) => {
       $or: [{ user: userId }, { counsellor: userId }],
       isActive: true
     })
-    .populate('user', 'name')
-    .populate('counsellor', 'name')
+    .populate('user', 'firstName lastName')
+    .populate('counsellor', 'firstName lastName')
     .populate('chatRequest', 'problemType brief')
     .sort('-createdAt');
     

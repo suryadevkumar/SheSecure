@@ -24,11 +24,11 @@ import {
 } from "lucide-react";
 
 const Header = () => {
+  const dispatch = useDispatch();
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
   const user = useSelector((state) => state.auth.user);
   const isSOSActive = useSelector((state) => state.sos.isSOSActive);
-  const dispatch = useDispatch();
   const { startSOS, stopSOS } = useSosSocket();
   const navigate = useNavigate();
   const [showProfileBox, setShowProfileBox] = useState(false);
@@ -127,7 +127,7 @@ const Header = () => {
                   onClick={() => setShowProfileBox(!showProfileBox)}
                 >
                   <img
-                    src={user.additionalDetails.image}
+                    src={user.image}
                     alt="Profile"
                     className="h-10 w-10 ring-2 ring-white rounded-full transition-transform duration-200 group-hover:scale-110"
                   />

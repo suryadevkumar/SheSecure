@@ -21,7 +21,7 @@ const getPlaceDetails = async (lat, lng) => {
     };
 };
 
-export const sendLocationToBackend = async (lat, lng, startTime, endTime, token, userId) => {
+export const sendLocationToBackend = async (lat, lng, startTime, endTime, token) => {
     if (!token) return;
     try {
         const { displayName, formattedAddress } = await getPlaceDetails(lat, lng);
@@ -37,8 +37,7 @@ export const sendLocationToBackend = async (lat, lng, startTime, endTime, token,
                 displayName: displayName,
                 formattedAddress: formattedAddress,
                 startTime: startTime,
-                endTime: endTime,
-                userId: userId
+                endTime: endTime
             }),
         });
 

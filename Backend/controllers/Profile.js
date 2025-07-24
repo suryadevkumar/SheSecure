@@ -11,13 +11,10 @@ export const getUserAllDetails = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        // Find the user and populate profile details
         const user = await User.findById(userId)
             .populate({
                 path: "additionalDetails",
-                populate: [
-                    { path: "emergencyContacts", model: "EmergencyContacts" }
-                ]
+                select: "-emergencyContacts -location",
             })
             .populate("qualification");
 
@@ -35,6 +32,7 @@ export const getUserAllDetails = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 export const updateProfile = async (req, res) => {
     try {
@@ -77,7 +75,7 @@ export const updateProfile = async (req, res) => {
         if (dob !== undefined) updateData.dob = dob;
         if (imageUrl !== null) updateData.image = imageUrl;
 
-        console.log(updateData);
+        console.log(updateData, userId);
 
         // Update profile
         const updatedProfile = await Profile.findByIdAndUpdate(
@@ -94,7 +92,7 @@ export const updateProfile = async (req, res) => {
         const updatedUser = await User.findById(userId)
             .populate({
                 path: "additionalDetails",
-                populate: { path: "emergencyContacts" }
+                select: "-emergencyContacts -location",
             });
 
         return res.status(200).json({

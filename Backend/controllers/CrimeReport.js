@@ -180,7 +180,7 @@ export const reportCrime = async (req, res) => {
                     message: `Failed to process suspect ${index}: ${suspectError.message}`
                 });
             }
-        }
+    }
 
         // Process witnesses
         const witnessIds = [];

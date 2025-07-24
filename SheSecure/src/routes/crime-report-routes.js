@@ -48,6 +48,8 @@ export const fetchReports = async (token, userType) => {
             });
         }
 
+        console.log(response.data);
+
         return { success: true, data: response.data.reports };
     } catch (err) {
         console.error('Error fetching reports:', err);

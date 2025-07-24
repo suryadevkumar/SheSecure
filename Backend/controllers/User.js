@@ -339,8 +339,13 @@ export const login = async (req, res) => {
             });
         }
 
-        // Check if user exists
-        const user = await User.findOne({ email }).populate('additionalDetails');
+        const user = await User.findOne({ email })
+            .populate({
+                path: 'additionalDetails',
+                select: 'image',
+            })
+            .select('firstName lastName email userType token additionalDetails approved'); // ✅ only needed fields
+
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -362,7 +367,6 @@ export const login = async (req, res) => {
             });
         }
 
-        // Generate JWT
         const payload = {
             email: user.email,
             id: user._id,
@@ -373,20 +377,23 @@ export const login = async (req, res) => {
             expiresIn: "72h",
         });
 
-        //save token to user document in database
         user.token = token;
         await user.save();
 
-        //create cookie and send response
-        const options = {
-            expiresIn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        res.cookie("token", token, {
             httpOnly: true,
-        }
-
-        res.cookie("token", token, { httpOnly: true }).status(200).json({
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        }).status(200).json({
             success: true,
             token,
-            user,
+            user: {
+                _id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                userType: user.userType,
+                image: user?.additionalDetails?.image || null,
+            },
             message: "User Login Success",
         });
 
@@ -398,6 +405,7 @@ export const login = async (req, res) => {
         });
     }
 };
+
 
 export const allUser = async (req, res) => {
     const userId = req.user._id;

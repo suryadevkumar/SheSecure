@@ -49,7 +49,6 @@ const CrimeReportForm = () => {
   const autocompleteInputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
-  // Single loader instance with all required libraries
   const loader = new Loader({
     apiKey: googleMapAPI,
     version: "weekly",
@@ -88,7 +87,6 @@ const CrimeReportForm = () => {
     "Other",
   ];
 
-  // Close suggestions dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -107,11 +105,9 @@ const CrimeReportForm = () => {
     };
   }, []);
 
-  // Initialize Google Maps and Places API
   useEffect(() => {
     const initMapAndPlaces = async () => {
       try {
-        // Load all required libraries once
         const [places, maps, markerLib] = await Promise.all([
           loader.importLibrary("places"),
           loader.importLibrary("maps"),
@@ -121,19 +117,16 @@ const CrimeReportForm = () => {
         const { Map } = maps;
         const { AdvancedMarkerElement } = markerLib;
 
-        // Create a session token for Autocomplete
         const token1 = new window.google.maps.places.AutocompleteSessionToken();
         setSessionToken(token1);
 
-        // Initialize Geocoder service
         window.geocoder = new window.google.maps.Geocoder();
 
         setIsMapLoading(false);
 
-        // Initialize Map if needed
         if (showMap && !map && mapRef.current) {
           const mapInstance = new Map(mapRef.current, {
-            center: { lat: 20.5937, lng: 78.9629 }, // Center on India
+            center: { lat: 20.5937, lng: 78.9629 },
             zoom: 5,
             mapTypeControl: false,
             streetViewControl: false,
@@ -146,7 +139,6 @@ const CrimeReportForm = () => {
             gmpDraggable: true,
           });
 
-          // Add click listener to map
           mapInstance.addListener("click", (e) => {
             const lat = e.latLng.lat();
             const lng = e.latLng.lng();
@@ -154,7 +146,6 @@ const CrimeReportForm = () => {
             reverseGeocode(lat, lng);
           });
 
-          // Add marker dragend listener
           markerInstance.addListener("dragend", () => {
             const position = markerInstance.position;
             const lat = position.lat;
@@ -165,7 +156,6 @@ const CrimeReportForm = () => {
           setMap(mapInstance);
           setMarker(markerInstance);
 
-          // Try to get current location
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
               (position) => {
@@ -191,7 +181,6 @@ const CrimeReportForm = () => {
     initMapAndPlaces();
   }, [showMap]);
 
-  // Handle location search input change
   const handleLocationInputChange = async (e) => {
     const value = e.target.value;
     setLocationQuery(value);
@@ -203,22 +192,18 @@ const CrimeReportForm = () => {
       window.google.maps.places
     ) {
       try {
-        // Modify the request object to use the correct properties
         const request = {
           input: value,
           sessionToken: sessionToken,
           locationRestriction: {
-            // Create a boundary for India
             east: 97.4025614766,
             north: 35.6745457,
             south: 6.7559528,
             west: 68.1097,
           },
-          origin: map?.getCenter() || { lat: 20.5937, lng: 78.9629 }, // Use map center as origin if available
-          // Remove the countries and componentRestrictions properties
+          origin: map?.getCenter() || { lat: 20.5937, lng: 78.9629 },
         };
 
-        // Use the new AutocompleteSuggestion API
         const { suggestions: placeSuggestions } =
           await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
             request
@@ -244,10 +229,7 @@ const CrimeReportForm = () => {
 
   const handleSuggestionSelect = async (suggestion) => {
     try {
-      // Get place from the suggestion
       const place = await suggestion.placePrediction.toPlace();
-
-      // Fetch necessary fields
       await place.fetchFields({
         fields: ["displayName", "formattedAddress", "location"],
       });
@@ -255,40 +237,48 @@ const CrimeReportForm = () => {
       setLocationQuery(place.formattedAddress || place.displayName);
       setShowSuggestions(false);
 
-      // Check if location contains functions for lat and lng
-      if (
-        place.location &&
-        typeof place.location.lat === "function" &&
-        typeof place.location.lng === "function"
-      ) {
-        // Call the functions to get the actual values
-        const lat = place.location.lat();
-        const lng = place.location.lng();
+      const getLatLng = () => {
+        if (!place.location) return null;
 
-        setValue("location.coordinates", [lat, lng]);
+        if (
+          typeof place.location.lat === "function" &&
+          typeof place.location.lng === "function"
+        ) {
+          return {
+            lat: place.location.lat(),
+            lng: place.location.lng(),
+          };
+        }
+
+        if (
+          typeof place.location.lat === "number" &&
+          typeof place.location.lng === "number"
+        ) {
+          return {
+            lat: place.location.lat,
+            lng: place.location.lng,
+          };
+        }
+
+        return null;
+      };
+
+      const latLng = getLatLng();
+
+      if (latLng) {
+        setValue("location.coordinates", [latLng.lat, latLng.lng]);
         setValue(
           "location.address",
           place.formattedAddress || place.displayName
         );
         setSelectedPlace(place);
 
-        // Update map if visible
         if (map && marker) {
-          try {
-            const latLng = { lat, lng };
-            console.log("Setting map center to:", latLng);
-
-            map.setCenter(latLng);
-            map.setZoom(15);
-            marker.position = latLng;
-          } catch (mapError) {
-            console.error("Error updating map:", mapError);
-          }
+          map.setCenter(latLng);
+          map.setZoom(15);
+          marker.position = latLng;
         }
       } else {
-        console.error("Invalid location data format:", place.location);
-
-        // Try to get coordinates from geocoder as fallback
         const geocoder = new window.google.maps.Geocoder();
         geocoder.geocode(
           {
@@ -303,8 +293,6 @@ const CrimeReportForm = () => {
             ) {
               const lat = results[0].geometry.location.lat();
               const lng = results[0].geometry.location.lng();
-
-              console.log("Geocoded coordinates:", { lat, lng });
 
               setValue("location.coordinates", [lat, lng]);
               setValue(
@@ -322,11 +310,11 @@ const CrimeReportForm = () => {
         );
       }
 
-      // Create a new session token for the next search
       const newToken = new window.google.maps.places.AutocompleteSessionToken();
       setSessionToken(newToken);
     } catch (error) {
       console.error("Error selecting place:", error);
+      toast.error("Failed to select location. Please try again.");
     }
   };
 
@@ -393,57 +381,43 @@ const CrimeReportForm = () => {
     setUploadProgress(10);
 
     try {
+      // Validate location data
+      if (!data.location?.coordinates) {
+        throw new Error(
+          "Please select a location on the map or from suggestions"
+        );
+      }
+
       const formData = new FormData();
 
-      // Append all form data
+      // Append basic form data
       Object.keys(data).forEach((key) => {
-        if (key === "location") {
-          formData.append("location", JSON.stringify(data.location));
-        } else {
+        if (key !== "location") {
           formData.append(key, data[key]);
         }
       });
 
-      // Add longitude and latitude from selectedPlace
-      if (selectedPlace && selectedPlace.Eg && selectedPlace.Eg.location) {
-        // Append coordinates
-        formData.append("longitude", selectedPlace.Eg.location.lng);
-        formData.append("latitude", selectedPlace.Eg.location.lat);
-      
-        // Append place (display name)
-        if (selectedPlace.Eg.displayName) {
-          formData.append("displayName", selectedPlace.Eg.displayName);
-        }
-      
-        // Append formatted address
-        if (selectedPlace.Eg.formattedAddress) {
-          formData.append("formattedAddress", selectedPlace.Eg.formattedAddress);
-        }
-      } else {
-        // If using coordinates directly instead of a place object
-        if (data.longitude && data.latitude) {
-          formData.append("longitude", data.longitude);
-          formData.append("latitude", data.latitude);
-      
-          // Optional fallback for place/address if available in raw data
-          if (data.displayName) {
-            formData.append("displayName", data.place);
-          }
-          if (data.formattedAddress) {
-            formData.append("formattedAddress", data.address);
-          }
-        } else {
-          throw new Error("Location coordinates are required");
-        }
-      }      
+      // Extract location components
+      const [latitude, longitude] = data.location.coordinates;
+
+      // Create complete location object
+      const locationData = {
+        coordinates: [longitude, latitude], // Note: longitude first
+        address: data.location.address || locationQuery,
+        displayName: data.location.address || locationQuery, // Added displayName
+      };
+
+      // Append location data
+      formData.append("location", JSON.stringify(locationData));
+      formData.append("latitude", latitude);
+      formData.append("longitude", longitude);
+      formData.append("formattedAddress", locationData.address);
+      formData.append("displayName", locationData.displayName);
 
       // Append files
       if (firFile) formData.append("FIR", firFile);
-
       photoFiles.forEach((file) => formData.append("crimePhotos", file));
       videoFiles.forEach((file) => formData.append("crimeVideos", file));
-
-      // Replace the suspects and witnesses append code with:
 
       // Append suspects
       formData.append(
@@ -456,7 +430,6 @@ const CrimeReportForm = () => {
         )
       );
 
-      // Append suspect photos
       suspects.forEach((suspect, index) => {
         if (suspect.suspectPhoto) {
           formData.append(`suspectPhotos[${index}]`, suspect.suspectPhoto);
@@ -476,7 +449,6 @@ const CrimeReportForm = () => {
         )
       );
 
-      // Append witness photos
       witnesses.forEach((witness, index) => {
         if (witness.witnessPhoto) {
           formData.append(`witnessPhotos[${index}]`, witness.witnessPhoto);
@@ -509,17 +481,21 @@ const CrimeReportForm = () => {
       }, 1000);
     } catch (error) {
       console.error("Error submitting form:", error);
-      setError(error.response?.data?.message || "Failed to submit report");
+      setError(error.message || "Failed to submit report");
       setIsSubmitting(false);
       setUploadProgress(0);
-      toast.error("There was an error submitting your report. Please try again.");
-      throw error;
+      toast.error(
+        error.message ||
+          "There was an error submitting your report. Please try again."
+      );
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 mb-10 lg:mb-2">
-      <h1 className="text-2xl font-bold text-center mb-2 text-rose-500">Report a Crime</h1>
+      <h1 className="text-2xl font-bold text-center mb-2 text-rose-500">
+        Report a Crime
+      </h1>
       <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg">
         <div className="flex items-center mb-6">
           <FiAlertTriangle className="text-rose-600 text-3xl mr-3" />
@@ -550,7 +526,7 @@ const CrimeReportForm = () => {
         )}
 
         {isSubmitting && (
-          <div className="fixed top-0 left-0 right-0 z-50">
+          <div className="fixed left-0 right-0 z-50">
             <div className="max-w-md mx-auto p-4 mt-4 shadow-2xl">
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div
@@ -632,7 +608,7 @@ const CrimeReportForm = () => {
                   notFutureDate: (value) => {
                     const selectedDate = new Date(value);
                     const today = new Date();
-                    today.setHours(0, 0, 0, 0); // Set to beginning of day for fair comparison
+                    today.setHours(0, 0, 0, 0);
                     return (
                       selectedDate <= today || "Date cannot be in the future"
                     );
@@ -640,7 +616,7 @@ const CrimeReportForm = () => {
                 },
               })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-              max={new Date().toISOString().split("T")[0]} // Set max date to today
+              max={new Date().toISOString().split("T")[0]}
               disabled={isSubmitting}
             />
             {errors.dateOfCrime && (

@@ -9,7 +9,7 @@ import {
 } from "@react-google-maps/api";
 import { useSearchParams } from "react-router-dom";
 import io from "socket.io-client";
-import { api, googleMapAPI1, wsUrl } from "../config/config";
+import { api, googleMapAPI, wsUrl } from "../config/config";
 import calculateDistance from "../utils/calculateDistance";
 import victimIcon from "../assets/location1.png";
 import helperIcon from "../assets/liveLocation.png";
@@ -521,7 +521,7 @@ const SharedMap = () => {
       )}
 
       <LoadScript
-        googleMapsApiKey={googleMapAPI1}
+        googleMapsApiKey={googleMapAPI}
         libraries={libraries}
         onError={() => setMapError("Failed to load Google Maps API")}
         onLoad={() => setMapError(null)}

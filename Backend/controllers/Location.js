@@ -4,7 +4,8 @@ import User from '../models/User.js';
 
 export const saveLocation = async (req, res) => {
   try {
-    const { latitude, longitude, displayName, formattedAddress, startTime, endTime, userId } = req.body;
+    const userId = req.user._id;
+    const { latitude, longitude, displayName, formattedAddress, startTime, endTime } = req.body;
 
     // Validate the location data
     if (!latitude || !longitude || !startTime || !endTime) {

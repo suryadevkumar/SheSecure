@@ -35,14 +35,16 @@ export const getAllFeedbacks = async (req, res) => {
     const feedbacks = await Feedback.find()
       .populate({
         path: 'userId',
-        select: 'firstName lastName additionalDetails',
+        select: '-_id firstName lastName additionalDetails',
         populate: {
           path: 'additionalDetails',
           model: 'Profile',
+          select: '-_id -location -address -emergencyContacts -dob -gender'
         }
       })
-      .sort({ rating: -1 }) // Sort by rating in descending order
-      .limit(6); // Limit to maximum 6 feedbacks
+      .sort({ rating: -1 })
+      .limit(6);
+
 
     res.status(200).json({ success: true, data: feedbacks });
   } catch (error) {
