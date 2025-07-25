@@ -71,6 +71,7 @@ app.use(
   })
 );
 app.set('trust proxy', 1); 
+
 // Session setup with MongoDB storage
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'my_secret_key',
@@ -83,8 +84,8 @@ const sessionMiddleware = session({
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure:true, //for production
-    sameSite:'none' ,
+    secure: process.env.NODE_ENV === 'production', //for production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 });
 
