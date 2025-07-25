@@ -133,7 +133,7 @@ export const sendOTP = async (req, res) => {
 
         try {
             const mailResponse = await mailSender(email, "Your OTP Code", sendotp(otp));
-            console.log("Email sent successfully:", mailResponse);
+            console.log("Email sent successfully");
         } catch (error) {
             console.error("Error while sending OTP:", error);
             return res.status(500).json({
