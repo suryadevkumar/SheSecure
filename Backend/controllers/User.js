@@ -122,8 +122,6 @@ export const sendOTP = async (req, res) => {
         req.session.emailOTP = otp;
         req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
 
-        console.log(req.session.emailOTP);
-
         // Save session data
         req.session.save((err) => {
             if (err) {
@@ -159,8 +157,6 @@ export const sendOTP = async (req, res) => {
 export const verifyOTP = async (req, res) => {
     try {
         const { emailOTP } = req.body;
-
-        console.log(req.session.emailOTP, req.session.otpExpiresAt);
 
         // Check if OTP exists and has not expired
         if (!req.session.emailOTP || Date.now() > req.session.otpExpiresAt) {

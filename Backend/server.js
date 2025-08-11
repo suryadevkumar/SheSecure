@@ -35,7 +35,6 @@ const io = new Server(server, {
     origin: [
       process.env.FRONTEND_URL,
       'http://10.0.2.2:3000',
-      'https://shesecure-kzfl.onrender.com',
     ],
     methods: ["GET", "POST"],
     credentials: true
@@ -51,8 +50,7 @@ app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL,
-      'http://10.0.2.2:3000',
-      'https://shesecure-kzfl.onrender.com',
+      "http://10.0.2.2:3000"
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
