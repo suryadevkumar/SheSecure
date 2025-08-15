@@ -12,7 +12,6 @@ import {
   Pencil,
   BadgeInfo,
 } from "lucide-react";
-import { setUser } from "../redux/authSlice";
 
 const UpdateProfile = () => {
   const [formData, setFormData] = useState({

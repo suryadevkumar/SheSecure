@@ -12,19 +12,21 @@ import {
   FileImage,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "../redux/authSlice";
 
 const MyProfile = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [modalImage, setModalImage] = useState(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const token = useSelector((state)=>state.auth.token);
 
   useEffect(() => {
     getUserDetails(token)
       .then((res) => {
-        setUser(res.user);
+        setUserData(res.user);
         const updatedUser = {
           _id: res.user._id,
           firstName: res.user.firstName,
