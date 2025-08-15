@@ -33,7 +33,16 @@ const UpdateProfile = () => {
     const fetchProfile = async () => {
       try {
         const res = await getUserDetails(token);
-        dispatch(setUser(res.user));
+        const updatedUser = {
+          _id: res.user._id,
+          firstName: res.user.firstName,
+          lastName: res.user.lastName,
+          email: res.user.email,
+          userType: res.user.userType,
+          image: res.user?.additionalDetails?.image || null,
+        };
+        
+        dispatch(setUser(updatedUser));
         const details = res.user.additionalDetails || {};
         const dataToSet = {
           gender: details.gender || "",
@@ -60,12 +69,11 @@ const UpdateProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true); // Disable button during submission
+    setIsSubmitting(true);
 
     const data = new FormData();
     let hasUpdates = false;
 
-    // Compare initial form data with current form data
     Object.entries(formData).forEach(([key, value]) => {
       if (key === "displayPicture") {
         if (value) {
@@ -100,7 +108,11 @@ const UpdateProfile = () => {
   };
 
   if (!user)
-    return <div className="text-center mt-32 text-base text-gray-600">Loading...</div>;
+    return (
+      <div className="text-center mt-32 text-base text-gray-600">
+        Loading...
+      </div>
+    );
 
   const isGenderSet = !!user.additionalDetails?.gender;
 

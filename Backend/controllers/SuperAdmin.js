@@ -129,7 +129,7 @@ export const submitContactForm = async (req, res) => {
 
         // Send email to your support team
         await mailSender(
-            process.env.EMAIL_USER, 
+            process.env.EMAIL_SUPER_ADMIN, 
             `New Contact-Us Form Submission: ${subject}`,
             emailHtml
         );

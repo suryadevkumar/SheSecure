@@ -44,9 +44,6 @@ async function cleanupResources(qualificationIds = [], profile = null, user = nu
         // Delete qualifications if any were created
         if (qualificationIds.length > 0) {
             await Qualification.deleteMany({ _id: { $in: qualificationIds } });
-
-            // Optional: Clean up Cloudinary files if needed
-            // await deleteFromCloudinary(qualificationIds);
         }
     } catch (cleanupError) {
         console.error("Cleanup failed:", cleanupError);
@@ -117,8 +114,8 @@ export const sendOTP = async (req, res) => {
 
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
-        console.log(otp);   
-        
+        console.log(otp);
+
         req.session.emailOTP = otp;
         req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
 
@@ -303,8 +300,17 @@ export const signUp = async (req, res) => {
 
         // Send email (non-critical operation)
         if (createdUser.approved === "Unverified") {
-            mailSender(email,"Account created & Pending for Verification",
+            mailSender(process.env.EMAIL_SUPER_ADMIN, "Account created & Pending for Verification",
                 `A new ${userType} has signed up and is awaiting approval.\n\nName: ${firstName} ${lastName}\nEmail: ${email}\n\nApprove or reject in the admin panel.`
+            ).catch(console.error);
+
+            mailSender(email, "Account created & Pending for Verification",
+                `Hii ${firstName} ${lastName}\n\nEmail: ${email}\n\n Your account is created successfully and waiting for verificaiton by SheSecure Authority.`
+            ).catch(console.error);
+        }
+        else {
+            mailSender(email, "Account created Successfully",
+                `Hii ${ firstName } ${ lastName }\n\nEmail: ${ email }\n\n Your account is created successfully and now you can login: < span style = "color:blue" > https://shesecure.vercel.app/login</span>.`
             ).catch(console.error);
         }
 
@@ -344,7 +350,7 @@ export const login = async (req, res) => {
                 path: 'additionalDetails',
                 select: 'image',
             })
-            .select('firstName lastName email userType token additionalDetails approved'); // ✅ only needed fields
+            .select('firstName lastName email userType token additionalDetails approved');
 
         if (!user) {
             return res.status(401).json({
@@ -467,7 +473,7 @@ export const customerCare = async (req, res) => {
         const userId = req.user._id;
         const user = await User.findById(userId);
 
-        if (user.accountType == 'Admin' || user.accountType === 'SuperAdmin') {
+        if (user.accountType === 'SuperAdmin') {
             return res.status(500).json({
                 success: false,
                 message: "You can't fetch this type of data.",
@@ -499,7 +505,7 @@ export const customerCare = async (req, res) => {
 
         // Send email to your support team
         await mailSender(
-            "kuldeepbhagbole@gmail.com",
+            process.env.EMAIL_SUPER_ADMIN,
             `New Customer Query : ${subject}`,
             emailHtml
         );
