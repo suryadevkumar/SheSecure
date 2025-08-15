@@ -102,7 +102,7 @@ export const updateProfile = async (req, res) => {
                 _id: updatedUser._id,
                 firstName: updatedUser.firstName,
                 lastName: updatedUser.lastName,
-                email: usupdatedUserer.email,
+                email: updatedUser.email,
                 userType: updatedUser.userType,
                 image: updatedUser?.additionalDetails?.image || null,
             },
