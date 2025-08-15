@@ -25,6 +25,16 @@ const MyProfile = () => {
     getUserDetails(token)
       .then((res) => {
         setUser(res.user);
+        const updatedUser = {
+          _id: res.user._id,
+          firstName: res.user.firstName,
+          lastName: res.user.lastName,
+          email: res.user.email,
+          userType: res.user.userType,
+          image: res.user?.additionalDetails?.image || null,
+        };
+        dispatch(setUser(updatedUser));
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       })
       .catch(() => toast.error("Failed to load profile"));
   }, []);
