@@ -99,12 +99,12 @@ export const updateProfile = async (req, res) => {
             success: true,
             message: "Profile updated successfully.",
             user: {
-                _id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                userType: user.userType,
-                image: user?.additionalDetails?.image || null,
+                _id: updatedUser._id,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                email: usupdatedUserer.email,
+                userType: updatedUser.userType,
+                image: updatedUser?.additionalDetails?.image || null,
             },
         });
 
