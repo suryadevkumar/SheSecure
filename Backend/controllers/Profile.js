@@ -98,7 +98,14 @@ export const updateProfile = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Profile updated successfully.",
-            user: updatedUser,
+            user: {
+                _id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                userType: user.userType,
+                image: user?.additionalDetails?.image || null,
+            },
         });
 
     } catch (error) {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { updateProfile, getUserDetails } from "../routes/profile-routes";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "../redux/authSlice";
 import {
   Phone,
   Calendar,
@@ -86,7 +87,10 @@ const UpdateProfile = () => {
     // Send the data to the API
     try {
       const res = await updateProfile(token, data);
+      console.log("updated data", res);
       if (res.success) {
+        dispatch(setUser(res.user));
+        localStorage.setItem('user', JSON.stringify(res.user));
         toast.success(res.message);
         navigate("/profile");
       }

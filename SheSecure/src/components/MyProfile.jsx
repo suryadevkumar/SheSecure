@@ -12,31 +12,19 @@ import {
   FileImage,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { setUser } from "../redux/authSlice";
+import { useSelector } from "react-redux";
 
 const MyProfile = () => {
   const [user, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [modalImage, setModalImage] = useState(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const token = useSelector((state)=>state.auth.token);
 
   useEffect(() => {
     getUserDetails(token)
       .then((res) => {
         setUserData(res.user);
-        const updatedUser = {
-          _id: res.user._id,
-          firstName: res.user.firstName,
-          lastName: res.user.lastName,
-          email: res.user.email,
-          userType: res.user.userType,
-          image: res.user?.additionalDetails?.image || null,
-        };
-        dispatch(setUser(updatedUser));
-        localStorage.setItem('user', JSON.stringify(updatedUser));
       })
       .catch(() => toast.error("Failed to load profile"));
   }, []);
