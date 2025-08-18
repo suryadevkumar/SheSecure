@@ -11,7 +11,8 @@ import { useSearchParams } from "react-router-dom";
 import io from "socket.io-client";
 import { api, googleMapAPI, wsUrl } from "../config/config";
 import calculateDistance from "../utils/calculateDistance";
-import victimIcon from "../assets/location1.png";
+import victimHistoryIcon from "../assets/dotIcon.png";
+import victimLiveIcon from "../assets/dotLive.png";
 import helperIcon from "../assets/liveLocation.png";
 import liveIcon from "../assets/location1.png";
 import { toast } from "react-toastify";
@@ -19,7 +20,7 @@ import { toast } from "react-toastify";
 const libraries = ["places", "directions"];
 const mapContainerStyle = {
   width: "100%",
-  height: `${window.innerHeight - 4 * 20}px`,
+  height: `${window.innerHeight - 7 * 19}px`,
 };
 
 const center = {
@@ -527,7 +528,7 @@ const SharedMap = () => {
         onLoad={() => setMapError(null)}
       >
         <div className="emergency-map-container">
-          <div className="flex mt-20">
+          <div className="flex mt-2">
             <div
               className={`status-message ${
                 mapMode === "sos"
@@ -614,8 +615,8 @@ const SharedMap = () => {
                   }`}
                   position={{ lat: point.latitude, lng: point.longitude }}
                   icon={{
-                    url: victimIcon,
-                    scaledSize: new window.google.maps.Size(32, 32),
+                    url: victimHistoryIcon,
+                    scaledSize: new window.google.maps.Size(20, 20),
                   }}
                   onClick={() =>
                     setSelectedMarker({ ...point, type: "historical" })
@@ -634,7 +635,7 @@ const SharedMap = () => {
                   }`}
                   position={{ lat: point.latitude, lng: point.longitude }}
                   icon={{
-                    url: victimIcon,
+                    url: victimLiveIcon,
                     scaledSize: new window.google.maps.Size(32, 32),
                   }}
                   onClick={() => setSelectedMarker({ ...point, type: "live" })}
