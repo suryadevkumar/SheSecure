@@ -1,4 +1,6 @@
 import io from 'socket.io-client';
+import { toast } from 'react-toastify';
+
 import {
   setSocket,
   setConnected
@@ -40,7 +42,7 @@ const chatSocket = store => {
       if (socket) socket.disconnect();
 
       // Create new socket
-      socket = io(wsUrl+'/chat');
+      socket = io(wsUrl + '/chat');
 
       // Socket event handlers
       socket.on('connect', () => {
@@ -76,7 +78,13 @@ const chatSocket = store => {
 
       socket.on('error', (error) => {
         console.error('Socket error:', error);
+        if (error?.message) {
+          toast.error(error.message);
+        } else {
+          toast.error('Something went wrong with the chat');
+        }
       });
+
 
       // Set up chat event listeners
       // For counsellors
@@ -102,9 +110,9 @@ const chatSocket = store => {
       }
 
       // For both user types
-      socket.on('chat_request_accepted', ({ chatRequest, chatRoom }) => {
+      socket.on('chat_request_accepted', ({ chatRequest }) => {
         dispatch(updateChatRequest(chatRequest));
-        dispatch(addChatRoom(chatRoom));
+        dispatch(addChatRoom(chatRequest));
       });
 
       socket.on('chat_room_created', (chatRoom) => {
@@ -199,7 +207,7 @@ const chatSocket = store => {
       socket.emit('create_chat_request', {
         userId: user._id,
         problemType,
-        brief,
+        brief
       });
     }
 

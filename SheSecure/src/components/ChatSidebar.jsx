@@ -32,6 +32,8 @@ const ChatSidebar = () => {
     0
   );
 
+  console.log(chatRooms);
+
   const handleCreateRequest = (e) => {
     e.preventDefault();
     dispatch({
@@ -239,7 +241,7 @@ const ChatSidebar = () => {
                     activeRoom?._id === room._id
                       ? "bg-blue-50 border-blue-500"
                       : "border-transparent"
-                  } ${room.isEnded ? "opacity-70" : ""}`}
+                  } ${room.status=='Completed' ? "opacity-70" : ""}`}
                   onClick={() => handleSetActiveRoom(room)}
                 >
                   <div className="flex justify-between">
@@ -256,7 +258,7 @@ const ChatSidebar = () => {
                       )}
                     </p>
                     <div className="flex items-center">
-                      {room.isEnded && (
+                      {room.status=="Completed" && (
                         <span className="mr-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
                           Ended
                         </span>
@@ -289,8 +291,8 @@ const ChatSidebar = () => {
                       </div>
                     ) : (
                       <p className="text-sm text-gray-600 truncate transform transition-all duration-300 ease-in-out">
-                        {room.chatRequest?.problemType}:{" "}
-                        {room.chatRequest?.brief}
+                        {room.problemType}:{" "}
+                        {room.brief}
                       </p>
                     )}
                   </div>

@@ -17,14 +17,9 @@ export const fetchChatRooms = createAsyncThunk(
   'chat/fetchRooms',
   async (userId, { rejectWithValue }) => {
     try {
-      const [roomsRes, countsRes] = await Promise.all([
-        axios.get(`/api/chat/rooms?userId=${userId}`),
-      ]);
+      const rooms = await axios.get(`/api/chat/rooms?userId=${userId}`);
 
-      return {
-        rooms: roomsRes.data,
-        unreadCounts: countsRes.data
-      };
+      return rooms.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to fetch chat rooms');
     }
@@ -59,7 +54,6 @@ export const fetchMessages = createAsyncThunk(
   }
 );
 
-// In your chatSlice.js
 export const fetchUnreadCounts = createAsyncThunk(
   'chat/fetchUnreadCounts',
   async (userId, { rejectWithValue }) => {
@@ -170,7 +164,7 @@ const chatSlice = createSlice({
         if (room._id === chatRoomId) {
           return {
             ...room,
-            isEnded: true,
+            status: 'Completed',
             endedAt: new Date().toISOString()
           };
         }
@@ -181,7 +175,7 @@ const chatSlice = createSlice({
       if (state.activeRoom && state.activeRoom._id === chatRoomId) {
         state.activeRoom = {
           ...state.activeRoom,
-          isEnded: true,
+          status: 'Completed',
           endedAt: new Date().toISOString()
         };
       }
@@ -229,8 +223,7 @@ const chatSlice = createSlice({
         state.loading = true;
       })
       .addCase(fetchChatRooms.fulfilled, (state, action) => {
-        state.chatRooms = action.payload.rooms;
-        state.unreadCounts = action.payload.unreadCounts;
+        state.chatRooms = action.payload;
         state.loading = false;
       })
       .addCase(fetchChatRooms.rejected, (state, action) => {

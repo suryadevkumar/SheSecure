@@ -636,7 +636,7 @@ const SharedMap = () => {
                   position={{ lat: point.latitude, lng: point.longitude }}
                   icon={{
                     url: victimLiveIcon,
-                    scaledSize: new window.google.maps.Size(32, 32),
+                    scaledSize: new window.google.maps.Size(20, 20),
                   }}
                   onClick={() => setSelectedMarker({ ...point, type: "live" })}
                   zIndex={3}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 const ChatBox = () => {
@@ -10,6 +10,7 @@ const ChatBox = () => {
   const typingUsers = useSelector((state) => state.chat.typingUsers);
   const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
+  const [cooldown, setCooldown] = useState(0);
   const [newMessage, setNewMessage] = useState("");
   const [showEndChatConfirm, setShowEndChatConfirm] = useState(false);
   const messagesEndRef = useRef(null);
@@ -109,7 +110,7 @@ const ChatBox = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || activeRoom?.isEnded) return;
+    if (!newMessage.trim() || activeRoom?.status == "Completed") return;
 
     dispatch({ type: "socket/sendMessage", payload: { content: newMessage } });
     setNewMessage("");
@@ -121,8 +122,15 @@ const ChatBox = () => {
         type: "socket/requestEndChat",
         payload: { chatRoomId: activeRoom._id },
       });
+      setCooldown(300);
     }
   };
+
+  useEffect(() => {
+    if (activeRoom?.status === "Completed") {
+      setCooldown(0); // stop countdown if chat is ended
+    }
+  }, [activeRoom?.status]);
 
   const handleEndChatResponse = (accepted) => {
     dispatch({
@@ -131,6 +139,16 @@ const ChatBox = () => {
     });
     setShowEndChatConfirm(false);
   };
+
+  useEffect(() => {
+    let interval;
+    if (cooldown > 0) {
+      interval = setInterval(() => {
+        setCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   // Show end chat confirmation dialog when requested
   useEffect(() => {
@@ -222,31 +240,37 @@ const ChatBox = () => {
                 )}
               </h3>
               <p className="text-sm text-gray-500">
-                {activeRoom.chatRequest.problemType}:{" "}
-                {activeRoom.chatRequest.brief}
+                {activeRoom.problemType}: {activeRoom.brief}
               </p>
             </div>
           </div>
           <div className="flex items-center">
             <div
               className={`px-3 py-1 text-xs font-medium rounded-full mr-3 ${
-                activeRoom.isEnded
+                activeRoom.status == "Completed"
                   ? "bg-red-100 text-red-700"
                   : "bg-green-100 text-green-700"
               }`}
             >
-              {activeRoom.isEnded ? "Ended" : "Active"}
+              {activeRoom.status == "Completed" ? "Ended" : "Active"}
             </div>
 
             {/* End Chat Button - Only for counsellors and active chats */}
-            {user?.userType === "Counsellor" && !activeRoom.isEnded && (
+            {user?.userType === "Counsellor" && activeRoom.status === "Accepted" && (
               <button
                 onClick={handleEndChatRequest}
-                className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm"
+                disabled={cooldown > 0}
+                className={`px-3 py-1 text-xs font-medium rounded-lg shadow-sm transition duration-200 
+                  ${cooldown > 0 
+                    ? "bg-gray-400 cursor-not-allowed text-white" 
+                    : "bg-red-600 hover:bg-red-700 text-white"}`}
               >
-                End Chat
+                {cooldown > 0 
+                  ? `Retry in ${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")}`
+                  : "End Chat"}
               </button>
             )}
+
           </div>
         </div>
       </div>
@@ -403,7 +427,7 @@ const ChatBox = () => {
 
       {/* Message Input - Disabled if chat is ended */}
       <div className="p-3 bg-white border-t border-gray-200">
-        {activeRoom.isEnded ? (
+        {activeRoom.status == "Completed" ? (
           <div className="p-3 text-center text-sm text-gray-600 bg-gray-100 rounded-lg shadow-inner">
             <svg
               className="w-5 h-5 mx-auto mb-1 text-gray-500"

@@ -1,5 +1,4 @@
 import User from '../models/User.js';
-import ChatRequest from '../models/ChatRequest.js';
 import ChatRoom from '../models/ChatRoom.js';
 import Message from '../models/Message.js';
 
@@ -26,7 +25,7 @@ const chatSocket = (io) => {
                     // Find all chat partners for this user
                     const chatRooms = await ChatRoom.find({
                         $or: [{ user: userId }, { counsellor: userId }],
-                        isActive: true
+                        status: 'Accepted'
                     });
 
                     // Create a list of chat partners who should be notified
@@ -54,7 +53,7 @@ const chatSocket = (io) => {
 
                     // If counsellor, send all pending chat requests
                     if (user.userType === 'Counsellor') {
-                        const pendingRequests = await ChatRequest.find({ status: 'Pending' })
+                        const pendingRequests = await ChatRoom.find({ status: 'Pending' })
                             .populate('user', 'firstName lastName')
                             .sort('-createdAt');
                         socket.emit('pending_chat_requests', pendingRequests);
@@ -63,8 +62,8 @@ const chatSocket = (io) => {
                     // Send active chat rooms for this user
                     const activeChatRooms = await ChatRoom.find({
                         $or: [{ user: userId }, { counsellor: userId }],
-                        isActive: true
-                    }).populate('user counsellor chatRequest');
+                        status: { $ne: 'Pending' }
+                    }).populate('user counsellor');
 
                     const activeChatPartners = [];
                     for (const room of activeChatRooms) {
@@ -97,14 +96,13 @@ const chatSocket = (io) => {
             try {
                 const { userId, problemType, brief } = data;
 
-                const newChatRequest = await ChatRequest.create({
+                const newChatRequest = await ChatRoom.create({
                     user: userId,
                     problemType,
-                    brief,
-                    status: 'Pending'
+                    brief
                 });
 
-                const populatedRequest = await ChatRequest.findById(newChatRequest._id)
+                const populatedRequest = await ChatRoom.findById(newChatRequest._id)
                     .populate('user', 'firstName lastName');
 
                 // Broadcast to all counsellors
@@ -129,34 +127,23 @@ const chatSocket = (io) => {
                 const { counsellorId, requestId } = data;
 
                 // Update chat request status
-                const chatRequest = await ChatRequest.findByIdAndUpdate(
+                const chatRequest = await ChatRoom.findByIdAndUpdate(
                     requestId,
-                    { status: 'Accepted', acceptedBy: counsellorId },
+                    { status: 'Accepted', counsellor: counsellorId },
                     { new: true }
-                ).populate('user acceptedBy');
+                ).populate('user counsellor');
 
                 if (!chatRequest) {
                     socket.emit('error', { message: 'Chat request not found' });
                     return;
                 }
 
-                // Create a new chat room
-                const newChatRoom = await ChatRoom.create({
-                    chatRequest: requestId,
-                    user: chatRequest.user._id,
-                    counsellor: counsellorId,
-                    isActive: true
-                });
-
-                const populatedRoom = await ChatRoom.findById(newChatRoom._id)
-                    .populate('user counsellor chatRequest');
-
                 // Get counsellor details for welcome message
                 const counsellor = await User.findById(counsellorId);
 
                 // Create welcome message
                 const welcomeMessage = await Message.create({
-                    chatRoom: newChatRoom._id,
+                    chatRoom: requestId,
                     sender: counsellorId,
                     content: `Hi, I am ${counsellor.firstName} ${counsellor.lastName} from SheSecure. How can I help you?`,
                     readBy: [counsellorId]
@@ -169,13 +156,12 @@ const chatSocket = (io) => {
                 const userSocketId = onlineUsers.get(chatRequest.user._id.toString());
                 if (userSocketId) {
                     io.to(userSocketId).emit('chat_request_accepted', {
-                        chatRequest,
-                        chatRoom: populatedRoom
+                        chatRequest
                     });
                     io.to(userSocketId).emit('new_message', populatedMessage);
                 }
 
-                socket.emit('chat_room_created', populatedRoom);
+                socket.emit('chat_room_created', chatRequest);
                 socket.emit('message_sent', populatedMessage);
 
                 // Update all counsellors that this request is no longer available
@@ -192,7 +178,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, senderId, content } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || !chatRoom.isActive) {
+                if (!chatRoom || chatRoom.status!='Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -233,7 +219,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || !chatRoom.isActive) {
+                if (!chatRoom || chatRoom.status!='Accepted') {
                     return;
                 }
 
@@ -258,7 +244,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || !chatRoom.isActive) {
+                if (!chatRoom || chatRoom.status!='Accepted') {
                     return;
                 }
 
@@ -284,7 +270,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, counsellorId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || !chatRoom.isActive) {
+                if (!chatRoom || chatRoom.status!='Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -295,16 +281,24 @@ const chatSocket = (io) => {
                     return;
                 }
 
+                // Find the user socket to send the confirmation request
+                const userSocketId = onlineUsers.get(chatRoom.user.toString());
+
+                if (!userSocketId) {
+                    socket.emit('error', { message: 'User is offline, try again later' });
+                    return;
+                }
+
                 // Check if the room already has a pending end request
                 const pendingEndRequest = await Message.findOne({
                     chatRoom: chatRoomId,
                     isSystem: true,
                     content: { $regex: 'requested to end this chat' },
-                    createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) } // Within last 5 minutes
+                    createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
                 });
 
                 if (pendingEndRequest) {
-                    socket.emit('error', { message: 'An end request is already pending' });
+                    socket.emit('error', { message: 'You cannot send another end request within 5 minutes' });
                     return;
                 }
 
@@ -317,8 +311,6 @@ const chatSocket = (io) => {
                     readBy: [counsellorId]
                 });
 
-                // Find the user socket to send the confirmation request
-                const userSocketId = onlineUsers.get(chatRoom.user.toString());
                 if (userSocketId) {
                     io.to(userSocketId).emit('end_chat_request', { chatRoomId });
 
@@ -342,7 +334,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId, accepted } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || !chatRoom.isActive) {
+                if (!chatRoom || chatRoom.status!='Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -355,8 +347,7 @@ const chatSocket = (io) => {
 
                 if (accepted) {
                     // End the chat
-                    chatRoom.isEnded = true;
-                    chatRoom.endedBy = chatRoom.counsellor; // Counsellor initiated the end
+                    chatRoom.status = 'Completed';
                     chatRoom.endedAt = new Date();
                     await chatRoom.save();
 
@@ -433,7 +424,7 @@ const chatSocket = (io) => {
                 // Specifically notify users in active chats about status change
                 ChatRoom.find({
                     $or: [{ user: userId }, { counsellor: userId }],
-                    isActive: true
+                    status: 'Accepted'
                 })
                     .then(rooms => {
                         rooms.forEach(room => {

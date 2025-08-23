@@ -1,4 +1,3 @@
-import ChatRequest from '../models/ChatRequest.js';
 import ChatRoom from '../models/ChatRoom.js';
 import Message from '../models/Message.js';
 
@@ -10,9 +9,9 @@ export const getChatRequests = async (req, res) => {
     if (userId) query.user = userId;
     query.status = "Pending";
     
-    const chatRequests = await ChatRequest.find(query)
+    const chatRequests = await ChatRoom.find(query)
       .populate('user', 'firstName lastName')
-      .populate('acceptedBy', 'firstName lastName')
+      .populate('counsellor', 'firstName lastName')
       .sort('-createdAt');
     
     res.json(chatRequests);
@@ -32,12 +31,11 @@ export const getChatRooms = async (req, res) => {
     
     const chatRooms = await ChatRoom.find({
       $or: [{ user: userId }, { counsellor: userId }],
-      isActive: true
+      status: { $ne: 'Pending' }
     })
     .populate('user', 'firstName lastName')
     .populate('counsellor', 'firstName lastName')
-    .populate('chatRequest', 'problemType brief')
-    .sort('-createdAt');
+    .sort('-updatedAt');
     
     res.json(chatRooms);
   } catch (error) {
