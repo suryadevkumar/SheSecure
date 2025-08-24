@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { FaThumbsUp, FaThumbsDown, FaTimes, FaComment } from "react-icons/fa";
 import {
@@ -9,8 +9,8 @@ import {
 
 const CrimeDetailsModal = ({ crime, onClose }) => {
   const [interactions, setInteractions] = useState({
-    supports: 0,
-    unsupports: 0,
+    likeCount: 0,
+    unlikeCount: 0,
     comments: [],
     userInteraction: null,
   });
@@ -35,13 +35,13 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
       setLoading(true);
       setError(null);
       const response = await getInteractions(token, crime._id);
-      
+
       if (response?.success) {
         setInteractions({
-          supports: response.data.supports || 0,
-          unsupports: response.data.unsupports || 0,
+          likeCount: response.data.likeCount,
+          unlikeCount: response.data.unlikeCount,
           comments: response.data.comments || [],
-          userInteraction: response.data.userInteraction || null,
+          userInteraction: response.data.userLike,
         });
       } else {
         setError(response?.error || "Failed to load interactions");
@@ -54,18 +54,22 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
     }
   };
 
-  const handleInteraction = async (supportStatus) => {
+  const handleInteraction = async (likeStatus) => {
     try {
       setError(null);
       // Toggle behavior - if already selected, remove selection
-      const action = interactions.userInteraction?.supportStatus === supportStatus 
-        ? null 
-        : supportStatus;
-      
+      const action =
+        interactions.userInteraction === likeStatus ? null : likeStatus;
+
       const response = await interactWithCrime(token, crime._id, action);
-      
+
       if (response?.success) {
-        fetchInteractions();
+        setInteractions({
+          likeCount: response.data.likeCount,
+          unlikeCount: response.data.unlikeCount,
+          comments: [...interactions.comments],
+          userInteraction: response.data.like,
+        });
       } else {
         setError(response?.error || "Failed to update interaction");
       }
@@ -83,11 +87,15 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
       setSubmitStatus("submitting");
       setError(null);
       const response = await crimeComment(token, crime._id, comment);
-      
+
       if (response?.success) {
+        console.log(response)
         setComment("");
+        setInteractions((prev) => ({
+          ...prev,
+          comments: [response.data.comment, ...prev.comments],
+        }));
         setSubmitStatus("success");
-        fetchInteractions();
         setTimeout(() => setSubmitStatus(""), 3000);
       } else {
         setSubmitStatus("error");
@@ -103,15 +111,15 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
   };
 
   const toggleCommentExpansion = (commentId) => {
-    setExpandedComments(prev => ({
+    setExpandedComments((prev) => ({
       ...prev,
-      [commentId]: !prev[commentId]
+      [commentId]: !prev[commentId],
     }));
   };
 
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    
+
     const intervals = [
       { label: "year", seconds: 31536000 },
       { label: "month", seconds: 2592000 },
@@ -126,13 +134,15 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
         return `${count} ${interval.label}${count === 1 ? "" : "s"} ago`;
       }
     }
-    
+
     return `${Math.floor(seconds)} seconds ago`;
   };
 
   const getUserName = (commentUser) => {
     if (!commentUser) return "Anonymous";
-    return `${commentUser.firstName} ${commentUser.lastName}`.trim() || "Anonymous";
+    return (
+      `${commentUser.firstName} ${commentUser.lastName}`.trim() || "Anonymous"
+    );
   };
 
   const getUserImage = (commentUser) => {
@@ -144,17 +154,17 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
     const commentText = comment.text;
     const isLongComment = commentText.length > 150;
     const isExpanded = expandedComments[comment._id];
-    
+
     if (!isLongComment) {
       return <p className="mt-1 text-gray-700">{commentText}</p>;
     }
-    
+
     return (
       <div className="mt-1">
         <p className="text-gray-700">
           {isExpanded ? commentText : `${commentText.substring(0, 150)}...`}
         </p>
-        <button 
+        <button
           onClick={() => toggleCommentExpansion(comment._id)}
           className="text-blue-600 text-sm mt-1 hover:underline focus:outline-none cursor-pointer"
         >
@@ -228,31 +238,31 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
                 {/* Support/Unsupport Counts */}
                 <div className="flex justify-around mb-6">
                   <button
-                    onClick={() => handleInteraction("Support")}
+                    onClick={() => handleInteraction("Like")}
                     className={`flex flex-col items-center cursor-pointer ${
-                      interactions.userInteraction?.supportStatus === "Support"
+                      interactions.userInteraction === "Like"
                         ? "text-blue-600"
                         : "text-gray-600 hover:text-blue-600"
                     } transition-colors`}
                   >
                     <FaThumbsUp size={32} />
                     <span className="font-bold mt-1">
-                      {interactions.supports}
+                      {interactions.likeCount}
                     </span>
                     <span>Support</span>
                   </button>
 
                   <button
-                    onClick={() => handleInteraction("Unsupport")}
+                    onClick={() => handleInteraction("Unlike")}
                     className={`flex flex-col items-center cursor-pointer ${
-                      interactions.userInteraction?.supportStatus === "Unsupport"
+                      interactions.userInteraction === "Unlike"
                         ? "text-red-600"
                         : "text-gray-600 hover:text-red-600"
                     } transition-colors`}
                   >
                     <FaThumbsDown size={32} />
                     <span className="font-bold mt-1">
-                      {interactions.unsupports}
+                      {interactions.unlikeCount}
                     </span>
                     <span>Unsupport</span>
                   </button>
@@ -279,7 +289,9 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
                     />
                     <button
                       type="submit"
-                      disabled={!comment.trim() || submitStatus === "submitting"}
+                      disabled={
+                        !comment.trim() || submitStatus === "submitting"
+                      }
                       className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {submitStatus === "submitting" ? "Posting..." : "Post"}
@@ -323,9 +335,13 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
                               <div className="flex justify-between">
                                 <p className="font-semibold">
                                   {getUserName(comment.user)}
-                                  {currentUser && comment.user && currentUser._id === comment.user._id && 
-                                    <span className="text-xs text-blue-600 ml-2">(You)</span>
-                                  }
+                                  {currentUser &&
+                                    comment.user &&
+                                    currentUser._id === comment.user._id && (
+                                      <span className="text-xs text-blue-600 ml-2">
+                                        (You)
+                                      </span>
+                                    )}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {timeAgo(comment.createdAt)}
@@ -337,12 +353,15 @@ const CrimeDetailsModal = ({ crime, onClose }) => {
                                 <div className="mt-1 flex items-center">
                                   {comment.supportStatus === "Support" ? (
                                     <span className="text-blue-600 text-sm flex items-center">
-                                      <FaThumbsUp className="mr-1" size={12} /> 
+                                      <FaThumbsUp className="mr-1" size={12} />
                                       Supported
                                     </span>
                                   ) : (
                                     <span className="text-red-600 text-sm flex items-center">
-                                      <FaThumbsDown className="mr-1" size={12} /> 
+                                      <FaThumbsDown
+                                        className="mr-1"
+                                        size={12}
+                                      />
                                       Unsupported
                                     </span>
                                   )}

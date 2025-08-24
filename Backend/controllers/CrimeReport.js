@@ -41,7 +41,7 @@ async function cleanupResources(resources) {
 
 // Function to assign admin in a round-robin fashion
 const getNextAdmin = async () => {
-    const admins = await User.find({ accountType: "Admin", approved: "Verified" }).sort('_id'); // Get all admins
+    const admins = await User.find({ userType: "Admin", approved: "Verified" }).sort('_id'); // Get all admins
     if (admins.length === 0) return null; // No admins available
 
     // Find the last assigned report to determine the last admin
@@ -528,8 +528,10 @@ export const getCrimesNearLocation = async (req, res) => {
             description: crime.description,
             crimePhotos: crime.crimePhotos,
             crimeVideos: crime.crimeVideos,
+            likeCount: crime.likeCount,
+            unlikeCount: crime.unlikeCount,
             createdAt: crime.createdAt,
-            distance: crime.distance, // Include distance in the response
+            distance: crime.distance,
             location: {
                 displayName: crime.location.displayName,
                 formattedAddress: crime.location.formattedAddress,

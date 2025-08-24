@@ -80,8 +80,8 @@ const UserDashboard = () => {
 
     // Scale: 0.1km -> 10 points, 5km -> 90 points
     const score = Math.min(
-      90,
-      Math.max(10, (nearestCrimeDistance / 5) * 80 + 10)
+      100,
+      Math.max(0, (nearestCrimeDistance / 2) * 100)
     );
     return Math.round(score);
   };

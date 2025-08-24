@@ -22,6 +22,7 @@ const getPlaceDetails = async (lat, lng) => {
 };
 
 export const sendLocationToBackend = async (lat, lng, startTime, endTime, token) => {
+  return;
     if (!token) return;
     try {
         const { displayName, formattedAddress } = await getPlaceDetails(lat, lng);

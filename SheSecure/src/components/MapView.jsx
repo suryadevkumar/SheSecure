@@ -17,7 +17,6 @@ import pathIcon from "../assets/pathDot.png";
 import { setPathDistance } from "../redux/distanceSlice";
 import calculateDistance from "../utils/calculateDistance";
 import CrimeDetailsModal from "./CrimeDetailsModal";
-import { crimeInteraction } from "../routes/crime-report-interaction-routes";
 import { fetchLocationHistory } from "../routes/location-routes";
 import { FaThumbsUp, FaThumbsDown } from "react-icons/fa";
 import { FiClock, FiCalendar, FiMapPin, FiAlertCircle } from "react-icons/fi";
@@ -57,7 +56,6 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
   const [rippleColor, setRippleColor] = useState("#00FF00");
   const [safetyScore, setSafetyScore] = useState(100);
   const [showCrimeDetailsModal, setShowCrimeDetailsModal] = useState(false);
-  const [crimeInteractions, setCrimeInteractions] = useState({});
 
   // History mode state
   const [locations, setLocations] = useState([]);
@@ -99,12 +97,6 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
       }
     }
   }, [latitude, longitude, crimesData, showCrimes]);
-
-  useEffect(() => {
-    if (crimesData?.length) {
-      fetchCrimeInteractions();
-    }
-  }, [crimesData]);
 
   useEffect(() => {
     if (!showCrimes) {
@@ -166,24 +158,6 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
         setFilteredLocations([]);
       }
       setLoading(false);
-    }
-  };
-
-  const fetchCrimeInteractions = async () => {
-    try {
-      const response = await crimeInteraction(token);
-      if (response.success) {
-        const interactionsMap = {};
-        response.data.forEach((item) => {
-          interactionsMap[item.crimeId] = {
-            supports: item.supports,
-            unsupports: item.unsupports,
-          };
-        });
-        setCrimeInteractions(interactionsMap);
-      }
-    } catch (error) {
-      console.error("Error fetching crime interactions:", error);
     }
   };
 
@@ -289,7 +263,6 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
   const closeCrimeDetailsModal = () => {
     setShowCrimeDetailsModal(false);
-    fetchCrimeInteractions();
   };
 
   const toggleLocationList = () => {
@@ -409,7 +382,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 items-center">
                     <FiClock className="mr-2" /> End Time
                   </label>
                   <select
@@ -697,11 +670,11 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                     <div className="flex justify-between mt-2 mb-2">
                       <div className="flex items-center gap-1 text-blue-600">
                         <FaThumbsUp />
-                        {crimeInteractions[selectedCrime._id]?.supports || 0}
+                        {selectedCrime.likeCount}
                       </div>
                       <div className="flex items-center gap-1 text-red-600">
                         <FaThumbsDown />
-                        {crimeInteractions[selectedCrime._id]?.unsupports || 0}
+                        {selectedCrime.unlikeCount}
                       </div>
                     </div>
 
@@ -778,9 +751,8 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
               {showPlaceButton && (
                 <div
                   className={`${isMobile ? "fixed bottom-0 left-0 right-0 z-10" : "static"} 
-                  w-full md:w-[27%] transition-all duration-300 ${
-                    showCrimes ? "h-[calc(50vh)]" : "h-[calc(40vh)]"
-                  } bg-white shadow-lg md:shadow-none`}
+                  w-full md:w-[27%] transition-all duration-300 h-[calc(100vh-4rem)] 
+                  bg-white shadow-lg md:shadow-none`}
                 >
                   {isMobile && (
                     <button
@@ -837,7 +809,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                       Nearest PoliceStation
                     </p>
                   </div>
-                  <div className="w-full bg-blue-200 h-[45%] overflow-x-hidden overflow-y-auto">
+                  <div className="w-full bg-blue-200 h-[35%] overflow-x-hidden overflow-y-auto">
                     {sortedPoliceStations?.map((place, index) => (
                       <div
                         className={`p-1 border-white border-2 cursor-pointer ${
@@ -878,7 +850,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                       Nearest Hospitals
                     </p>
                   </div>
-                  <div className="w-full bg-blue-200 h-[45%] overflow-x-hidden overflow-y-auto">
+                  <div className="w-full bg-blue-200 h-[38%] overflow-x-hidden overflow-y-auto">
                     {sortedHospitals?.map((place, index) => (
                       <div
                         className={`p-1 border-white border-2 cursor-pointer ${
