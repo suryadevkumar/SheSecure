@@ -32,7 +32,7 @@ export const interactWithCrime = async (token, crimeId, action) => {
     try {
         const response = await axios.post(
             `/api/crimeInteraction/${crimeId}/interact`,
-            { supportStatus: action },
+            { likeStatus: action },
             {
                 headers: {
                     Authorization: `Bearer ${token}`,

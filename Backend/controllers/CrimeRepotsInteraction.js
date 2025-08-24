@@ -64,8 +64,6 @@ export const interactWithCrime = async (req, res) => {
         const { likeStatus } = req.body; // This can be "Like", "Unlike", or null
         const userId = req.user._id;
 
-        console.log('Received likeStatus:', likeStatus);
-
         const crimeExists = await CrimeReport.exists({ _id: crimeId });
         if (!crimeExists) {
             return res.status(404).json({ message: 'Crime report not found' });
@@ -95,7 +93,6 @@ export const interactWithCrime = async (req, res) => {
         }
 
         const previousStatus = existingLike ? existingLike.likeStatus : null;
-        console.log('Previous status:', previousStatus);
 
         let like;
         if (existingLike) {
@@ -114,7 +111,6 @@ export const interactWithCrime = async (req, res) => {
                     { likeStatus },
                     { new: true, runValidators: true }
                 );
-                console.log('Updated like:', like);
             }
         } else if (likeStatus !== null) {
             // Create new like only if status is not null
@@ -123,7 +119,6 @@ export const interactWithCrime = async (req, res) => {
                 likeStatus
             });
             await like.save();
-            console.log('Created like:', like);
             
             // Add like reference to crime interaction
             crimeInteraction.like.push(like._id);
@@ -132,27 +127,20 @@ export const interactWithCrime = async (req, res) => {
 
         // Update the like counts in the crime report
         const crimeReport = await CrimeReport.findById(crimeId);
-        console.log('Initial counts - likeCount:', crimeReport.likeCount, 'unlikeCount:', crimeReport.unlikeCount);
         
         // Decrement previous status count only if it was set
         if (previousStatus === 'Like') {
             crimeReport.likeCount = Math.max(0, crimeReport.likeCount - 1);
-            console.log('Decremented like count');
         } else if (previousStatus === 'Unlike') {
             crimeReport.unlikeCount = Math.max(0, crimeReport.unlikeCount - 1);
-            console.log('Decremented unlike count');
         }
         
         // Increment new status count only if it's not null
         if (likeStatus === 'Like') {
             crimeReport.likeCount += 1;
-            console.log('Incremented like count');
         } else if (likeStatus === 'Unlike') {
             crimeReport.unlikeCount += 1;
-            console.log('Incremented unlike count');
         }
-        
-        console.log('Final counts - likeCount:', crimeReport.likeCount, 'unlikeCount:', crimeReport.unlikeCount);
         
         await crimeReport.save();
 
