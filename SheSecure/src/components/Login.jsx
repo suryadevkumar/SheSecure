@@ -9,6 +9,8 @@ const Login = () => {
   const [emailTimer, setEmailTimer] = useState(0);
   const [otpVisible, setOtpVisible] = useState(false);
   const [buttonText, setButtonText] = useState('Send OTP');
+  const [isSending, setIsSending] = useState(false); 
+  const [isVerifying, setIsVerifying] = useState(false);
   const otpInputRefs = useRef([]);
 
   // Email timer
@@ -36,33 +38,56 @@ const Login = () => {
 
   const handleSendOTPClick = async (e) => {
     e.preventDefault();
-    if (!otpVisible) {
-      if (!email) {
-        toast.error('Please enter your email!');
-        return;
-      }
+    
+    // Don't proceed if already sending or timer is active
+    if (isSending || (otpVisible && emailTimer > 0)) return;
+    
+    if (!email) {
+      toast.error('Please enter your email!');
+      return;
+    }
 
-      const response = await checkUserExist(email);
-      if (response.success){
-        setOtpVisible(true);
-        sendEmailOTP(setEmailTimer, email, (status) => {
+    setIsSending(true);
+    setButtonText('Sending...');
+
+    try {
+      if (!otpVisible) {
+        const response = await checkUserExist(email);
+        if (response.success) {
+          setOtpVisible(true);
+          await sendEmailOTP(setEmailTimer, email, (status) => {
+            if (status.success) {
+              toast.success(status.message);
+            } else {
+              toast.error(status.message);
+              setIsSending(false); // Re-enable button on error
+              setButtonText('Send OTP');
+            }
+          });
+        } else {
+          toast.error(response.message);
+          setIsSending(false);
+          setButtonText('Send OTP');
+        }
+      } else {
+        await sendEmailOTP(setEmailTimer, email, (status) => {
           if (status.success) {
             toast.success(status.message);
           } else {
             toast.error(status.message);
+            setIsSending(false);
+            setButtonText('Resend OTP');
           }
         });
-      } else {
-        toast.error(response.message);
       }
-    } else {
-      sendEmailOTP(setEmailTimer, email, (status) => {
-        if (status.success) {
-          toast.success(status.message);
-        } else {
-          toast.error(status.message);
-        }
-      });
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+      setIsSending(false);
+      setButtonText(otpVisible ? 'Resend OTP' : 'Send OTP');
+    } finally {
+      if (!isSending) {
+        setIsSending(false);
+      }
     }
   };
 
@@ -84,9 +109,24 @@ const Login = () => {
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const fullOtp = otp.join('');
-    logIn(email, fullOtp);
+    
+    if (fullOtp.length !== 6) {
+      toast.error('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setIsVerifying(true);
+    
+    try {
+      await logIn(email, fullOtp);
+      // Assuming logIn handles success/error internally
+    } catch (error) {
+      toast.error('Login failed. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -145,12 +185,12 @@ const Login = () => {
             <div className="flex flex-col space-y-4">
               <button
                 className={`py-3 px-6 rounded-lg font-semibold text-white transition ${
-                  otpVisible && emailTimer > 0 
+                  (otpVisible && emailTimer > 0) || isSending
                     ? 'bg-pink-400 cursor-not-allowed' 
                     : 'bg-pink-600 hover:bg-pink-700 cursor-pointer'
                 }`}
                 onClick={handleSendOTPClick}
-                disabled={otpVisible && emailTimer > 0}
+                disabled={(otpVisible && emailTimer > 0) || isSending}
               >
                 {buttonText}
               </button>
@@ -158,14 +198,14 @@ const Login = () => {
               {otpVisible && (
                 <button
                   className={`py-3 px-6 rounded-lg font-semibold text-white transition ${
-                    otp.join('').length === 6
+                    otp.join('').length === 6 && !isVerifying
                       ? 'bg-pink-600 hover:bg-pink-700 cursor-pointer' 
                       : 'bg-pink-400 cursor-not-allowed'
                   }`}
                   onClick={handleLogin}
-                  disabled={otp.join('').length !== 6}
+                  disabled={otp.join('').length !== 6 || isVerifying}
                 >
-                  Verify & Login
+                  {isVerifying ? 'Verifying...' : 'Verify & Login'}
                 </button>
               )}
             </div>

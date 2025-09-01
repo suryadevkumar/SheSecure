@@ -4,6 +4,7 @@ import Profile from "../models/Profile.js";
 import EmergencyContacts from '../models/EmergencyContacts.js'
 import Location from "../models/Location.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import cloudinary from 'cloudinary';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -95,7 +96,7 @@ export const updateProfile = async (req, res) => {
             return res.status(404).json({ success: false, message: "Profile not found." });
         }
 
-        // 🔵 Now, fetch full user info with populated profile
+        // Now, fetch full user info with populated profile
         const updatedUser = await User.findById(userId)
             .populate({
                 path: "additionalDetails",
