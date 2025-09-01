@@ -5,6 +5,10 @@ const profileSchema=mongoose.Schema(
         image:{
             type:String,
         },
+        imageId:{
+            type:String,
+            default:null
+        },
         address:{
             type:String,
         },

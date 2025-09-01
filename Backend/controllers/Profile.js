@@ -44,10 +44,16 @@ export const updateProfile = async (req, res) => {
         }
 
         let imageUrl = null;
+        let imageId = null;
 
         // Check if a new display picture is uploaded
         if (req.files && req.files.displayPicture) {
             const displayPicture = req.files.displayPicture;
+
+            const oldProfile = await Profile.findById(user.additionalDetails);
+            if (oldProfile?.imageId) {
+                await cloudinary.uploader.destroy(oldProfile.imageId);
+            }
 
             // Upload image to Cloudinary
             const image = await uploadToCloudinary(
@@ -56,9 +62,9 @@ export const updateProfile = async (req, res) => {
                 1000,
                 1000
             );
-            console.log("Uploaded Image:", image);
 
             imageUrl = image.secure_url;
+            imageId = image.public_id;
         }
 
         const { address, dob, gender } = req.body;
@@ -73,9 +79,10 @@ export const updateProfile = async (req, res) => {
         if (gender !== undefined) updateData.gender = gender;
         if (address !== undefined) updateData.address = address;
         if (dob !== undefined) updateData.dob = dob;
-        if (imageUrl !== null) updateData.image = imageUrl;
-
-        console.log(updateData, userId);
+        if (imageUrl !== null){ 
+            updateData.image = imageUrl;
+            updateData.imageId = imageId;
+        }
 
         // Update profile
         const updatedProfile = await Profile.findByIdAndUpdate(

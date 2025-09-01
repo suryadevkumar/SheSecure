@@ -167,8 +167,8 @@ export const reportCrime = async (req, res) => {
                 // Map the incoming field names to the model field names
                 const newSuspect = await Suspect.create({
                     suspectPhoto: suspectPhotoUrl,
-                    suspectName: suspect.name,       // Map from frontend 'name' to model 'suspectName'
-                    suspectGender: suspect.gender    // Map from frontend 'gender' to model 'suspectGender'
+                    suspectName: suspect.name,
+                    suspectGender: suspect.gender
                 });
 
                 suspectIds.push(newSuspect._id);
