@@ -59,7 +59,7 @@ export const updateProfile = async (req, res) => {
             // Upload image to Cloudinary
             const image = await uploadToCloudinary(
                 displayPicture,
-                process.env.FOLDER_NAME,
+                "sheSecure_profile_picture",
                 1000,
                 1000
             );
