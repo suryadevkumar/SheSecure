@@ -10,7 +10,6 @@ const ChatBox = () => {
   const typingUsers = useSelector((state) => state.chat.typingUsers);
   const userLastSeen = useSelector((state) => state.chat.userLastSeen);
 
-  const [cooldown, setCooldown] = useState(0);
   const [newMessage, setNewMessage] = useState("");
   const [showEndChatConfirm, setShowEndChatConfirm] = useState(false);
   const messagesEndRef = useRef(null);
@@ -118,19 +117,30 @@ const ChatBox = () => {
 
   const handleEndChatRequest = () => {
     if (user?.userType === "Counsellor") {
-      dispatch({
-        type: "socket/requestEndChat",
-        payload: { chatRoomId: activeRoom._id },
-      });
-      setCooldown(300);
+      if (activeRoom.endRequestStatus) {
+        // Cancel end request
+        dispatch({
+          type: "socket/cancelEndChatRequest",
+          payload: { chatRoomId: activeRoom._id },
+        });
+      } else {
+        // Request end chat
+        dispatch({
+          type: "socket/requestEndChat",
+          payload: { chatRoomId: activeRoom._id },
+        });
+      }
     }
   };
 
+  // Show end chat confirmation dialog when requested
   useEffect(() => {
-    if (activeRoom?.status === "Completed") {
-      setCooldown(0); // stop countdown if chat is ended
+    if (activeRoom?.endRequestStatus === true && user?.userType === "User") {
+        setShowEndChatConfirm(true);
+    } else {
+        setShowEndChatConfirm(false);
     }
-  }, [activeRoom?.status]);
+}, [activeRoom?.endRequestStatus, user?.userType]);
 
   const handleEndChatResponse = (accepted) => {
     dispatch({
@@ -139,25 +149,6 @@ const ChatBox = () => {
     });
     setShowEndChatConfirm(false);
   };
-
-  useEffect(() => {
-    let interval;
-    if (cooldown > 0) {
-      interval = setInterval(() => {
-        setCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [cooldown]);
-
-  // Show end chat confirmation dialog when requested
-  useEffect(() => {
-    if (activeRoom?.pendingEndRequest && user?.userType === "User") {
-      setShowEndChatConfirm(true);
-    } else {
-      setShowEndChatConfirm(false);
-    }
-  }, [activeRoom?.pendingEndRequest, user?.userType]);
 
   // Check if someone is typing in the current chat room
   const isUserTyping =
@@ -256,21 +247,25 @@ const ChatBox = () => {
             </div>
 
             {/* End Chat Button - Only for counsellors and active chats */}
-            {user?.userType === "Counsellor" && activeRoom.status === "Accepted" && (
-              <button
-                onClick={handleEndChatRequest}
-                disabled={cooldown > 0}
-                className={`px-3 py-1 text-xs font-medium rounded-lg shadow-sm transition duration-200 
-                  ${cooldown > 0 
+            {user?.userType === "Counsellor" &&
+              activeRoom.status === "Accepted" && (
+                <button
+                  onClick={handleEndChatRequest}
+                  disabled={activeRoom.status === "Completed"}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg shadow-sm transition duration-200 
+                  ${activeRoom.status === "Completed" 
                     ? "bg-gray-400 cursor-not-allowed text-white" 
-                    : "bg-red-600 hover:bg-red-700 text-white"}`}
-              >
-                {cooldown > 0 
-                  ? `Retry in ${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")}`
+                    : activeRoom.endRequestStatus
+                    ? "bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer"
+                    : "bg-red-600 hover:bg-red-700 text-white cursor-pointer"}`}
+                >
+                  {activeRoom.status === "Completed" 
+                  ? "Ended"
+                  : activeRoom.endRequestStatus
+                  ? "Cancel End Request"
                   : "End Chat"}
-              </button>
-            )}
-
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -302,13 +297,13 @@ const ChatBox = () => {
               <div className="flex space-x-3">
                 <button
                   onClick={() => handleEndChatResponse(true)}
-                  className="px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm"
+                  className="px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm cursor-pointer"
                 >
                   Yes, End Chat
                 </button>
                 <button
                   onClick={() => handleEndChatResponse(false)}
-                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 shadow-sm"
+                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 shadow-sm cursor-pointer"
                 >
                   No, Continue
                 </button>

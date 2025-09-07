@@ -178,7 +178,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, senderId, content } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || chatRoom.status!='Accepted') {
+                if (!chatRoom || chatRoom.status != 'Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -219,7 +219,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || chatRoom.status!='Accepted') {
+                if (!chatRoom || chatRoom.status != 'Accepted') {
                     return;
                 }
 
@@ -244,7 +244,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || chatRoom.status!='Accepted') {
+                if (!chatRoom || chatRoom.status != 'Accepted') {
                     return;
                 }
 
@@ -270,7 +270,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, counsellorId } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || chatRoom.status!='Accepted') {
+                if (!chatRoom || chatRoom.status != 'Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -280,27 +280,12 @@ const chatSocket = (io) => {
                     socket.emit('error', { message: 'Unauthorized to end this chat' });
                     return;
                 }
+                // Update end request status
+                chatRoom.endRequestStatus = true;
+                await chatRoom.save();
 
                 // Find the user socket to send the confirmation request
                 const userSocketId = onlineUsers.get(chatRoom.user.toString());
-
-                if (!userSocketId) {
-                    socket.emit('error', { message: 'User is offline, try again later' });
-                    return;
-                }
-
-                // Check if the room already has a pending end request
-                const pendingEndRequest = await Message.findOne({
-                    chatRoom: chatRoomId,
-                    isSystem: true,
-                    content: { $regex: 'requested to end this chat' },
-                    createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
-                });
-
-                if (pendingEndRequest) {
-                    socket.emit('error', { message: 'You cannot send another end request within 5 minutes' });
-                    return;
-                }
 
                 // Create a system message for the end request
                 const endRequestMessage = await Message.create({
@@ -311,20 +296,69 @@ const chatSocket = (io) => {
                     readBy: [counsellorId]
                 });
 
+                const populatedMessage = await Message.findById(endRequestMessage._id)
+                    .populate('sender', 'firstName lastName userType');
+
+                // Notify both parties
+                socket.emit('end_chat_requested', { chatRoomId });
+
                 if (userSocketId) {
                     io.to(userSocketId).emit('end_chat_request', { chatRoomId });
-
-                    // Also send the system message
-                    const populatedMessage = await Message.findById(endRequestMessage._id)
-                        .populate('sender', 'firstName lastName userType');
-
                     io.to(userSocketId).emit('new_message', populatedMessage);
-                } else {
-                    socket.emit('error', { message: 'User is offline, try again later' });
                 }
+                socket.emit('new_message', populatedMessage);
             } catch (error) {
                 console.error('Error in request_end_chat:', error);
                 socket.emit('error', { message: 'Failed to request end chat' });
+            }
+        });
+
+        socket.on('cancel_end_chat_request', async (data) => {
+            try {
+                const { chatRoomId, counsellorId } = data;
+
+                const chatRoom = await ChatRoom.findById(chatRoomId);
+                if (!chatRoom || chatRoom.status !== 'Accepted') {
+                    socket.emit('error', { message: 'Chat room not found or inactive' });
+                    return;
+                }
+
+                // Verify the counsellor is part of this chat
+                if (chatRoom.counsellor.toString() !== counsellorId) {
+                    socket.emit('error', { message: 'Unauthorized to cancel end chat request' });
+                    return;
+                }
+
+                // Update end request status
+                chatRoom.endRequestStatus = false;
+                await chatRoom.save();
+
+                // Find the user socket to remove the confirmation request
+                const userSocketId = onlineUsers.get(chatRoom.user.toString());
+
+                // Create a system message for the cancellation
+                const cancelMessage = await Message.create({
+                    chatRoom: chatRoomId,
+                    sender: counsellorId,
+                    content: 'The counselor has canceled the end chat request.',
+                    isSystem: true,
+                    readBy: [counsellorId]
+                });
+
+                const populatedMessage = await Message.findById(cancelMessage._id)
+                    .populate('sender', 'firstName lastName userType');
+
+                // Notify both parties
+                socket.emit('end_chat_request_canceled', { chatRoomId });
+
+                if (userSocketId) {
+                    io.to(userSocketId).emit('end_chat_request_canceled', { chatRoomId });
+                    io.to(userSocketId).emit('new_message', populatedMessage);
+                }
+                socket.emit('new_message', populatedMessage);
+            } catch (error) {
+                console.error('Error in cancel_end_chat_request:', error);
+                socket.emit('error', { message: 'Failed to cancel end chat request' });
             }
         });
 
@@ -334,7 +368,7 @@ const chatSocket = (io) => {
                 const { chatRoomId, userId, accepted } = data;
 
                 const chatRoom = await ChatRoom.findById(chatRoomId);
-                if (!chatRoom || chatRoom.status!='Accepted') {
+                if (!chatRoom || chatRoom.status != 'Accepted') {
                     socket.emit('error', { message: 'Chat room not found or inactive' });
                     return;
                 }
@@ -345,56 +379,61 @@ const chatSocket = (io) => {
                     return;
                 }
 
+                const counsellorSocketId = onlineUsers.get(chatRoom.counsellor.toString());
                 if (accepted) {
                     // End the chat
                     chatRoom.status = 'Completed';
                     chatRoom.endedAt = new Date();
+                    chatRoom.endRequestStatus = false;
                     await chatRoom.save();
 
+                    // Create a system message noting the chat ended
+                    const endMessage = await Message.create({
+                        chatRoom: chatRoomId,
+                        sender: chatRoom.counsellor,
+                        content: "This chat has been ended.",
+                        isSystem: true,
+                        readBy: [chatRoom.counsellor, chatRoom.user]
+                    });
+
+                    const populatedEndMessage = await Message.findById(endMessage._id)
+                        .populate('sender', 'firstName lastName userType');
+
                     // Notify both parties
-                    const counsellorSocketId = onlineUsers.get(chatRoom.counsellor.toString());
                     if (counsellorSocketId) {
                         io.to(counsellorSocketId).emit('chat_ended', { chatRoomId });
+                        io.to(counsellorSocketId).emit('new_message', populatedEndMessage);
                     }
 
                     socket.emit('chat_ended', { chatRoomId });
-
-                    // Create a system message noting the chat ended
-                    await Message.create({
-                        chatRoom: chatRoomId,
-                        sender: chatRoom.counsellor, // Counsellor initiated
-                        content: "This chat has been ended by the counsellor.",
-                        isSystem: true,
-                        readBy: [chatRoom.counsellor]
-                    });
+                    socket.emit('new_message', populatedEndMessage);
                 } else {
                     // User declined to end the chat
-                    const counsellorSocketId = onlineUsers.get(chatRoom.counsellor.toString());
+                    chatRoom.endRequestStatus = false;
+                    await chatRoom.save();
+
+                    // Create system message noting the decline
+                    const declineMessage = await Message.create({
+                        chatRoom: chatRoomId,
+                        sender: chatRoom.user,
+                        content: "User declined to end the chat.",
+                        isSystem: true,
+                        readBy: [chatRoom.user, chatRoom.counsellor]
+                    });
+
+                    const populatedDeclineMessage = await Message.findById(declineMessage._id)
+                        .populate('sender', 'firstName lastName userType');
+
+                    // Notify counsellor
                     if (counsellorSocketId) {
                         io.to(counsellorSocketId).emit('end_chat_declined', { chatRoomId });
-
-                        // Create system message noting the decline
-                        await Message.create({
-                            chatRoom: chatRoomId,
-                            sender: chatRoom.user, // User declined
-                            content: "User declined to end the chat.",
-                            isSystem: true,
-                            readBy: [chatRoom.user]
-                        });
-
-                        // Clear any pending end request messages to allow counsellor to request again
-                        await Message.updateMany(
-                            {
-                                chatRoom: chatRoomId,
-                                isSystem: true,
-                                content: { $regex: 'requested to end this chat' }
-                            },
-                            { $set: { content: "End chat request was declined." } }
-                        );
-
-                        // Notify counsellor to clear the lock
-                        io.to(counsellorSocketId).emit('clear_end_request_lock', { chatRoomId });
+                        io.to(counsellorSocketId).emit('end_chat_request_canceled', { chatRoomId }); // Reset button state
+                        io.to(counsellorSocketId).emit('new_message', populatedDeclineMessage);
                     }
+
+                    // Also notify user about the decline message
+                    socket.emit('new_message', populatedDeclineMessage);
+                    socket.emit('end_chat_request_canceled', { chatRoomId });
                 }
             } catch (error) {
                 console.error('Error in end_chat_response:', error);
@@ -406,21 +445,21 @@ const chatSocket = (io) => {
         socket.on('disconnect', () => {
             if (socket.userId) {
                 const userId = socket.userId;
-        
+
                 // Remove from online users
                 onlineUsers.delete(userId);
-        
+
                 // Set last seen time
                 const lastSeenTime = Date.now();
                 userLastSeen.set(userId, lastSeenTime);
-        
+
                 // Global notification
                 io.emit('user_status_change', {
                     userId,
                     status: 'offline',
                     lastSeen: lastSeenTime
                 });
-        
+
                 // Specifically notify users in active chats about status change
                 ChatRoom.find({
                     $or: [{ user: userId }, { counsellor: userId }],
@@ -430,7 +469,7 @@ const chatSocket = (io) => {
                         rooms.forEach(room => {
                             const otherUserId = room.user.toString() === userId ?
                                 room.counsellor.toString() : room.user.toString();
-        
+
                             const otherUserSocketId = onlineUsers.get(otherUserId);
                             if (otherUserSocketId) {
                                 io.to(otherUserSocketId).emit('user_status_change', {
@@ -445,7 +484,7 @@ const chatSocket = (io) => {
             }
             console.log('Client disconnected:', socket.id);
         });
-        
+
     });
 
     // return io;

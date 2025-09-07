@@ -135,6 +135,28 @@ const chatSlice = createSlice({
         state.activeRoom.pendingEndRequest = true;
       }
     },
+    updateEndRequestStatus: (state, action) => {
+      const { chatRoomId, status } = action.payload;
+
+      // Update chat rooms list
+      state.chatRooms = state.chatRooms.map(room => {
+        if (room._id === chatRoomId) {
+          return {
+            ...room,
+            endRequestStatus: status
+          };
+        }
+        return room;
+      });
+
+      // Update active room if it's the one being modified
+      if (state.activeRoom && state.activeRoom._id === chatRoomId) {
+        state.activeRoom = {
+          ...state.activeRoom,
+          endRequestStatus: status
+        };
+      }
+    },
     removePendingEndRequest: (state, action) => {
       state.pendingEndRequests = state.pendingEndRequests.filter(
         id => id !== action.payload
@@ -265,7 +287,8 @@ export const {
   setUserOffline,
   markMessageRead,
   setUserTyping,
-  clearUserTyping
+  clearUserTyping,
+  updateEndRequestStatus
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

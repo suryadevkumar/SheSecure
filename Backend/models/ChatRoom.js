@@ -26,6 +26,10 @@ const chatRoomSchema = new mongoose.Schema({
       ref: 'User',
       default: null
     },
+    endRequestStatus: {
+      type: Boolean,
+      default: false
+    },
     endedAt: {
       type: Date,
       default: null
