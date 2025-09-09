@@ -12,7 +12,6 @@ import { googleMapAPI } from "../config/config";
 import icon1 from "../assets/policeIcon.png";
 import icon2 from "../assets/hospitalIcon.png";
 import icon3 from "../assets/liveLocation.png";
-import crimeIcon from "../assets/danger.png";
 import pathIcon from "../assets/pathDot.png";
 import { setPathDistance } from "../redux/distanceSlice";
 import calculateDistance from "../utils/calculateDistance";
@@ -76,9 +75,11 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
   const policeStations = useSelector((state) => state.police.policeStations);
   const hospitals = useSelector((state) => state.hospital.hospitals);
   const crimesData = useSelector((state) => state.crime.crimeReports);
-  const { latitude, longitude, error: locationError } = useSelector(
-    (state) => state.location
-  );
+  const {
+    latitude,
+    longitude,
+    error: locationError,
+  } = useSelector((state) => state.location);
 
   const liveLocation = [
     {
@@ -412,7 +413,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
               <div className="flex items-center justify-center h-[calc(100%-10rem)]">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-3 text-gray-600">Loading location history...</p>
+                  <p className="mt-3 text-gray-600">
+                    Loading location history...
+                  </p>
                 </div>
               </div>
             ) : error ? (
@@ -430,7 +433,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                 </h3>
                 <p className="mt-2 text-gray-500">
                   {locations.length === 0
-                    ? `No location history found for ${new Date(date).toLocaleDateString()}`
+                    ? `No location history found for ${new Date(
+                        date
+                      ).toLocaleDateString()}`
                     : "No locations match your selected time range"}
                 </p>
               </div>
@@ -444,7 +449,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                     {showLocationList ? "Hide List" : "Show List"}
                   </button>
                 )}
-                
+
                 {(showLocationList || !isMobile) && (
                   <div className="bg-white rounded-lg shadow-sm overflow-hidden w-full md:w-1/3">
                     <div className="p-4 bg-gray-50 border-b">
@@ -481,10 +486,13 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                                 {loc.displayName}
                               </h4>
                               <p className="text-sm text-gray-500 mt-1">
-                                {new Date(loc.startTime).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {new Date(loc.startTime).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
                               </p>
                               <p className="text-sm text-gray-400 mt-1 truncate">
                                 {loc.formattedAddress}
@@ -497,7 +505,11 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                   </div>
                 )}
 
-                <div className={`${showLocationList && isMobile ? "hidden" : "block"} flex-1 bg-white rounded-lg shadow-sm overflow-hidden`}>
+                <div
+                  className={`${
+                    showLocationList && isMobile ? "hidden" : "block"
+                  } flex-1 bg-white rounded-lg shadow-sm overflow-hidden`}
+                >
                   <GoogleMap
                     mapContainerStyle={{ width: "100%", height: "100%" }}
                     center={mapCenter}
@@ -580,7 +592,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
         <div className="flex h-full">
           <div
             className={`${
-              isFullMode && showPlaceButton && !isMobile ? "w-full md:w-[73%]" : "w-full"
+              isFullMode && showPlaceButton && !isMobile
+                ? "w-full md:w-[73%]"
+                : "w-full"
             } transition-all duration-300`}
           >
             <GoogleMap
@@ -624,8 +638,41 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                       lng: crime.location.longitude,
                     }}
                     icon={{
-                      url: crimeIcon,
-                      scaledSize: new window.google.maps.Size(32, 32),
+                      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+                          <defs>
+                            <style>
+                              .marker-ripple {
+                                animation: ripple 2.5s infinite ease-in-out;
+                                transform-origin: center;
+                                filter: drop-shadow(inset 0px 2px 4px rgba(0,0,0,0.5));
+                              }
+                              @keyframes ripple {
+                                0% { 
+                                  transform: scale(1.0); 
+                                  opacity: 0.8; 
+                                }
+                                50% { 
+                                  transform: scale(1.8); 
+                                  opacity: 0.5; 
+                                }
+                                100% { 
+                                  transform: scale(1.0); 
+                                  opacity: 0.8; 
+                                }
+                              }
+                            </style>
+                          </defs>
+                          <!-- Outer ripple twinkling effect -->
+                          <circle class="marker-ripple" cx="20" cy="20" r="11" fill="rgba(139, 0, 0, 0.75)" />
+                          <!-- White circle (static) -->
+                          <circle cx="20" cy="20" r="12" fill="white" stroke="rgba(0,0,0,0.15)" stroke-width="1.5" />
+                          <!-- Red dot inside (bigger) -->
+                          <circle cx="20" cy="20" r="7" fill="#dc2626" />
+                        </svg>
+                      `),
+                      scaledSize: new window.google.maps.Size(40, 40),
+                      anchor: new window.google.maps.Point(20, 20),
                     }}
                     onClick={() => handleCrimeClick(crime)}
                   />
@@ -750,7 +797,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
               {showPlaceButton && (
                 <div
-                  className={`${isMobile ? "fixed bottom-0 left-0 right-0 z-10" : "static"} 
+                  className={`${
+                    isMobile ? "fixed bottom-0 left-0 right-0 z-10" : "static"
+                  } 
                   w-full md:w-[27%] transition-all duration-300 h-[calc(100vh-4rem)] 
                   bg-white shadow-lg md:shadow-none`}
                 >
@@ -768,7 +817,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                         type="checkbox"
                         className="mr-2"
                         checked={showPoliceStations}
-                        onChange={() => setShowPoliceStations(!showPoliceStations)}
+                        onChange={() =>
+                          setShowPoliceStations(!showPoliceStations)
+                        }
                       />
                       <b>Police Station</b>
                     </label>
@@ -793,7 +844,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
 
                     {showCrimes && (
                       <div className="text-white text-md py-1 mx-3 text-center w-[90%]">
-                        <p className="font-bold">Safety Score: {safetyScore}/100</p>
+                        <p className="font-bold">
+                          Safety Score: {safetyScore}/100
+                        </p>
                         <p className="text-sm">
                           {crimesData && crimesData.length > 0
                             ? `${crimesData.length} crime${
@@ -835,8 +888,8 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                                   Path Distance:{" "}
                                 </span>
                                 {(
-                                  directions?.routes[0]?.legs[0]?.distance?.value /
-                                  1000
+                                  directions?.routes[0]?.legs[0]?.distance
+                                    ?.value / 1000
                                 ).toFixed(2)}{" "}
                                 km
                               </p>
@@ -860,7 +913,9 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                             : "hover:bg-gray-100"
                         }`}
                         key={`hospital-${index}`}
-                        onClick={() => handleListClick(place, "hospital", index)}
+                        onClick={() =>
+                          handleListClick(place, "hospital", index)
+                        }
                       >
                         <p className="font-semibold">
                           {place.displayName.text || "Location"}
@@ -876,8 +931,8 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                                   Path Distance:{" "}
                                 </span>
                                 {(
-                                  directions?.routes[0]?.legs[0]?.distance?.value /
-                                  1000
+                                  directions?.routes[0]?.legs[0]?.distance
+                                    ?.value / 1000
                                 ).toFixed(2)}{" "}
                                 km
                               </p>
@@ -913,6 +968,12 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
         {`
           .gm-ui-hover-effect {
             display: none !important;
+          }
+          
+          /* Additional Google Maps marker styles if needed */
+          .animated-crime-marker {
+            position: relative;
+            display: inline-block;
           }
         `}
       </style>
