@@ -383,7 +383,7 @@ const MapView = ({ mode = MAP_MODES.FULL }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 items-center">
+                  <label className="flex text-sm font-medium text-gray-700 mb-1 items-center">
                     <FiClock className="mr-2" /> End Time
                   </label>
                   <select
