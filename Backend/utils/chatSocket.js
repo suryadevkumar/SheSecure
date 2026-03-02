@@ -214,6 +214,43 @@ const chatSocket = (io) => {
             }
         });
 
+        socket.on('mark_messages_read', async (data) => {
+            try {
+                const { chatRoomId, userId } = data;
+
+                // saare unread messages ko read mark karo
+                await Message.updateMany(
+                    {
+                        chatRoom: chatRoomId,
+                        readBy: { $ne: userId }
+                    },
+                    {
+                        $push: { readBy: userId }
+                    }
+                );
+
+                // sender ko notify karo (seen update ke liye)
+                const chatRoom = await ChatRoom.findById(chatRoomId);
+
+                const partnerId =
+                    userId === chatRoom.user.toString()
+                        ? chatRoom.counsellor.toString()
+                        : chatRoom.user.toString();
+
+                const partnerSocketId = onlineUsers.get(partnerId);
+
+                if (partnerSocketId) {
+                    io.to(partnerSocketId).emit('messages_read', {
+                        chatRoomId,
+                        userId
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error in mark_messages_read:', error);
+            }
+        });
+
         socket.on('user_typing', async (data) => {
             try {
                 const { chatRoomId, userId } = data;
