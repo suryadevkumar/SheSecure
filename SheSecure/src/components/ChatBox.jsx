@@ -15,7 +15,12 @@ const ChatBox = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  const otherUserId = user.userType === "User" ? activeRoom.counsellor._id : activeRoom.user._id;
+  const otherUserId =
+  activeRoom && user
+    ? user.userType === "User"
+      ? activeRoom?.counsellor?._id
+      : activeRoom?.user?._id
+    : null;
 
   const formatLastSeen = (timestamp) => {
     if (!timestamp) return "Unknown";
