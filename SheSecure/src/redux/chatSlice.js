@@ -98,10 +98,25 @@ const chatSlice = createSlice({
     setActiveRoom: (state, action) => {
       state.activeRoom = action.payload;
     },
+    setMessages: (state, action) => {
+      state.messages = action.payload;
+    },
     addMessage: (state, action) => {
-      if (state.activeRoom && action.payload.chatRoom === state.activeRoom._id) {
+      const roomId = action.payload.chatRoom?._id || action.payload.chatRoom;
+
+      if (state.activeRoom && roomId === state.activeRoom._id) {
         state.messages.push(action.payload);
       }
+    },
+    markRoomMessagesReadLocal: (state, action) => {
+      const { userId } = action.payload;
+
+      state.messages = state.messages.map(m => ({
+        ...m,
+        readBy: m.readBy?.includes(userId)
+          ? m.readBy
+          : [...(m.readBy || []), userId]
+      }));
     },
     updateChatRequests: (state, action) => {
       state.chatRequests = action.payload;
@@ -271,7 +286,9 @@ const chatSlice = createSlice({
 
 export const {
   setActiveRoom,
+  setMessages,
   addMessage,
+  markRoomMessagesReadLocal,
   updateChatRequests,
   addChatRequest,
   removeChatRequest,

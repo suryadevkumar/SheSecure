@@ -15,6 +15,8 @@ const ChatBox = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
+  const otherUserId = user.userType === "User" ? activeRoom.counsellor._id : activeRoom.user._id;
+
   const formatLastSeen = (timestamp) => {
     if (!timestamp) return "Unknown";
     const date = new Date(timestamp);
@@ -46,6 +48,23 @@ const ChatBox = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (activeRoom && user) {
+      dispatch({
+        type: "socket/markMessageRead",
+        payload: {
+          chatRoomId: activeRoom._id,
+          userId: user._id,
+        },
+      });
+
+      dispatch({
+        type: "chat/markRoomMessagesReadLocal",
+        payload: { userId: user._id }
+      });
+    }
+  }, [activeRoom]);
 
   useEffect(() => {
     if (activeRoom && user && newMessage.length > 0) {
@@ -82,29 +101,6 @@ const ChatBox = () => {
       }
     };
   }, [newMessage, activeRoom, user, dispatch]);
-
-  useEffect(() => {
-    if (activeRoom && user && messages.length > 0) {
-      // Find messages that haven't been read by the current user
-      const unreadMessages = messages.filter(
-        (msg) =>
-          msg.sender._id !== user._id &&
-          (!msg.readBy || !msg.readBy.includes(user._id))
-      );
-
-      // Mark them as read
-      unreadMessages.forEach((msg) => {
-        dispatch({
-          type: "socket/markMessageRead",
-          payload: {
-            messageId: msg._id,
-            userId: user._id,
-            chatRoomId: activeRoom._id,
-          },
-        });
-      });
-    }
-  }, [activeRoom, messages, user, dispatch]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -356,13 +352,8 @@ const ChatBox = () => {
                     {msg.sender._id === user?._id && (
                       <span className="ml-1">
                         {msg.readBy &&
-                        msg.readBy.includes(
-                          msg.sender._id === user?._id
-                            ? user?.userType === "User"
-                              ? activeRoom?.counsellor?._id
-                              : activeRoom?.user?._id
-                            : user?._id
-                        ) ? (
+                        msg.readBy?.includes(otherUserId)
+                        ? (
                           // Double tick for read
                           <svg
                             className="w-3 h-3 text-blue-300"

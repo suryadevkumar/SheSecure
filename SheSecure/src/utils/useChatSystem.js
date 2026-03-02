@@ -239,14 +239,13 @@ const chatSocket = store => {
     }
 
     if (action.type === 'socket/markMessageRead') {
-      const { messageId, userId, chatRoomId } = action.payload;
+      const { userId, chatRoomId } = action.payload;
 
       if (!socket || !userId) return next(action);
 
-      socket.emit('mark_message_read', {
-        messageId,
-        userId,
-        chatRoomId
+      socket.emit('mark_messages_read', {
+        chatRoomId,
+        userId
       });
     }
 
